@@ -13,9 +13,7 @@ pub enum LoadAccumulator {
 
 impl Operation for LoadAccumulator {
     fn execute_on(&self, state: State) -> State {
-        match self {
-            _ => state,
-        }
+        state
     }
 
     fn get_size(&self) -> u8 {

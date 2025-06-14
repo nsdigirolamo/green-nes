@@ -1,6 +1,6 @@
 use crate::emu::{State, instruction::Operation};
 
-pub enum LoadX {
+pub enum LoadY {
     Immediate { operand: u8 },
     ZeroPage { operand: u8 },
     ZeroPageX { operand: u8 },
@@ -8,7 +8,7 @@ pub enum LoadX {
     AbsoluteX { operand: u16 },
 }
 
-impl Operation for LoadX {
+impl Operation for LoadY {
     fn execute_on(&self, state: State) -> State {
         state
     }
