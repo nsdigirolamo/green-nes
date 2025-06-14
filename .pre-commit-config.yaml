@@ -1,6 +1,14 @@
 repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-toml
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
 - repo: ./
-  rev: '8fb29bfadc83f226ca2062fd0be9d76c0e42abdc'
+  rev: 'efa0bad962bb64cfc3342497e3414979907831f5'
   hooks:
   - id: fmt
   - id: check

@@ -15,5 +15,5 @@
   entry: cargo clippy
   language: system
   types: [rust]
-  args: ["--", "-D", "warnings"]
   pass_filenames: false
+  args: ["--", "-D", "warnings" ]
