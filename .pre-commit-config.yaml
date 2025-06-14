@@ -1,6 +1,6 @@
 repos:
 - repo: ./
-  rev: '64c5a34ac0a1a8b54f45b387a1301d4cb8838dcd'
+  rev: '8fb29bfadc83f226ca2062fd0be9d76c0e42abdc'
   hooks:
   - id: fmt
   - id: check

@@ -2,11 +2,14 @@
   name: cargo fmt
   entry: cargo fmt
   language: system
+  args: ["--"]
 - id: check
   name: cargo check
   entry: cargo check
   language: system
+  pass_filenames: false
 - id: clippy
   name: cargo clippy
   entry: cargo clippy
   language: system
+  args: ["--", "-D", "warnings"]
