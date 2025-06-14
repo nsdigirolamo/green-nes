@@ -3,6 +3,3 @@
 
 # Misc
 /notes
-
-# Exceptions
-!.git/hooks/pre-commit
