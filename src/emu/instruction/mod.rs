@@ -11,6 +11,9 @@ use crate::{
                 adc::AddWithCarry, dec::Decrement, dex::DecrementX, dey::DecrementY,
                 inc::Increment, inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
             },
+            shift::{
+                asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
+            },
             transfer::{
                 tax::TransferAccumulatorToX, tay::TransferAccumulatorToY,
                 txa::TransferXToAccumulator, tya::TransferYToAccumulator,
@@ -21,6 +24,7 @@ use crate::{
 
 pub mod access;
 pub mod arithmetic;
+pub mod shift;
 pub mod transfer;
 
 pub enum NoOperation {
@@ -62,6 +66,12 @@ pub enum Instruction {
     INY(IncrementY),
     DEY(DecrementY),
 
+    // Transfer Operations
+    ASL(ArithmeticShiftLeft),
+    LSR(LogicalShiftRight),
+    ROL(RotateLeft),
+    ROR(RotateRight),
+
     NOP(NoOperation),
 }
 
@@ -91,6 +101,12 @@ impl Operation for Instruction {
             Instruction::DEX(dex) => dex.execute_on(state),
             Instruction::INY(iny) => iny.execute_on(state),
             Instruction::DEY(dey) => dey.execute_on(state),
+
+            // Transfer Operations
+            Instruction::ASL(asl) => asl.execute_on(state),
+            Instruction::LSR(lsr) => lsr.execute_on(state),
+            Instruction::ROL(rol) => rol.execute_on(state),
+            Instruction::ROR(ror) => ror.execute_on(state),
 
             Instruction::NOP(nop) => nop.execute_on(state),
         }
@@ -122,76 +138,78 @@ impl Operation for Instruction {
             Instruction::INY(iny) => iny.get_size(),
             Instruction::DEY(dey) => dey.get_size(),
 
+            // Transfer Operations
+            Instruction::ASL(asl) => asl.get_size(),
+            Instruction::LSR(lsr) => lsr.get_size(),
+            Instruction::ROL(rol) => rol.get_size(),
+            Instruction::ROR(ror) => ror.get_size(),
+
             Instruction::NOP(nop) => nop.get_size(),
         }
     }
 }
 
 pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
-    let byte_one = bytes.0;
-    let byte_two = bytes.1;
-    let byte_three = bytes.2;
-
-    match byte_one {
-        0xA9 => Instruction::LDA(LoadAccumulator::Immediate { operand: byte_two }),
-        0xA5 => Instruction::LDA(LoadAccumulator::ZeroPage { operand: byte_two }),
-        0xB5 => Instruction::LDA(LoadAccumulator::ZeroPageX { operand: byte_two }),
+    match bytes.0 {
+        0xA9 => Instruction::LDA(LoadAccumulator::Immediate { operand: bytes.1 }),
+        0xA5 => Instruction::LDA(LoadAccumulator::ZeroPage { operand: bytes.1 }),
+        0xB5 => Instruction::LDA(LoadAccumulator::ZeroPageX { operand: bytes.1 }),
         0xAD => Instruction::LDA(LoadAccumulator::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xBD => Instruction::LDA(LoadAccumulator::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xB9 => Instruction::LDA(LoadAccumulator::AbsoluteY {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
-        0xA1 => Instruction::LDA(LoadAccumulator::IndirectX { operand: byte_two }),
-        0xB1 => Instruction::LDA(LoadAccumulator::IndirectY { operand: byte_two }),
+        0xA1 => Instruction::LDA(LoadAccumulator::IndirectX { operand: bytes.1 }),
+        0xB1 => Instruction::LDA(LoadAccumulator::IndirectY { operand: bytes.1 }),
 
-        0x85 => Instruction::STA(StoreAccumulator::ZeroPage { operand: byte_two }),
-        0x95 => Instruction::STA(StoreAccumulator::ZeroPageX { operand: byte_two }),
+        0x85 => Instruction::STA(StoreAccumulator::ZeroPage { operand: bytes.1 }),
+        0x95 => Instruction::STA(StoreAccumulator::ZeroPageX { operand: bytes.1 }),
         0x8D => Instruction::STA(StoreAccumulator::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0x9D => Instruction::STA(StoreAccumulator::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0x99 => Instruction::STA(StoreAccumulator::AbsoluteY {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
-        0x81 => Instruction::STA(StoreAccumulator::IndirectX { operand: byte_two }),
-        0x91 => Instruction::STA(StoreAccumulator::IndirectY { operand: byte_two }),
+        0x81 => Instruction::STA(StoreAccumulator::IndirectX { operand: bytes.1 }),
+        0x91 => Instruction::STA(StoreAccumulator::IndirectY { operand: bytes.1 }),
 
-        0xA2 => Instruction::LDX(LoadX::Immediate { operand: byte_two }),
-        0xA6 => Instruction::LDX(LoadX::ZeroPage { operand: byte_two }),
-        0xB6 => Instruction::LDX(LoadX::ZeroPageX { operand: byte_two }),
+        0xA2 => Instruction::LDX(LoadX::Immediate { operand: bytes.1 }),
+        0xA6 => Instruction::LDX(LoadX::ZeroPage { operand: bytes.1 }),
+        0xB6 => Instruction::LDX(LoadX::ZeroPageX { operand: bytes.1 }),
         0xAE => Instruction::LDX(LoadX::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xBE => Instruction::LDX(LoadX::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
-        0x86 => Instruction::STX(StoreX::ZeroPage { operand: byte_two }),
-        0x96 => Instruction::STX(StoreX::ZeroPageY { operand: byte_two }),
+        0x86 => Instruction::STX(StoreX::ZeroPage { operand: bytes.1 }),
+        0x96 => Instruction::STX(StoreX::ZeroPageY { operand: bytes.1 }),
         0x8E => Instruction::STX(StoreX::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
-        0xA0 => Instruction::LDY(LoadY::Immediate { operand: byte_two }),
-        0xA4 => Instruction::LDY(LoadY::ZeroPage { operand: byte_two }),
-        0xB4 => Instruction::LDY(LoadY::ZeroPageX { operand: byte_two }),
+        0xA0 => Instruction::LDY(LoadY::Immediate { operand: bytes.1 }),
+        0xA4 => Instruction::LDY(LoadY::ZeroPage { operand: bytes.1 }),
+        0xB4 => Instruction::LDY(LoadY::ZeroPageX { operand: bytes.1 }),
         0xAC => Instruction::LDY(LoadY::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xBC => Instruction::LDY(LoadY::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
-        0x84 => Instruction::STY(StoreY::ZeroPage { operand: byte_two }),
-        0x94 => Instruction::STY(StoreY::ZeroPageX { operand: byte_two }),
+        0x84 => Instruction::STY(StoreY::ZeroPage { operand: bytes.1 }),
+        0x94 => Instruction::STY(StoreY::ZeroPageX { operand: bytes.1 }),
         0x8C => Instruction::STY(StoreY::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
         0xAA => Instruction::TAX(TransferAccumulatorToX::Implied),
@@ -202,52 +220,52 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
 
         0x98 => Instruction::TYA(TransferYToAccumulator::Implied),
 
-        0x69 => Instruction::ADC(AddWithCarry::Immediate { operand: byte_two }),
-        0x65 => Instruction::ADC(AddWithCarry::ZeroPage { operand: byte_two }),
-        0x75 => Instruction::ADC(AddWithCarry::ZeroPageX { operand: byte_two }),
+        0x69 => Instruction::ADC(AddWithCarry::Immediate { operand: bytes.1 }),
+        0x65 => Instruction::ADC(AddWithCarry::ZeroPage { operand: bytes.1 }),
+        0x75 => Instruction::ADC(AddWithCarry::ZeroPageX { operand: bytes.1 }),
         0x6D => Instruction::ADC(AddWithCarry::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0x7D => Instruction::ADC(AddWithCarry::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0x79 => Instruction::ADC(AddWithCarry::AbsoluteY {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
-        0x61 => Instruction::ADC(AddWithCarry::IndirectX { operand: byte_two }),
-        0x71 => Instruction::ADC(AddWithCarry::IndirectY { operand: byte_two }),
+        0x61 => Instruction::ADC(AddWithCarry::IndirectX { operand: bytes.1 }),
+        0x71 => Instruction::ADC(AddWithCarry::IndirectY { operand: bytes.1 }),
 
-        0xE9 => Instruction::SBC(SubtractWithCarry::Immediate { operand: byte_two }),
-        0xE5 => Instruction::SBC(SubtractWithCarry::ZeroPage { operand: byte_two }),
-        0xF5 => Instruction::SBC(SubtractWithCarry::ZeroPageX { operand: byte_two }),
+        0xE9 => Instruction::SBC(SubtractWithCarry::Immediate { operand: bytes.1 }),
+        0xE5 => Instruction::SBC(SubtractWithCarry::ZeroPage { operand: bytes.1 }),
+        0xF5 => Instruction::SBC(SubtractWithCarry::ZeroPageX { operand: bytes.1 }),
         0xED => Instruction::SBC(SubtractWithCarry::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xFD => Instruction::SBC(SubtractWithCarry::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xF9 => Instruction::SBC(SubtractWithCarry::AbsoluteY {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
-        0xE1 => Instruction::SBC(SubtractWithCarry::IndirectX { operand: byte_two }),
-        0xF1 => Instruction::SBC(SubtractWithCarry::IndirectY { operand: byte_two }),
+        0xE1 => Instruction::SBC(SubtractWithCarry::IndirectX { operand: bytes.1 }),
+        0xF1 => Instruction::SBC(SubtractWithCarry::IndirectY { operand: bytes.1 }),
 
-        0xE6 => Instruction::INC(Increment::ZeroPage { operand: byte_two }),
-        0xF6 => Instruction::INC(Increment::ZeroPageX { operand: byte_two }),
+        0xE6 => Instruction::INC(Increment::ZeroPage { operand: bytes.1 }),
+        0xF6 => Instruction::INC(Increment::ZeroPageX { operand: bytes.1 }),
         0xEE => Instruction::INC(Increment::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xFE => Instruction::INC(Increment::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
-        0xC6 => Instruction::DEC(Decrement::ZeroPage { operand: byte_two }),
-        0xD6 => Instruction::DEC(Decrement::ZeroPageX { operand: byte_two }),
+        0xC6 => Instruction::DEC(Decrement::ZeroPage { operand: bytes.1 }),
+        0xD6 => Instruction::DEC(Decrement::ZeroPageX { operand: bytes.1 }),
         0xCE => Instruction::DEC(Decrement::Absolute {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
         0xDE => Instruction::DEC(Decrement::AbsoluteX {
-            operand: concat_u8!(byte_three, byte_two),
+            operand: concat_u8!(bytes.2, bytes.1),
         }),
 
         0xE8 => Instruction::INX(IncrementX::Implied),
@@ -257,6 +275,46 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
         0xC8 => Instruction::INY(IncrementY::Implied),
 
         0x88 => Instruction::DEY(DecrementY::Implied),
+
+        0x0A => Instruction::ASL(ArithmeticShiftLeft::Accumulator),
+        0x06 => Instruction::ASL(ArithmeticShiftLeft::ZeroPage { operand: bytes.1 }),
+        0x16 => Instruction::ASL(ArithmeticShiftLeft::ZeroPageX { operand: bytes.1 }),
+        0x0E => Instruction::ASL(ArithmeticShiftLeft::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0x1E => Instruction::ASL(ArithmeticShiftLeft::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0x4A => Instruction::LSR(LogicalShiftRight::Accumulator),
+        0x46 => Instruction::LSR(LogicalShiftRight::ZeroPage { operand: bytes.1 }),
+        0x56 => Instruction::LSR(LogicalShiftRight::ZeroPageX { operand: bytes.1 }),
+        0x4E => Instruction::LSR(LogicalShiftRight::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0x5E => Instruction::LSR(LogicalShiftRight::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0x2A => Instruction::ROL(RotateLeft::Accumulator),
+        0x26 => Instruction::ROL(RotateLeft::ZeroPage { operand: bytes.1 }),
+        0x36 => Instruction::ROL(RotateLeft::ZeroPageX { operand: bytes.1 }),
+        0x2E => Instruction::ROL(RotateLeft::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0x3E => Instruction::ROL(RotateLeft::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0x6A => Instruction::ROR(RotateRight::Accumulator),
+        0x66 => Instruction::ROR(RotateRight::ZeroPage { operand: bytes.1 }),
+        0x76 => Instruction::ROR(RotateRight::ZeroPageX { operand: bytes.1 }),
+        0x6E => Instruction::ROR(RotateRight::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0x7E => Instruction::ROR(RotateRight::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
 
         _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
     }
