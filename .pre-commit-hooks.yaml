@@ -1,0 +1,12 @@
+- id: fmt
+  name: cargo fmt
+  entry: cargo fmt
+  language: system
+- id: check
+  name: cargo check
+  entry: cargo check
+  language: system
+- id: clippy
+  name: cargo clippy
+  entry: cargo clippy
+  language: system
