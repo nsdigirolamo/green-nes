@@ -1,12 +1,19 @@
 use crate::emu::{
     Operation, State,
-    instruction::access::{
-        lda::LoadAccumulator, ldx::LoadX, ldy::LoadY, sta::StoreAccumulator, stx::StoreX,
-        sty::StoreY,
+    instruction::{
+        access::{
+            lda::LoadAccumulator, ldx::LoadX, ldy::LoadY, sta::StoreAccumulator, stx::StoreX,
+            sty::StoreY,
+        },
+        transfer::{
+            tax::TransferAccumulatorToX, tay::TransferAccumulatorToY, txa::TransferXToAccumulator,
+            tya::TransferYToAccumulator,
+        },
     },
 };
 
 pub mod access;
+pub mod transfer;
 
 pub enum Instruction {
     // Access Operations
@@ -16,6 +23,12 @@ pub enum Instruction {
     STX(StoreX),
     LDY(LoadY),
     STY(StoreY),
+
+    // Transfer Operations
+    TAX(TransferAccumulatorToX),
+    TXA(TransferXToAccumulator),
+    TAY(TransferAccumulatorToY),
+    TYA(TransferYToAccumulator),
 
     NOP(NoOperation),
 }
@@ -31,6 +44,12 @@ impl Operation for Instruction {
             Instruction::LDY(ldy) => ldy.execute_on(state),
             Instruction::STY(sty) => sty.execute_on(state),
 
+            // Transfer Operations
+            Instruction::TAX(tax) => tax.execute_on(state),
+            Instruction::TXA(txa) => txa.execute_on(state),
+            Instruction::TAY(tay) => tay.execute_on(state),
+            Instruction::TYA(tya) => tya.execute_on(state),
+
             Instruction::NOP(nop) => nop.execute_on(state),
         }
     }
@@ -44,6 +63,12 @@ impl Operation for Instruction {
             Instruction::STX(stx) => stx.get_size(),
             Instruction::LDY(ldy) => ldy.get_size(),
             Instruction::STY(sty) => sty.get_size(),
+
+            // Transfer Operations
+            Instruction::TAX(tax) => tax.get_size(),
+            Instruction::TXA(txa) => txa.get_size(),
+            Instruction::TAY(tay) => tay.get_size(),
+            Instruction::TYA(tya) => tya.get_size(),
 
             Instruction::NOP(nop) => nop.get_size(),
         }
