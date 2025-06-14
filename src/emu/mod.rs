@@ -1,6 +1,9 @@
 use crate::emu::instruction::{
-    Instruction,
-    access::{lda::LoadAccumulator, ldx::LoadX},
+    Instruction, NoOperation,
+    access::{
+        lda::LoadAccumulator, ldx::LoadX, ldy::LoadY, sta::StoreAccumulator, stx::StoreX,
+        sty::StoreY,
+    },
 };
 
 pub mod instruction;
@@ -62,16 +65,54 @@ impl State {
             }),
             0xA1 => Instruction::LDA(LoadAccumulator::IndirectX { operand: byte_two }),
             0xB1 => Instruction::LDA(LoadAccumulator::IndirectY { operand: byte_two }),
-            0xA0 => Instruction::LDX(LoadX::Immediate { operand: byte_two }),
-            0xA4 => Instruction::LDX(LoadX::ZeroPage { operand: byte_two }),
-            0xB4 => Instruction::LDX(LoadX::ZeroPageX { operand: byte_two }),
-            0xAC => Instruction::LDX(LoadX::Absolute {
+
+            0x85 => Instruction::STA(StoreAccumulator::ZeroPage { operand: byte_two }),
+            0x95 => Instruction::STA(StoreAccumulator::ZeroPageX { operand: byte_two }),
+            0x8D => Instruction::STA(StoreAccumulator::Absolute {
                 operand: concat_u8!(byte_three, byte_two),
             }),
-            0xBC => Instruction::LDX(LoadX::AbsoluteX {
+            0x9D => Instruction::STA(StoreAccumulator::AbsoluteX {
                 operand: concat_u8!(byte_three, byte_two),
             }),
-            _ => Instruction::LDA(LoadAccumulator::Immediate { operand: byte_two }), // @TODO: Remove this once all opcodes are matched.
+            0x99 => Instruction::STA(StoreAccumulator::AbsoluteY {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0x81 => Instruction::STA(StoreAccumulator::IndirectX { operand: byte_two }),
+            0x91 => Instruction::STA(StoreAccumulator::IndirectY { operand: byte_two }),
+
+            0xA2 => Instruction::LDX(LoadX::Immediate { operand: byte_two }),
+            0xA6 => Instruction::LDX(LoadX::ZeroPage { operand: byte_two }),
+            0xB6 => Instruction::LDX(LoadX::ZeroPageX { operand: byte_two }),
+            0xAE => Instruction::LDX(LoadX::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xBE => Instruction::LDX(LoadX::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            0x86 => Instruction::STX(StoreX::ZeroPage { operand: byte_two }),
+            0x96 => Instruction::STX(StoreX::ZeroPageY { operand: byte_two }),
+            0x8E => Instruction::STX(StoreX::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            0xA0 => Instruction::LDY(LoadY::Immediate { operand: byte_two }),
+            0xA4 => Instruction::LDY(LoadY::ZeroPage { operand: byte_two }),
+            0xB4 => Instruction::LDY(LoadY::ZeroPageX { operand: byte_two }),
+            0xAC => Instruction::LDY(LoadY::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xBC => Instruction::LDY(LoadY::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            0x84 => Instruction::STY(StoreY::ZeroPage { operand: byte_two }),
+            0x94 => Instruction::STY(StoreY::ZeroPageX { operand: byte_two }),
+            0x8C => Instruction::STY(StoreY::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
         }
     }
 }
