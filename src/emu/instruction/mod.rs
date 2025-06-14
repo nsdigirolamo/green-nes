@@ -5,6 +5,10 @@ use crate::emu::{
             lda::LoadAccumulator, ldx::LoadX, ldy::LoadY, sta::StoreAccumulator, stx::StoreX,
             sty::StoreY,
         },
+        arithmetic::{
+            adc::AddWithCarry, dec::Decrement, dex::DecrementX, dey::DecrementY, inc::Increment,
+            inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
+        },
         transfer::{
             tax::TransferAccumulatorToX, tay::TransferAccumulatorToY, txa::TransferXToAccumulator,
             tya::TransferYToAccumulator,
@@ -13,6 +17,7 @@ use crate::emu::{
 };
 
 pub mod access;
+pub mod arithmetic;
 pub mod transfer;
 
 pub enum Instruction {
@@ -29,6 +34,16 @@ pub enum Instruction {
     TXA(TransferXToAccumulator),
     TAY(TransferAccumulatorToY),
     TYA(TransferYToAccumulator),
+
+    // Arithmetic Operations
+    ADC(AddWithCarry),
+    SBC(SubtractWithCarry),
+    INC(Increment),
+    DEC(Decrement),
+    INX(IncrementX),
+    DEX(DecrementX),
+    INY(IncrementY),
+    DEY(DecrementY),
 
     NOP(NoOperation),
 }
@@ -50,6 +65,16 @@ impl Operation for Instruction {
             Instruction::TAY(tay) => tay.execute_on(state),
             Instruction::TYA(tya) => tya.execute_on(state),
 
+            // Arithmetic Operations
+            Instruction::ADC(adc) => adc.execute_on(state),
+            Instruction::SBC(svc) => svc.execute_on(state),
+            Instruction::INC(inc) => inc.execute_on(state),
+            Instruction::DEC(dec) => dec.execute_on(state),
+            Instruction::INX(inx) => inx.execute_on(state),
+            Instruction::DEX(dex) => dex.execute_on(state),
+            Instruction::INY(iny) => iny.execute_on(state),
+            Instruction::DEY(dey) => dey.execute_on(state),
+
             Instruction::NOP(nop) => nop.execute_on(state),
         }
     }
@@ -69,6 +94,16 @@ impl Operation for Instruction {
             Instruction::TXA(txa) => txa.get_size(),
             Instruction::TAY(tay) => tay.get_size(),
             Instruction::TYA(tya) => tya.get_size(),
+
+            // Arithmetic Operations
+            Instruction::ADC(adc) => adc.get_size(),
+            Instruction::SBC(svc) => svc.get_size(),
+            Instruction::INC(inc) => inc.get_size(),
+            Instruction::DEC(dec) => dec.get_size(),
+            Instruction::INX(inx) => inx.get_size(),
+            Instruction::DEX(dex) => dex.get_size(),
+            Instruction::INY(iny) => iny.get_size(),
+            Instruction::DEY(dey) => dey.get_size(),
 
             Instruction::NOP(nop) => nop.get_size(),
         }

@@ -1,0 +1,17 @@
+use crate::emu::{Operation, State};
+
+pub enum IncrementX {
+    Implied,
+}
+
+impl Operation for IncrementX {
+    fn execute_on(&self, state: State) -> State {
+        state
+    }
+
+    fn get_size(&self) -> u8 {
+        match self {
+            Self::Implied => 2,
+        }
+    }
+}

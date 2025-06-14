@@ -4,6 +4,14 @@ use crate::emu::instruction::{
         lda::LoadAccumulator, ldx::LoadX, ldy::LoadY, sta::StoreAccumulator, stx::StoreX,
         sty::StoreY,
     },
+    arithmetic::{
+        adc::AddWithCarry, dec::Decrement, dex::DecrementX, dey::DecrementY, inc::Increment,
+        inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
+    },
+    transfer::{
+        tax::TransferAccumulatorToX, tay::TransferAccumulatorToY, txa::TransferXToAccumulator,
+        tya::TransferYToAccumulator,
+    },
 };
 
 pub mod instruction;
@@ -111,6 +119,70 @@ impl State {
             0x8C => Instruction::STY(StoreY::Absolute {
                 operand: concat_u8!(byte_three, byte_two),
             }),
+
+            0xAA => Instruction::TAX(TransferAccumulatorToX::Implied),
+
+            0x8A => Instruction::TXA(TransferXToAccumulator::Implied),
+
+            0xA8 => Instruction::TAY(TransferAccumulatorToY::Implied),
+
+            0x98 => Instruction::TYA(TransferYToAccumulator::Implied),
+
+            0x69 => Instruction::ADC(AddWithCarry::Immediate { operand: byte_two }),
+            0x65 => Instruction::ADC(AddWithCarry::ZeroPage { operand: byte_two }),
+            0x75 => Instruction::ADC(AddWithCarry::ZeroPageX { operand: byte_two }),
+            0x6D => Instruction::ADC(AddWithCarry::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0x7D => Instruction::ADC(AddWithCarry::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0x79 => Instruction::ADC(AddWithCarry::AbsoluteY {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0x61 => Instruction::ADC(AddWithCarry::IndirectX { operand: byte_two }),
+            0x71 => Instruction::ADC(AddWithCarry::IndirectY { operand: byte_two }),
+
+            0xE9 => Instruction::SBC(SubtractWithCarry::Immediate { operand: byte_two }),
+            0xE5 => Instruction::SBC(SubtractWithCarry::ZeroPage { operand: byte_two }),
+            0xF5 => Instruction::SBC(SubtractWithCarry::ZeroPageX { operand: byte_two }),
+            0xED => Instruction::SBC(SubtractWithCarry::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xFD => Instruction::SBC(SubtractWithCarry::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xF9 => Instruction::SBC(SubtractWithCarry::AbsoluteY {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xE1 => Instruction::SBC(SubtractWithCarry::IndirectX { operand: byte_two }),
+            0xF1 => Instruction::SBC(SubtractWithCarry::IndirectY { operand: byte_two }),
+
+            0xE6 => Instruction::INC(Increment::ZeroPage { operand: byte_two }),
+            0xF6 => Instruction::INC(Increment::ZeroPageX { operand: byte_two }),
+            0xEE => Instruction::INC(Increment::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xFE => Instruction::INC(Increment::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            0xC6 => Instruction::DEC(Decrement::ZeroPage { operand: byte_two }),
+            0xD6 => Instruction::DEC(Decrement::ZeroPageX { operand: byte_two }),
+            0xCE => Instruction::DEC(Decrement::Absolute {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+            0xDE => Instruction::DEC(Decrement::AbsoluteX {
+                operand: concat_u8!(byte_three, byte_two),
+            }),
+
+            0xE8 => Instruction::INX(IncrementX::Implied),
+
+            0xCA => Instruction::DEX(DecrementX::Implied),
+
+            0xC8 => Instruction::INY(IncrementY::Implied),
+
+            0x88 => Instruction::DEY(DecrementY::Implied),
 
             _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
         }
