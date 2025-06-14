@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "tamasfe.even-better-toml",
+        "eamodio.gitlens",
+        "rust-lang.rust-analyzer"
+    ]
+}

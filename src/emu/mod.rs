@@ -1,11 +1,16 @@
 use crate::emu::instruction::{
-    Instruction, Operation,
+    Instruction,
     access::{lda::LoadAccumulator, ldx::LoadX},
 };
 
 pub mod instruction;
 
 const MEMORY_LOCATION_COUNT: usize = 65535;
+
+pub trait Operation {
+    fn execute_on(&self, state: State) -> State;
+    fn get_size(&self) -> u8;
+}
 
 #[macro_export]
 macro_rules! concat_u8 {
