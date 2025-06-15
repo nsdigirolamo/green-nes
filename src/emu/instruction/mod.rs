@@ -12,6 +12,7 @@ use crate::{
                 inc::Increment, inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
             },
             bitwise::{and::BitwiseAnd, bit::BitTest, eor::BitwiseExclusiveOr, ora::BitwiseOr},
+            compare::{cmp::CompareAccumulator, cpx::CompareX, cpy::CompareY},
             shift::{
                 asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
             },
@@ -26,6 +27,7 @@ use crate::{
 pub mod access;
 pub mod arithmetic;
 pub mod bitwise;
+pub mod compare;
 pub mod shift;
 pub mod transfer;
 
@@ -80,6 +82,11 @@ pub enum Instruction {
     EOR(BitwiseExclusiveOr),
     BIT(BitTest),
 
+    // Comparison Operations
+    CMP(CompareAccumulator),
+    CPX(CompareX),
+    CPY(CompareY),
+
     NOP(NoOperation),
 }
 
@@ -123,11 +130,18 @@ impl Operation for Instruction {
             Instruction::ORA(ora) => ora.execute_on(state),
             Instruction::EOR(eor) => eor.execute_on(state),
             Instruction::BIT(bit) => bit.execute_on(state),
+
+            // Comparison Operations
+            Instruction::CMP(cmp) => cmp.execute_on(state),
+            Instruction::CPX(cpx) => cpx.execute_on(state),
+            Instruction::CPY(cpy) => cpy.execute_on(state),
         }
     }
 
     fn get_size(&self) -> u8 {
         match self {
+            Instruction::NOP(nop) => nop.get_size(),
+
             // Access Operations
             Instruction::LDA(lda) => lda.get_size(),
             Instruction::STA(sta) => sta.get_size(),
@@ -164,7 +178,10 @@ impl Operation for Instruction {
             Instruction::EOR(eor) => eor.get_size(),
             Instruction::BIT(bit) => bit.get_size(),
 
-            Instruction::NOP(nop) => nop.get_size(),
+            // Comparison Operations
+            Instruction::CMP(cmp) => cmp.get_size(),
+            Instruction::CPX(cpx) => cpx.get_size(),
+            Instruction::CPY(cpy) => cpy.get_size(),
         }
     }
 }
@@ -333,6 +350,33 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
             operand: concat_u8!(bytes.2, bytes.1),
         }),
         0x7E => Instruction::ROR(RotateRight::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0xC9 => Instruction::CMP(CompareAccumulator::Immediate { operand: bytes.1 }),
+        0xC5 => Instruction::CMP(CompareAccumulator::ZeroPage { operand: bytes.1 }),
+        0xD5 => Instruction::CMP(CompareAccumulator::ZeroPageX { operand: bytes.1 }),
+        0xCD => Instruction::CMP(CompareAccumulator::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0xDD => Instruction::CMP(CompareAccumulator::AbsoluteX {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0xD9 => Instruction::CMP(CompareAccumulator::AbsoluteY {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0xC1 => Instruction::CMP(CompareAccumulator::IndirectX { operand: bytes.1 }),
+        0xD1 => Instruction::CMP(CompareAccumulator::IndirectY { operand: bytes.1 }),
+
+        0xE0 => Instruction::CPX(CompareX::Immediate { operand: bytes.1 }),
+        0xE4 => Instruction::CPX(CompareX::ZeroPage { operand: bytes.1 }),
+        0xEC => Instruction::CPX(CompareX::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0xC0 => Instruction::CPY(CompareY::Immediate { operand: bytes.1 }),
+        0xC4 => Instruction::CPY(CompareY::ZeroPage { operand: bytes.1 }),
+        0xCC => Instruction::CPY(CompareY::Absolute {
             operand: concat_u8!(bytes.2, bytes.1),
         }),
 
