@@ -18,6 +18,10 @@ use crate::{
                 bvc::BranchIfOverflowClear, bvs::BranchIfOverflowSet,
             },
             compare::{cmp::CompareAccumulator, cpx::CompareX, cpy::CompareY},
+            jump::{
+                brk::Break, jmp::Jump, jsr::JumpToSubroutine, rti::ReturnFromInterrupt,
+                rts::ReturnFromSubroutine,
+            },
             shift::{
                 asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
             },
@@ -34,6 +38,7 @@ pub mod arithmetic;
 pub mod bitwise;
 pub mod branch;
 pub mod compare;
+pub mod jump;
 pub mod shift;
 pub mod transfer;
 
@@ -104,6 +109,13 @@ pub enum Instruction {
     BMI(BranchIfMinus),
     BVC(BranchIfOverflowClear),
     BVS(BranchIfOverflowSet),
+
+    // Jump Operations
+    JMP(Jump),
+    JSR(JumpToSubroutine),
+    RTS(ReturnFromSubroutine),
+    BRK(Break),
+    RTI(ReturnFromInterrupt),
 }
 
 impl Operation for Instruction {
@@ -161,6 +173,13 @@ impl Operation for Instruction {
             Instruction::BMI(bmi) => bmi.execute_on(state),
             Instruction::BVC(bvc) => bvc.execute_on(state),
             Instruction::BVS(bvs) => bvs.execute_on(state),
+
+            // Jump Operations
+            Instruction::JMP(jmp) => jmp.execute_on(state),
+            Instruction::JSR(jsr) => jsr.execute_on(state),
+            Instruction::RTS(rts) => rts.execute_on(state),
+            Instruction::BRK(brk) => brk.execute_on(state),
+            Instruction::RTI(rti) => rti.execute_on(state),
         }
     }
 
@@ -218,6 +237,13 @@ impl Operation for Instruction {
             Instruction::BMI(bmi) => bmi.get_size(),
             Instruction::BVC(bvc) => bvc.get_size(),
             Instruction::BVS(bvs) => bvs.get_size(),
+
+            // Jump Operations
+            Instruction::JMP(jmp) => jmp.get_size(),
+            Instruction::JSR(jsr) => jsr.get_size(),
+            Instruction::RTS(rts) => rts.get_size(),
+            Instruction::BRK(brk) => brk.get_size(),
+            Instruction::RTI(rti) => rti.get_size(),
         }
     }
 }
@@ -431,6 +457,23 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
         0x50 => Instruction::BVC(BranchIfOverflowClear::Relative { operand: bytes.1 }),
 
         0x70 => Instruction::BVS(BranchIfOverflowSet::Relative { operand: bytes.1 }),
+
+        0x4C => Instruction::JMP(Jump::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+        0x6C => Instruction::JMP(Jump::Indirect {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0x20 => Instruction::JSR(JumpToSubroutine::Absolute {
+            operand: concat_u8!(bytes.2, bytes.1),
+        }),
+
+        0x60 => Instruction::RTS(ReturnFromSubroutine::Implied),
+
+        0x00 => Instruction::BRK(Break::Implied),
+
+        0x40 => Instruction::RTI(ReturnFromInterrupt::Implied),
 
         _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
     }
