@@ -12,6 +12,11 @@ use crate::{
                 inc::Increment, inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
             },
             bitwise::{and::BitwiseAnd, bit::BitTest, eor::BitwiseExclusiveOr, ora::BitwiseOr},
+            branch::{
+                bcc::BranchIfCarryClear, bcs::BranchIfCarrySet, beq::BranchIfEqual,
+                bmi::BranchIfMinus, bne::BranchIfNotEqual, bpl::BranchIfPlus,
+                bvc::BranchIfOverflowClear, bvs::BranchIfOverflowSet,
+            },
             compare::{cmp::CompareAccumulator, cpx::CompareX, cpy::CompareY},
             shift::{
                 asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
@@ -27,6 +32,7 @@ use crate::{
 pub mod access;
 pub mod arithmetic;
 pub mod bitwise;
+pub mod branch;
 pub mod compare;
 pub mod shift;
 pub mod transfer;
@@ -46,6 +52,8 @@ impl Operation for NoOperation {
 }
 
 pub enum Instruction {
+    NOP(NoOperation),
+
     // Access Operations
     LDA(LoadAccumulator),
     STA(StoreAccumulator),
@@ -87,7 +95,15 @@ pub enum Instruction {
     CPX(CompareX),
     CPY(CompareY),
 
-    NOP(NoOperation),
+    // Branch Operations
+    BCC(BranchIfCarryClear),
+    BCS(BranchIfCarrySet),
+    BEQ(BranchIfEqual),
+    BNE(BranchIfNotEqual),
+    BPL(BranchIfPlus),
+    BMI(BranchIfMinus),
+    BVC(BranchIfOverflowClear),
+    BVS(BranchIfOverflowSet),
 }
 
 impl Operation for Instruction {
@@ -135,6 +151,16 @@ impl Operation for Instruction {
             Instruction::CMP(cmp) => cmp.execute_on(state),
             Instruction::CPX(cpx) => cpx.execute_on(state),
             Instruction::CPY(cpy) => cpy.execute_on(state),
+
+            // Branch Operations
+            Instruction::BCC(bcc) => bcc.execute_on(state),
+            Instruction::BCS(bcs) => bcs.execute_on(state),
+            Instruction::BEQ(beq) => beq.execute_on(state),
+            Instruction::BNE(bne) => bne.execute_on(state),
+            Instruction::BPL(bpl) => bpl.execute_on(state),
+            Instruction::BMI(bmi) => bmi.execute_on(state),
+            Instruction::BVC(bvc) => bvc.execute_on(state),
+            Instruction::BVS(bvs) => bvs.execute_on(state),
         }
     }
 
@@ -182,6 +208,16 @@ impl Operation for Instruction {
             Instruction::CMP(cmp) => cmp.get_size(),
             Instruction::CPX(cpx) => cpx.get_size(),
             Instruction::CPY(cpy) => cpy.get_size(),
+
+            // Branch Operations
+            Instruction::BCC(bcc) => bcc.get_size(),
+            Instruction::BCS(bcs) => bcs.get_size(),
+            Instruction::BEQ(beq) => beq.get_size(),
+            Instruction::BNE(bne) => bne.get_size(),
+            Instruction::BPL(bpl) => bpl.get_size(),
+            Instruction::BMI(bmi) => bmi.get_size(),
+            Instruction::BVC(bvc) => bvc.get_size(),
+            Instruction::BVS(bvs) => bvs.get_size(),
         }
     }
 }
@@ -379,6 +415,22 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
         0xCC => Instruction::CPY(CompareY::Absolute {
             operand: concat_u8!(bytes.2, bytes.1),
         }),
+
+        0x90 => Instruction::BCC(BranchIfCarryClear::Relative { operand: bytes.1 }),
+
+        0xB0 => Instruction::BCS(BranchIfCarrySet::Relative { operand: bytes.1 }),
+
+        0xF0 => Instruction::BEQ(BranchIfEqual::Relative { operand: bytes.1 }),
+
+        0xD0 => Instruction::BNE(BranchIfNotEqual::Relative { operand: bytes.1 }),
+
+        0x10 => Instruction::BPL(BranchIfPlus::Relative { operand: bytes.1 }),
+
+        0x30 => Instruction::BMI(BranchIfMinus::Relative { operand: bytes.1 }),
+
+        0x50 => Instruction::BVC(BranchIfOverflowClear::Relative { operand: bytes.1 }),
+
+        0x70 => Instruction::BVS(BranchIfOverflowSet::Relative { operand: bytes.1 }),
 
         _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
     }
