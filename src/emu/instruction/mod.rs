@@ -25,6 +25,11 @@ use crate::{
             shift::{
                 asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
             },
+            stack::{
+                pha::PushAccumulator, php::PushProcessorStatus, pla::PullAccumulator,
+                plp::PullProcessorStatus, tsx::TransferXToStackPointer,
+                txs::TransferStackPointerToX,
+            },
             transfer::{
                 tax::TransferAccumulatorToX, tay::TransferAccumulatorToY,
                 txa::TransferXToAccumulator, tya::TransferYToAccumulator,
@@ -40,6 +45,7 @@ pub mod branch;
 pub mod compare;
 pub mod jump;
 pub mod shift;
+pub mod stack;
 pub mod transfer;
 
 pub enum NoOperation {
@@ -116,6 +122,14 @@ pub enum Instruction {
     RTS(ReturnFromSubroutine),
     BRK(Break),
     RTI(ReturnFromInterrupt),
+
+    // Stack Operations
+    PHA(PushAccumulator),
+    PLA(PullAccumulator),
+    PHP(PushProcessorStatus),
+    PLP(PullProcessorStatus),
+    TXS(TransferXToStackPointer),
+    TSX(TransferStackPointerToX),
 }
 
 impl Operation for Instruction {
@@ -180,6 +194,14 @@ impl Operation for Instruction {
             Instruction::RTS(rts) => rts.execute_on(state),
             Instruction::BRK(brk) => brk.execute_on(state),
             Instruction::RTI(rti) => rti.execute_on(state),
+
+            // Stack Operations
+            Instruction::PHA(pha) => pha.execute_on(state),
+            Instruction::PLA(pla) => pla.execute_on(state),
+            Instruction::PHP(php) => php.execute_on(state),
+            Instruction::PLP(plp) => plp.execute_on(state),
+            Instruction::TXS(txs) => txs.execute_on(state),
+            Instruction::TSX(tsx) => tsx.execute_on(state),
         }
     }
 
@@ -244,6 +266,14 @@ impl Operation for Instruction {
             Instruction::RTS(rts) => rts.get_size(),
             Instruction::BRK(brk) => brk.get_size(),
             Instruction::RTI(rti) => rti.get_size(),
+
+            // Stack Operations
+            Instruction::PHA(pha) => pha.get_size(),
+            Instruction::PLA(pla) => pla.get_size(),
+            Instruction::PHP(php) => php.get_size(),
+            Instruction::PLP(plp) => plp.get_size(),
+            Instruction::TXS(txs) => txs.get_size(),
+            Instruction::TSX(tsx) => tsx.get_size(),
         }
     }
 }
@@ -474,6 +504,18 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
         0x00 => Instruction::BRK(Break::Implied),
 
         0x40 => Instruction::RTI(ReturnFromInterrupt::Implied),
+
+        0x48 => Instruction::PHA(PushAccumulator::Implied),
+
+        0x68 => Instruction::PLA(PullAccumulator::Implied),
+
+        0x08 => Instruction::PHP(PushProcessorStatus::Implied),
+
+        0x27 => Instruction::PLP(PullProcessorStatus::Implied),
+
+        0x9A => Instruction::TXS(TransferXToStackPointer::Implied),
+
+        0xBA => Instruction::TSX(TransferStackPointerToX::Implied),
 
         _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
     }
