@@ -18,6 +18,10 @@ use crate::{
                 bvc::BranchIfOverflowClear, bvs::BranchIfOverflowSet,
             },
             compare::{cmp::CompareAccumulator, cpx::CompareX, cpy::CompareY},
+            flags::{
+                clc::ClearCarry, cld::ClearDecimal, cli::ClearInterruptDisable, clv::ClearOverflow,
+                sec::SetCarry, sed::SetDecimal, sei::SetInterruptDisable,
+            },
             jump::{
                 brk::Break, jmp::Jump, jsr::JumpToSubroutine, rti::ReturnFromInterrupt,
                 rts::ReturnFromSubroutine,
@@ -43,6 +47,7 @@ pub mod arithmetic;
 pub mod bitwise;
 pub mod branch;
 pub mod compare;
+pub mod flags;
 pub mod jump;
 pub mod shift;
 pub mod stack;
@@ -130,6 +135,15 @@ pub enum Instruction {
     PLP(PullProcessorStatus),
     TXS(TransferXToStackPointer),
     TSX(TransferStackPointerToX),
+
+    // Flags Operations
+    CLC(ClearCarry),
+    SEC(SetCarry),
+    CLI(ClearInterruptDisable),
+    SEI(SetInterruptDisable),
+    CLD(ClearDecimal),
+    SED(SetDecimal),
+    CLV(ClearOverflow),
 }
 
 impl Operation for Instruction {
@@ -202,6 +216,15 @@ impl Operation for Instruction {
             Instruction::PLP(plp) => plp.execute_on(state),
             Instruction::TXS(txs) => txs.execute_on(state),
             Instruction::TSX(tsx) => tsx.execute_on(state),
+
+            // Flags Operations
+            Instruction::CLC(clc) => clc.execute_on(state),
+            Instruction::SEC(sec) => sec.execute_on(state),
+            Instruction::CLI(cli) => cli.execute_on(state),
+            Instruction::SEI(sei) => sei.execute_on(state),
+            Instruction::CLD(cld) => cld.execute_on(state),
+            Instruction::SED(sed) => sed.execute_on(state),
+            Instruction::CLV(clv) => clv.execute_on(state),
         }
     }
 
@@ -274,6 +297,15 @@ impl Operation for Instruction {
             Instruction::PLP(plp) => plp.get_size(),
             Instruction::TXS(txs) => txs.get_size(),
             Instruction::TSX(tsx) => tsx.get_size(),
+
+            // Flags Operations
+            Instruction::CLC(clc) => clc.get_size(),
+            Instruction::SEC(sec) => sec.get_size(),
+            Instruction::CLI(cli) => cli.get_size(),
+            Instruction::SEI(sei) => sei.get_size(),
+            Instruction::CLD(cld) => cld.get_size(),
+            Instruction::SED(sed) => sed.get_size(),
+            Instruction::CLV(clv) => clv.get_size(),
         }
     }
 }
@@ -516,6 +548,20 @@ pub fn get_instruction(bytes: (u8, u8, u8)) -> Instruction {
         0x9A => Instruction::TXS(TransferXToStackPointer::Implied),
 
         0xBA => Instruction::TSX(TransferStackPointerToX::Implied),
+
+        0x18 => Instruction::CLC(ClearCarry::Implied),
+
+        0x38 => Instruction::SEC(SetCarry::Implied),
+
+        0x58 => Instruction::CLI(ClearInterruptDisable::Implied),
+
+        0x78 => Instruction::SEI(SetInterruptDisable::Implied),
+
+        0xD8 => Instruction::CLD(ClearDecimal::Implied),
+
+        0xF8 => Instruction::SED(SetDecimal::Implied),
+
+        0xB8 => Instruction::CLV(ClearOverflow::Implied),
 
         _ => Instruction::NOP(NoOperation::Implied), // @TODO: Remove this once all opcodes are matched.
     }
