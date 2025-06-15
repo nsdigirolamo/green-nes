@@ -11,6 +11,7 @@ use crate::{
                 adc::AddWithCarry, dec::Decrement, dex::DecrementX, dey::DecrementY,
                 inc::Increment, inx::IncrementX, iny::IncrementY, sbc::SubtractWithCarry,
             },
+            bitwise::{and::BitwiseAnd, bit::BitTest, eor::BitwiseExclusiveOr, ora::BitwiseOr},
             shift::{
                 asl::ArithmeticShiftLeft, lsr::LogicalShiftRight, rol::RotateLeft, ror::RotateRight,
             },
@@ -24,6 +25,7 @@ use crate::{
 
 pub mod access;
 pub mod arithmetic;
+pub mod bitwise;
 pub mod shift;
 pub mod transfer;
 
@@ -72,12 +74,20 @@ pub enum Instruction {
     ROL(RotateLeft),
     ROR(RotateRight),
 
+    // Bitwise Operations
+    AND(BitwiseAnd),
+    ORA(BitwiseOr),
+    EOR(BitwiseExclusiveOr),
+    BIT(BitTest),
+
     NOP(NoOperation),
 }
 
 impl Operation for Instruction {
     fn execute_on(&self, state: State) -> State {
         match self {
+            Instruction::NOP(nop) => nop.execute_on(state),
+
             // Access Operations
             Instruction::LDA(lda) => lda.execute_on(state),
             Instruction::STA(sta) => sta.execute_on(state),
@@ -102,13 +112,17 @@ impl Operation for Instruction {
             Instruction::INY(iny) => iny.execute_on(state),
             Instruction::DEY(dey) => dey.execute_on(state),
 
-            // Transfer Operations
+            // Shift Operations
             Instruction::ASL(asl) => asl.execute_on(state),
             Instruction::LSR(lsr) => lsr.execute_on(state),
             Instruction::ROL(rol) => rol.execute_on(state),
             Instruction::ROR(ror) => ror.execute_on(state),
 
-            Instruction::NOP(nop) => nop.execute_on(state),
+            // Bitwise Operations
+            Instruction::AND(and) => and.execute_on(state),
+            Instruction::ORA(ora) => ora.execute_on(state),
+            Instruction::EOR(eor) => eor.execute_on(state),
+            Instruction::BIT(bit) => bit.execute_on(state),
         }
     }
 
@@ -138,11 +152,17 @@ impl Operation for Instruction {
             Instruction::INY(iny) => iny.get_size(),
             Instruction::DEY(dey) => dey.get_size(),
 
-            // Transfer Operations
+            // Shift Operations
             Instruction::ASL(asl) => asl.get_size(),
             Instruction::LSR(lsr) => lsr.get_size(),
             Instruction::ROL(rol) => rol.get_size(),
             Instruction::ROR(ror) => ror.get_size(),
+
+            // Bitwise Operations
+            Instruction::AND(and) => and.get_size(),
+            Instruction::ORA(ora) => ora.get_size(),
+            Instruction::EOR(eor) => eor.get_size(),
+            Instruction::BIT(bit) => bit.get_size(),
 
             Instruction::NOP(nop) => nop.get_size(),
         }
