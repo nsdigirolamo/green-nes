@@ -24,22 +24,23 @@ macro_rules! split_u16 {
 }
 
 pub struct Registers {
-    pub a: u8,   // Acumulator
-    pub x: u8,   // X Index
-    pub y: u8,   // Y Index
-    pub pc: u16, // Program Counter
-    pub s: u8,   // Stack Pointer
-    pub p: u8,   // Processor Status Register
+    pub accumulator: u8,
+    pub x_index: u8,
+    pub y_index: u8,
+    pub program_counter: u16,
+    pub stack_pointer: u8,
+    pub processor_status: u8,
 }
 
 pub struct State {
     pub registers: Registers,
     pub memory: [u8; MEMORY_LOCATION_COUNT],
+    pub instruction_count: u64,
 }
 
 impl State {
     pub fn fetch_next_operation(state: State) -> impl Operation {
-        let program_counter = state.registers.pc as usize;
+        let program_counter = state.registers.program_counter as usize;
 
         get_instruction((
             state.memory[program_counter],

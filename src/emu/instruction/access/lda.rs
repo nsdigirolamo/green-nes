@@ -1,4 +1,8 @@
-use crate::emu::{State, instruction::Operation};
+use crate::{
+    concat_u8,
+    emu::{State, instruction::Operation},
+    split_u16,
+};
 
 pub enum LoadAccumulator {
     Immediate { operand: u8 },
@@ -12,7 +16,100 @@ pub enum LoadAccumulator {
 }
 
 impl Operation for LoadAccumulator {
-    fn execute_on(&self, state: State) -> State {
+    fn execute_on(&self, mut state: State) -> State {
+        match *self {
+            Self::Immediate { operand } => {
+                state.registers.accumulator = operand;
+                state.instruction_count += 2;
+            }
+            Self::ZeroPage { operand } => {
+                let address = concat_u8!(0x00, operand);
+                let value = state.memory[address as usize];
+
+                state.registers.accumulator = value;
+                state.instruction_count += 3;
+            }
+            Self::ZeroPageX { operand } => {
+                let address = concat_u8!(0x00, operand);
+                let index_offset = state.registers.x_index as u16;
+                let value = state.memory[(address + index_offset) as usize];
+
+                state.registers.accumulator = value;
+                state.instruction_count += 4;
+            }
+            Self::Absolute { operand } => {
+                let address = operand;
+                let value = state.memory[address as usize];
+
+                state.registers.accumulator = value;
+                state.instruction_count += 4;
+            }
+            Self::AbsoluteX { operand } => {
+                let address = operand;
+                let index_offset = state.registers.x_index as u16;
+                let value = state.memory[(address + index_offset) as usize];
+
+                state.registers.accumulator = value;
+
+                let first_page = split_u16!(address).0;
+                let second_page = split_u16!(address + index_offset).0;
+
+                if first_page == second_page {
+                    state.instruction_count += 4;
+                } else {
+                    state.instruction_count += 5;
+                }
+            }
+            Self::AbsoluteY { operand } => {
+                let address = operand;
+                let index_offset = state.registers.y_index as u16;
+                let value = state.memory[(address + index_offset) as usize];
+
+                state.registers.accumulator = value;
+
+                let first_page = split_u16!(address).0;
+                let second_page = split_u16!(address + index_offset).0;
+
+                if first_page == second_page {
+                    state.instruction_count += 4;
+                } else {
+                    state.instruction_count += 5;
+                }
+            }
+            Self::IndirectX { operand } => {
+                let pointer_address = concat_u8!(0x00, operand);
+                let address = concat_u8!(
+                    state.memory[(pointer_address + 1) as usize],
+                    state.memory[pointer_address as usize]
+                );
+                let index_offset = state.registers.x_index as u16;
+                let value = state.memory[(address + index_offset) as usize];
+
+                state.registers.accumulator = value;
+                state.instruction_count += 6;
+            }
+            Self::IndirectY { operand } => {
+                let pointer_address = concat_u8!(0x00, operand);
+                let address = concat_u8!(
+                    state.memory[(pointer_address + 1) as usize],
+                    state.memory[pointer_address as usize]
+                );
+                let index_offset = state.registers.x_index as u16;
+                let value = state.memory[(address + index_offset) as usize];
+
+                state.registers.accumulator = value;
+
+                let first_page = split_u16!(address).0;
+                let second_page = split_u16!(address + index_offset).0;
+
+                if first_page == second_page {
+                    state.instruction_count += 5;
+                } else {
+                    state.instruction_count += 6;
+                }
+            }
+        }
+
         state
     }
 
