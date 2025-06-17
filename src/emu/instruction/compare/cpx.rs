@@ -1,5 +1,6 @@
 use crate::emu::{Operation, State};
 
+#[derive(Debug)]
 pub enum CompareX {
     Immediate { operand: u8 },
     ZeroPage { operand: u8 },
@@ -11,7 +12,7 @@ impl Operation for CompareX {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Self::Immediate { operand: _ } => 2,
             Self::ZeroPage { operand: _ } => 2,

@@ -1,5 +1,6 @@
 use crate::emu::{Operation, State};
 
+#[derive(Debug)]
 pub enum TransferYToAccumulator {
     Implied,
 }
@@ -9,7 +10,7 @@ impl Operation for TransferYToAccumulator {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Self::Implied => 1,
         }

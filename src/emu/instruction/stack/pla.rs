@@ -1,5 +1,6 @@
 use crate::emu::{State, instruction::Operation};
 
+#[derive(Debug)]
 pub enum PullAccumulator {
     Implied,
 }
@@ -9,7 +10,7 @@ impl Operation for PullAccumulator {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Self::Implied => 1,
         }

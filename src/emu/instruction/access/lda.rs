@@ -4,6 +4,7 @@ use crate::{
     split_u16,
 };
 
+#[derive(Debug)]
 pub enum LoadAccumulator {
     Immediate { operand: u8 },
     ZeroPage { operand: u8 },
@@ -20,14 +21,14 @@ impl Operation for LoadAccumulator {
         match *self {
             Self::Immediate { operand } => {
                 state.registers.accumulator = operand;
-                state.instruction_count += 2;
+                state.cycle_count += 2;
             }
             Self::ZeroPage { operand } => {
                 let address = concat_u8!(0x00, operand);
                 let value = state.memory[address as usize];
 
                 state.registers.accumulator = value;
-                state.instruction_count += 3;
+                state.cycle_count += 3;
             }
             Self::ZeroPageX { operand } => {
                 let address = concat_u8!(0x00, operand);
@@ -35,14 +36,14 @@ impl Operation for LoadAccumulator {
                 let value = state.memory[(address + index_offset) as usize];
 
                 state.registers.accumulator = value;
-                state.instruction_count += 4;
+                state.cycle_count += 4;
             }
             Self::Absolute { operand } => {
                 let address = operand;
                 let value = state.memory[address as usize];
 
                 state.registers.accumulator = value;
-                state.instruction_count += 4;
+                state.cycle_count += 4;
             }
             Self::AbsoluteX { operand } => {
                 let address = operand;
@@ -55,9 +56,9 @@ impl Operation for LoadAccumulator {
                 let second_page = split_u16!(address + index_offset).0;
 
                 if first_page == second_page {
-                    state.instruction_count += 4;
+                    state.cycle_count += 4;
                 } else {
-                    state.instruction_count += 5;
+                    state.cycle_count += 5;
                 }
             }
             Self::AbsoluteY { operand } => {
@@ -71,9 +72,9 @@ impl Operation for LoadAccumulator {
                 let second_page = split_u16!(address + index_offset).0;
 
                 if first_page == second_page {
-                    state.instruction_count += 4;
+                    state.cycle_count += 4;
                 } else {
-                    state.instruction_count += 5;
+                    state.cycle_count += 5;
                 }
             }
             Self::IndirectX { operand } => {
@@ -86,7 +87,7 @@ impl Operation for LoadAccumulator {
                 let value = state.memory[(address + index_offset) as usize];
 
                 state.registers.accumulator = value;
-                state.instruction_count += 6;
+                state.cycle_count += 6;
             }
             Self::IndirectY { operand } => {
                 let pointer_address = concat_u8!(0x00, operand);
@@ -103,9 +104,9 @@ impl Operation for LoadAccumulator {
                 let second_page = split_u16!(address + index_offset).0;
 
                 if first_page == second_page {
-                    state.instruction_count += 5;
+                    state.cycle_count += 5;
                 } else {
-                    state.instruction_count += 6;
+                    state.cycle_count += 6;
                 }
             }
         }
@@ -113,7 +114,7 @@ impl Operation for LoadAccumulator {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Self::Immediate { operand: _ } => 2,
             Self::ZeroPage { operand: _ } => 2,

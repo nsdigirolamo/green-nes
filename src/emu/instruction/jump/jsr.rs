@@ -1,5 +1,6 @@
 use crate::emu::{Operation, State};
 
+#[derive(Debug)]
 pub enum JumpToSubroutine {
     Absolute { operand: u16 },
 }
@@ -9,7 +10,7 @@ impl Operation for JumpToSubroutine {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Self::Absolute { operand: _ } => 3,
         }

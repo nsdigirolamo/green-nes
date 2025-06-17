@@ -53,6 +53,21 @@ pub mod shift;
 pub mod stack;
 pub mod transfer;
 
+#[macro_export]
+macro_rules! concat_u8 {
+    ($high:expr, $low:expr) => {
+        (($high as u16) << 8) | ($low as u16)
+    };
+}
+
+#[macro_export]
+macro_rules! split_u16 {
+    ($value:expr) => {
+        (($value >> 8) as u8, $value as u8)
+    };
+}
+
+#[derive(Debug)]
 pub enum NoOperation {
     Implied,
 }
@@ -62,11 +77,12 @@ impl Operation for NoOperation {
         state
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         1
     }
 }
 
+#[derive(Debug)]
 pub enum Instruction {
     NOP(NoOperation),
 
@@ -228,7 +244,7 @@ impl Operation for Instruction {
         }
     }
 
-    fn get_size(&self) -> u8 {
+    fn get_size(&self) -> u16 {
         match self {
             Instruction::NOP(nop) => nop.get_size(),
 
