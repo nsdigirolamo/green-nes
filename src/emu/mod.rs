@@ -1,11 +1,17 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::{
     fmt::{self},
     path::Path,
 };
 
-use crate::emu::{
-    error::{EmuError, LoadError},
-    instruction::get_instruction,
+use crate::{
+    concat_u8,
+    emu::{
+        error::{EmuError, LoadError},
+        instruction::get_instruction,
+    },
 };
 
 pub mod error;
@@ -47,13 +53,148 @@ impl Default for State {
 }
 
 impl State {
-    fn get_memory(self, address: u16) -> u8 {
+    fn absolute_get_memory(&self, address: u16) -> u8 {
         self.memory[address as usize]
     }
 
-    // fn set_memory(mut self, address: u16, data: u8) {
-    //     self.memory[address as usize] = data;
-    // }
+    fn zero_page_get_memory(&self, low_order_address_byte: u8) -> u8 {
+        let address = concat_u8!(0x00, low_order_address_byte);
+
+        self.absolute_get_memory(address)
+    }
+
+    fn indirect_absolute_get_memory(&self, indirect_address: u16) -> u8 {
+        let low_order_address_byte = self.absolute_get_memory(indirect_address);
+        let high_order_address_byte = self.absolute_get_memory(indirect_address.wrapping_add(1));
+        let address = concat_u8!(high_order_address_byte, low_order_address_byte);
+
+        self.absolute_get_memory(address)
+    }
+
+    fn absolute_x_indexed_get_memory(&self, address: u16) -> u8 {
+        let x_index_offset = self.registers.x_index as u16;
+
+        self.absolute_get_memory(address.wrapping_add(x_index_offset))
+    }
+
+    fn absolute_y_indexed_get_memory(&self, address: u16) -> u8 {
+        let y_index_offset = self.registers.y_index as u16;
+
+        self.absolute_get_memory(address.wrapping_add(y_index_offset))
+    }
+
+    fn zero_page_x_indexed_get_memory(&self, low_order_address_byte: u8) -> u8 {
+        let x_index_offset = self.registers.x_index as u16;
+        let address = concat_u8!(0x00, low_order_address_byte);
+
+        self.absolute_get_memory(address.wrapping_add(x_index_offset))
+    }
+
+    fn zero_page_y_indexed_get_memory(&self, low_order_address_byte: u8) -> u8 {
+        let y_index_offset = self.registers.y_index as u16;
+        let address = concat_u8!(0x00, low_order_address_byte);
+
+        self.absolute_get_memory(address.wrapping_add(y_index_offset))
+    }
+
+    fn indirect_x_indexed_get_memory(&self, low_order_address_byte: u8) -> u8 {
+        let indirect_address = concat_u8!(0x00, low_order_address_byte);
+        let low_order_address_byte = self.absolute_get_memory(indirect_address);
+        let high_order_address_byte = self.absolute_get_memory(indirect_address.wrapping_add(1));
+
+        let address = concat_u8!(high_order_address_byte, low_order_address_byte);
+        let x_index_offset = self.registers.x_index as u16;
+
+        self.absolute_get_memory(address.wrapping_add(x_index_offset))
+    }
+
+    fn indirect_y_indexed_get_memory(&self, low_order_address_byte: u8) -> u8 {
+        let indirect_address = concat_u8!(0x00, low_order_address_byte);
+        let low_order_address_byte = self.absolute_get_memory(indirect_address);
+        let high_order_address_byte = self.absolute_get_memory(indirect_address.wrapping_add(1));
+
+        let address = concat_u8!(high_order_address_byte, low_order_address_byte);
+        let y_index_offset = self.registers.y_index as u16;
+
+        self.absolute_get_memory(address.wrapping_add(y_index_offset))
+    }
+
+    fn get_negative_flag(&self) -> bool {
+        (self.registers.processor_status & 0b10000000) != 0
+    }
+
+    fn get_overflow_flag(&self) -> bool {
+        (self.registers.processor_status & 0b01000000) != 0
+    }
+
+    fn get_break_command_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00010000) != 0
+    }
+
+    fn get_decimal_mode_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00001000) != 0
+    }
+
+    fn get_interrupt_disable_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000100) != 0
+    }
+
+    fn get_zero_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000010) != 0
+    }
+
+    fn get_carry_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000001) != 0
+    }
+}
+
+pub fn set_negative_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status | 0b10000000;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_overflow_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status | 0b10000000;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_break_command_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status & 0b00010000;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_decimal_mode_command_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status & 0b00001000;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_interrupt_disable_command_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status & 0b00000100;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_zero_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status & 0b00000010;
+    state.registers.processor_status = new_status;
+
+    state
+}
+
+pub fn set_carry_flag(mut state: State) -> State {
+    let new_status = state.registers.processor_status & 0b00000001;
+    state.registers.processor_status = new_status;
+
+    state
 }
 
 pub fn run_emulator(state: State) -> Result<State, EmuError> {
@@ -87,9 +228,9 @@ pub fn fetch_next_operation(state: State) -> impl Operation {
     let pc = state.registers.program_counter;
 
     get_instruction((
-        state.get_memory(pc),
-        state.get_memory(pc.wrapping_add(1)),
-        state.get_memory(pc.wrapping_add(2)),
+        state.absolute_get_memory(pc),
+        state.absolute_get_memory(pc.wrapping_add(1)),
+        state.absolute_get_memory(pc.wrapping_add(2)),
     ))
 }
 
