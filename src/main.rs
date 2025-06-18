@@ -1,39 +1,48 @@
-use std::env;
+use std::{env, process};
 
-use crate::emu::State;
+use crate::emu::{State, load_program, run_emulator};
 
 pub mod emu;
 
 fn main() {
-    let state: State = Default::default();
-
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 2 {
-        println!("Please provide an argument.");
-        return;
-    }
+    match args.get(1).map(|s| s.as_str()) {
+        Some("run") => {
+            let state: State = Default::default();
+            let path_to_program = match args.get(2) {
+                Some(path) => path,
+                None => {
+                    eprintln!("Missing path to program file");
+                    process::exit(1);
+                }
+            };
 
-    let command = args[1].as_str();
-
-    match command {
-        "run" => {
-            if args.len() < 3 {
-                println!("Usage: green-nes run <path-to-program-file>");
-                return;
-            }
-
-            let path_to_program = args[2].as_str();
-            let final_state = match state.run(path_to_program) {
+            let state = match load_program(state, path_to_program) {
                 Ok(state) => state,
-                Err(e) => panic!("{}", e),
+                Err(e) => {
+                    eprintln!("Loading program failed: {}", e);
+                    process::exit(1);
+                }
+            };
+
+            let final_state = match run_emulator(state) {
+                Ok(state) => state,
+                Err(e) => {
+                    eprintln!("Running program failed: {}", e);
+                    process::exit(1);
+                }
             };
 
             println!(
                 "Done. Completed program in {} cycles.",
                 final_state.cycle_count
             );
+            process::exit(0);
         }
-        _ => println!("Invalid command."),
+        _ => {
+            println!("Invalid command.");
+            process::exit(1);
+        }
     }
 }

@@ -3,49 +3,19 @@ use std::{
     path::Path,
 };
 
-use crate::emu::instruction::get_instruction;
+use crate::emu::{
+    error::{EmuError, LoadError},
+    instruction::get_instruction,
+};
 
+pub mod error;
 pub mod instruction;
 
-const MEMORY_LOCATION_COUNT: usize = 65535;
+const MAX_MEMORY_ADDRESS: u16 = 65535;
+const MAX_STACK_ADDRESS: u16 = 0x00FF;
 
-#[derive(Debug, Clone)]
-pub enum EmuError {
-    LoadError { e: LoadError },
-}
-
-impl fmt::Display for EmuError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::LoadError { e } => write!(f, "{}", e),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum LoadError {
-    ProgramTooLarge { maximum_size: usize },
-    FileOpenFailed { message: String },
-    MissingHeader,
-}
-
-impl fmt::Display for LoadError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::ProgramTooLarge { maximum_size } => write!(
-                f,
-                "program is too large (exceeds maximum size of {} bytes)",
-                maximum_size
-            ),
-            Self::FileOpenFailed { message } => {
-                write!(f, "failed to open program file: {}", message)
-            }
-            Self::MissingHeader => {
-                write!(f, "the program header is missing")
-            }
-        }
-    }
-}
+const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
+const PROGRAM_HEADER_LENGTH: usize = 16;
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Registers {
@@ -60,7 +30,7 @@ pub struct Registers {
 #[derive(Clone, Copy, Debug)]
 pub struct State {
     pub registers: Registers,
-    pub memory: [u8; MEMORY_LOCATION_COUNT],
+    memory: [u8; MEMORY_LENGTH],
     pub cycle_count: u64,
     pub is_halted: bool,
 }
@@ -69,11 +39,43 @@ impl Default for State {
     fn default() -> Self {
         State {
             registers: Registers::default(),
-            memory: [0u8; MEMORY_LOCATION_COUNT],
+            memory: [0u8; MEMORY_LENGTH],
             cycle_count: 0,
             is_halted: true,
         }
     }
+}
+
+impl State {
+    fn get_memory(self, address: u16) -> u8 {
+        self.memory[address as usize]
+    }
+
+    // fn set_memory(mut self, address: u16, data: u8) {
+    //     self.memory[address as usize] = data;
+    // }
+}
+
+pub fn run_emulator(state: State) -> Result<State, EmuError> {
+    let mut current_state = state;
+    current_state.is_halted = false;
+
+    while !current_state.is_halted {
+        let next_operation = fetch_next_operation(current_state);
+        let mut next_state = next_operation.execute_on(current_state);
+
+        let next_program_counter = current_state
+            .registers
+            .program_counter
+            .wrapping_add(next_operation.get_size());
+        next_state.registers.program_counter = next_program_counter;
+
+        current_state = next_state;
+
+        println!("{:?}", next_operation);
+    }
+
+    Ok(current_state)
 }
 
 pub trait Operation: fmt::Debug {
@@ -81,61 +83,41 @@ pub trait Operation: fmt::Debug {
     fn get_size(&self) -> u16;
 }
 
-impl State {
-    pub fn run(self, path_to_program: &str) -> Result<State, EmuError> {
-        let mut state = self;
-        state = load_program(state, path_to_program).map_err(|e| EmuError::LoadError { e })?;
-        //println!("{:?}", state);
+pub fn fetch_next_operation(state: State) -> impl Operation {
+    let pc = state.registers.program_counter;
 
-        state.is_halted = false;
-
-        while !state.is_halted {
-            let next_operation = state.fetch_next_operation();
-            println!("{:?}", next_operation);
-            state = next_operation.execute_on(state);
-            state.registers.program_counter += next_operation.get_size();
-        }
-
-        Ok(state)
-    }
-
-    pub fn fetch_next_operation(self) -> impl Operation {
-        let program_counter = self.registers.program_counter as usize;
-
-        get_instruction((
-            self.memory[program_counter],
-            self.memory[program_counter + 1],
-            self.memory[program_counter + 2],
-        ))
-    }
+    get_instruction((
+        state.get_memory(pc),
+        state.get_memory(pc.wrapping_add(1)),
+        state.get_memory(pc.wrapping_add(2)),
+    ))
 }
 
-fn load_program(mut state: State, path_to_program: &str) -> Result<State, LoadError> {
-    let starting_addr: u16 = 0x0100;
-
+pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, LoadError> {
     let program =
         std::fs::read(Path::new(path_to_program)).map_err(|e| LoadError::FileOpenFailed {
             message: e.to_string(),
         })?;
-    if program.len() < 16 {
+    if program.len() < PROGRAM_HEADER_LENGTH {
         return Err(LoadError::MissingHeader);
     }
 
-    let program = &program[16..];
+    let starting_addr: u16 = MAX_STACK_ADDRESS + 1;
+    state.registers.program_counter = starting_addr;
 
-    let address_size = state.memory.len() - starting_addr as usize;
-    if address_size < program.len() {
+    let program = &program[PROGRAM_HEADER_LENGTH..];
+    let maximum_program_size = MEMORY_LENGTH - starting_addr as usize;
+
+    if maximum_program_size < program.len() {
         return Err(LoadError::ProgramTooLarge {
-            maximum_size: address_size,
+            maximum_size: maximum_program_size,
         });
     }
 
     for (index, &data) in program.iter().enumerate() {
-        let address = starting_addr + index as u16;
-        state.memory[address as usize] = data;
+        let address = starting_addr as usize + index;
+        state.memory[address] = data;
     }
-
-    state.registers.program_counter = starting_addr;
 
     Ok(state)
 }
