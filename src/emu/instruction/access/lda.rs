@@ -1,7 +1,8 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-use crate::emu::{State, instruction::Operation};
+use crate::{
+    concat_u8,
+    emu::{State, instruction::Operation},
+    split_u16,
+};
 
 #[derive(Debug)]
 pub enum LoadAccumulator {
@@ -23,82 +24,101 @@ impl Operation for LoadAccumulator {
                 state.cycle_count += 2;
             }
             Self::ZeroPage { operand } => {
-                let value = state.zero_page_get_memory(operand);
-                state.registers.accumulator = value;
+                let address = concat_u8!(0x00, operand);
+
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
                 state.cycle_count += 3;
             }
             Self::ZeroPageX { operand } => {
-                let value = state.zero_page_x_indexed_get_memory(operand);
-                state.registers.accumulator = value;
+                let x_index_offset = state.registers.x_index as u16;
+                let zero_page_address = concat_u8!(0x00, operand);
+                let address = zero_page_address.wrapping_add(x_index_offset);
+
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
                 state.cycle_count += 4;
             }
             Self::Absolute { operand } => {
-                let value = state.absolute_get_memory(operand);
-                state.registers.accumulator = value;
+                let address = operand;
+
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
                 state.cycle_count += 4;
             }
             Self::AbsoluteX { operand } => {
-                // let value = state.absolute_x_indexed_get_memory(operand);
-                // state.registers.accumulator = value;
+                let x_index_offset = state.registers.x_index as u16;
+                let address = operand.wrapping_add(x_index_offset);
 
-                // let first_page = split_u16!(address).0;
-                // let second_page = split_u16!(address + index_offset).0;
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
 
-                // if first_page == second_page {
-                //     state.cycle_count += 4;
-                // } else {
-                //     state.cycle_count += 5;
-                // }
+                let first_page = split_u16!(operand).0;
+                let second_page = split_u16!(address).0;
+
+                if first_page == second_page {
+                    state.cycle_count += 4;
+                } else {
+                    state.cycle_count += 5;
+                }
             }
             Self::AbsoluteY { operand } => {
-                // let address = operand;
-                // let index_offset = state.registers.y_index as u16;
-                // let value = state.memory[(address + index_offset) as usize];
+                let y_index_offset = state.registers.y_index as u16;
+                let address = operand.wrapping_add(y_index_offset);
 
-                // state.registers.accumulator = value;
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
 
-                // let first_page = split_u16!(address).0;
-                // let second_page = split_u16!(address + index_offset).0;
+                let first_page = split_u16!(operand).0;
+                let second_page = split_u16!(address).0;
 
-                // if first_page == second_page {
-                //     state.cycle_count += 4;
-                // } else {
-                //     state.cycle_count += 5;
-                // }
+                if first_page == second_page {
+                    state.cycle_count += 4;
+                } else {
+                    state.cycle_count += 5;
+                }
             }
             Self::IndirectX { operand } => {
-                // let pointer_address = concat_u8!(0x00, operand);
-                // let address = concat_u8!(
-                //     state.memory[(pointer_address + 1) as usize],
-                //     state.memory[pointer_address as usize]
-                // );
-                // let index_offset = state.registers.x_index as u16;
-                // let value = state.memory[(address + index_offset) as usize];
+                let indirect_address = concat_u8!(0x00, operand);
+                let low_order_address_byte = state.read_from_memory(indirect_address);
+                let high_order_address_byte =
+                    state.read_from_memory(indirect_address.wrapping_add(1));
 
-                // state.registers.accumulator = value;
-                // state.cycle_count += 6;
+                let x_index_offset = state.registers.x_index as u16;
+                let address = concat_u8!(high_order_address_byte, low_order_address_byte)
+                    .wrapping_add(x_index_offset);
+
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
+
+                state.cycle_count += 6;
             }
             Self::IndirectY { operand } => {
-                // let pointer_address = concat_u8!(0x00, operand);
-                // let address = concat_u8!(
-                //     state.memory[(pointer_address + 1) as usize],
-                //     state.memory[pointer_address as usize]
-                // );
-                // let index_offset = state.registers.x_index as u16;
-                // let value = state.memory[(address + index_offset) as usize];
+                let indirect_address = concat_u8!(0x00, operand);
+                let low_order_address_byte = state.read_from_memory(indirect_address);
+                let high_order_address_byte =
+                    state.read_from_memory(indirect_address.wrapping_add(1));
 
-                // state.registers.accumulator = value;
+                let y_index_offset = state.registers.y_index as u16;
+                let nonoffset_address = concat_u8!(high_order_address_byte, low_order_address_byte);
+                let address = nonoffset_address.wrapping_add(y_index_offset);
 
-                // let first_page = split_u16!(address).0;
-                // let second_page = split_u16!(address + index_offset).0;
+                let data = state.read_from_memory(address);
+                state.registers.accumulator = data;
 
-                // if first_page == second_page {
-                //     state.cycle_count += 5;
-                // } else {
-                //     state.cycle_count += 6;
-                // }
+                let first_page = split_u16!(nonoffset_address).0;
+                let second_page = split_u16!(address).0;
+
+                if first_page == second_page {
+                    state.cycle_count += 5
+                } else {
+                    state.cycle_count += 6
+                }
             }
         }
+
+        state.set_negative_flag(state.registers.accumulator >> 7 != 0);
+        state.set_zero_flag(state.registers.accumulator == 0);
 
         state
     }

@@ -1,6 +1,6 @@
 use std::{env, process};
 
-use crate::emu::{State, load_program, run_emulator};
+use crate::emu::{load_program, run_emulator, state::State};
 
 pub mod emu;
 
