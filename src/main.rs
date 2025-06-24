@@ -18,7 +18,7 @@ fn main() {
                 }
             };
 
-            let state = match load_program(state, path_to_program) {
+            let mut state = match load_program(state, path_to_program) {
                 Ok(state) => state,
                 Err(e) => {
                     eprintln!("Loading program failed: {}", e);
@@ -26,7 +26,7 @@ fn main() {
                 }
             };
 
-            let final_state = match run_emulator(state) {
+            let final_state = match run_emulator(&mut state) {
                 Ok(state) => state,
                 Err(e) => {
                     eprintln!("Running program failed: {}", e);
@@ -34,10 +34,8 @@ fn main() {
                 }
             };
 
-            println!(
-                "Done. Completed program in {} cycles.",
-                final_state.cycle_count
-            );
+            println!("{:?}", final_state);
+
             process::exit(0);
         }
         _ => {

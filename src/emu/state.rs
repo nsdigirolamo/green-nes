@@ -1,13 +1,8 @@
 pub const MAX_MEMORY_ADDRESS: u16 = 65535;
 pub const MAX_STACK_ADDRESS: u16 = 0x00FF;
+pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
-pub const PROGRAM_HEADER_LENGTH: usize = 16;
-
-pub struct AddressResult {
-    address: u16,
-    page_crossed: bool,
-}
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Registers {
@@ -19,24 +14,61 @@ pub struct Registers {
     pub processor_status: u8,
 }
 
+/// Data used by the "micro-instructions" on a per-cycle basis.
+#[derive(Clone, Copy, Default, Debug)]
+pub struct CycleData {
+    pub opcode: u8, // Used as if it were the instruction register (IR)
+    pub low_operand: u8,
+    pub high_operand: u8,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct State {
-    pub registers: Registers,
     memory: [u8; MEMORY_LENGTH],
-    pub cycle_count: u64,
-    pub is_halted: bool,
+    pub registers: Registers,
+    pub cycle_data: CycleData,
 }
 
 impl Default for State {
     fn default() -> Self {
         State {
-            registers: Registers::default(),
             memory: [0u8; MEMORY_LENGTH],
-            cycle_count: 0,
-            is_halted: true,
+            registers: Registers::default(),
+            cycle_data: CycleData::default(),
         }
     }
 }
+
+// impl fmt::Display for State {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         let pc = self.registers.program_counter;
+//         let opcode = self.read_from_memory(pc);
+//         let operand_1 = self.read_from_memory(pc.wrapping_add(1));
+//         let operand_2 = self.read_from_memory(pc.wrapping_add(2));
+
+//         let next_instruction = fetch_next_operation(*self);
+//         let next_instruction_size = next_instruction.get_size();
+
+//         let address_string = format!("{:04X}", pc);
+
+//         let instruction_bytes_string = if next_instruction_size == 1 {
+//             format!("{:02X}", opcode)
+//         } else if next_instruction_size == 2 {
+//             format!("{:02X} {:02X}", opcode, operand_1)
+//         } else {
+//             format!("{:02X} {:02X} {:02X}", opcode, operand_1, operand_2)
+//         };
+//         let instruction_bytes_string = format!("{:8}", instruction_bytes_string);
+
+//         let instruction_name = format!("{:?}", next_instruction);
+
+//         write!(
+//             f,
+//             "{}  {}  {}",
+//             address_string, instruction_bytes_string, instruction_name
+//         )
+//     }
+// }
 
 impl State {
     pub fn read_from_memory(&self, address: u16) -> u8 {
@@ -47,32 +79,14 @@ impl State {
         self.memory[address as usize] = data;
     }
 
+    pub fn read_from_pc_address(&self) -> u8 {
+        let address = self.registers.program_counter;
+
+        self.read_from_memory(address)
+    }
+
     pub fn get_negative_flag(&self) -> bool {
         (self.registers.processor_status & 0b10000000) != 0
-    }
-
-    pub fn get_overflow_flag(&self) -> bool {
-        (self.registers.processor_status & 0b01000000) != 0
-    }
-
-    pub fn get_break_command_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00010000) != 0
-    }
-
-    pub fn get_decimal_mode_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00001000) != 0
-    }
-
-    pub fn get_interrupt_disable_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000100) != 0
-    }
-
-    pub fn get_zero_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000010) != 0
-    }
-
-    pub fn get_carry_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000001) != 0
     }
 
     pub fn set_negative_flag(&mut self, flag: bool) {
@@ -85,6 +99,10 @@ impl State {
         self.registers.processor_status = new_status;
     }
 
+    pub fn get_overflow_flag(&self) -> bool {
+        (self.registers.processor_status & 0b01000000) != 0
+    }
+
     pub fn set_overflow_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.registers.processor_status | 0b01000000
@@ -93,6 +111,10 @@ impl State {
         };
 
         self.registers.processor_status = new_status;
+    }
+
+    pub fn get_break_command_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00010000) != 0
     }
 
     pub fn set_break_command_flag(&mut self, flag: bool) {
@@ -105,6 +127,10 @@ impl State {
         self.registers.processor_status = new_status;
     }
 
+    pub fn get_decimal_mode_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00001000) != 0
+    }
+
     pub fn set_decimal_mode_command_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.registers.processor_status | 0b00001000
@@ -113,6 +139,10 @@ impl State {
         };
 
         self.registers.processor_status = new_status;
+    }
+
+    pub fn get_interrupt_disable_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000100) != 0
     }
 
     pub fn set_interrupt_disable_command_flag(&mut self, flag: bool) {
@@ -125,6 +155,10 @@ impl State {
         self.registers.processor_status = new_status;
     }
 
+    pub fn get_zero_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000010) != 0
+    }
+
     pub fn set_zero_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.registers.processor_status | 0b00000010
@@ -133,6 +167,10 @@ impl State {
         };
 
         self.registers.processor_status = new_status;
+    }
+
+    pub fn get_carry_flag(&self) -> bool {
+        (self.registers.processor_status & 0b00000001) != 0
     }
 
     pub fn set_carry_flag(&mut self, flag: bool) {
