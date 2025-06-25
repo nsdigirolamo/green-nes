@@ -1,12 +1,8 @@
-use std::{
-    collections::VecDeque,
-    fmt::{self},
-    path::Path,
-};
+use std::{collections::VecDeque, path::Path};
 
 use crate::emu::{
     error::{EmuError, LoadError},
-    operation::{fetch_opcode, get_operation},
+    operation::{Operation, fetch_opcode, get_operation},
     state::{PROGRAM_START_ADDRESS, State},
 };
 
@@ -28,11 +24,14 @@ macro_rules! split_u16 {
     };
 }
 
-type Event = fn(&mut State);
-
-pub trait Operation: fmt::Debug {
-    fn get_events(&self) -> VecDeque<Event>;
+#[macro_export]
+macro_rules! did_signed_overflow {
+    ($lhs:expr, $rhs:expr, $result:expr) => {
+        (($lhs ^ $result) & ($rhs ^ $result) & 0x80) != 0
+    };
 }
+
+type Event = fn(&mut State);
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
