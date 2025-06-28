@@ -1,0 +1,48 @@
+use std::collections::VecDeque;
+
+use crate::emu::{
+    Event,
+    operation::{
+        Operation,
+        addressing::{read_at_effective_absolute_address, write_to_effective_absolute_address},
+        instruction::{fetch_high_operand, fetch_low_operand},
+    },
+    state::State,
+};
+
+#[derive(Debug)]
+pub enum DEC {
+    ZeroPage,
+    ZeroPageX,
+    Absolute,
+    AbsoluteX,
+}
+
+impl Operation for DEC {
+    fn get_events(&self) -> VecDeque<Event> {
+        match *self {
+            DEC::ZeroPageX => panic!("dec zero page x not implemented"),
+            DEC::ZeroPage => panic!("dec zero page not implemented"),
+            DEC::Absolute => VecDeque::from([
+                fetch_low_operand,
+                fetch_high_operand,
+                read_at_effective_absolute_address,
+                dec,
+                write_to_effective_absolute_address,
+            ]),
+            DEC::AbsoluteX => panic!("dec absolute x not implemented"),
+        }
+    }
+}
+
+fn dec(state: &mut State) {
+    let address = state.cycle_data.effective_address;
+    let data = state.cycle_data.acting_data;
+    state.write_to_memory(address, data);
+
+    let result = data - 1;
+    state.cycle_data.acting_data = result;
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+}

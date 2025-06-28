@@ -6,7 +6,7 @@ use crate::{
         Event,
         operation::{
             Operation,
-            addressing::get_absolute_address,
+            addressing::read_at_effective_absolute_address,
             instruction::{fetch_high_operand, fetch_low_operand},
         },
         state::State,
@@ -41,9 +41,8 @@ impl Operation for SBC {
 }
 
 fn sbc_absolute(state: &mut State) {
-    let address = get_absolute_address(state);
-    let data = state.read_from_memory(address);
-    let data = !data;
+    read_at_effective_absolute_address(state);
+    let data = !state.cycle_data.acting_data;
 
     let accumulator = state.registers.accumulator;
     let carry = state.get_carry_flag() as u8;

@@ -20,21 +20,21 @@ fn main() {
 
             let mut state = match load_program(state, path_to_program) {
                 Ok(state) => state,
-                Err(e) => {
-                    eprintln!("Loading program failed: {}", e);
+                Err(err) => {
+                    eprintln!("Loading program failed: {err}");
                     process::exit(1);
                 }
             };
 
             let final_state = match run_emulator(&mut state) {
                 Ok(state) => state,
-                Err(e) => {
-                    eprintln!("Running program failed: {}", e);
+                Err(err) => {
+                    eprintln!("Running program failed: {err}");
                     process::exit(1);
                 }
             };
 
-            println!("{:?}", final_state);
+            println!("{final_state:?}");
 
             process::exit(0);
         }

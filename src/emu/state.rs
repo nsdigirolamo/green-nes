@@ -17,9 +17,11 @@ pub struct Registers {
 /// Data used by the "micro-instructions" on a per-cycle basis.
 #[derive(Clone, Copy, Default, Debug)]
 pub struct CycleData {
-    pub opcode: u8, // Used as if it were the instruction register (IR)
-    pub low_operand: u8,
-    pub high_operand: u8,
+    pub opcode: u8,             // Used as if it were the instruction register (IR)
+    pub low_operand: u8,        // Low operand of the instruction in memory.
+    pub high_operand: u8,       // High operand of the instruction in memory.
+    pub effective_address: u16, // The memory address that the current instruction is working on.
+    pub acting_data: u8,        // The data that the current instruction is working on.
 }
 
 #[derive(Clone, Copy, Debug)]

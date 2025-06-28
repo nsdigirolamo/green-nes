@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::get_absolute_address,
+        addressing::read_at_effective_absolute_address,
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -38,8 +38,8 @@ impl Operation for CMP {
 }
 
 fn cmp_absolute(state: &mut State) {
-    let address = get_absolute_address(state);
-    let data = state.read_from_memory(address);
+    read_at_effective_absolute_address(state);
+    let data = state.cycle_data.acting_data;
 
     let (difference, overflow) = state.registers.accumulator.overflowing_sub(data);
 

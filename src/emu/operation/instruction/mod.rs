@@ -8,6 +8,7 @@ pub mod bitwise;
 pub mod compare;
 pub mod jump;
 pub mod other;
+pub mod shift;
 
 #[derive(Debug)]
 pub enum Instruction {

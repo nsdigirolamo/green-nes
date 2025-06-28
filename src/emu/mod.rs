@@ -58,7 +58,7 @@ pub fn run_emulator(state: &mut State) -> Result<State, EmuError> {
         is_halted = cycle_count > 100; // @TODO: Determine how to halt (haha halting problem)
     }
 
-    println!("Cycles completed: {}", cycle_count);
+    println!("Cycles completed: {cycle_count}");
 
     Ok(*state)
 }

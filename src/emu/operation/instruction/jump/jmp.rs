@@ -1,13 +1,12 @@
 use std::collections::VecDeque;
 
-use crate::emu::{
-    Event,
-    operation::{
-        Operation,
-        addressing::get_absolute_address,
-        instruction::{fetch_high_operand, fetch_low_operand},
+use crate::{
+    concat_u8,
+    emu::{
+        Event,
+        operation::{Operation, instruction::fetch_low_operand},
+        state::State,
     },
-    state::State,
 };
 
 #[derive(Debug)]
@@ -19,14 +18,15 @@ pub enum JMP {
 impl Operation for JMP {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
-            JMP::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, jmp_absolute]),
+            JMP::Absolute => VecDeque::from([fetch_low_operand, jmp_absolute]),
             JMP::Indirect => panic!("jmp indirect not implemented"),
         }
     }
 }
 
 fn jmp_absolute(state: &mut State) {
-    let address = get_absolute_address(state);
+    let low_address_byte = state.cycle_data.low_operand;
+    let high_address_byte = state.read_from_pc_address();
 
-    state.registers.program_counter = address
+    state.registers.program_counter = concat_u8!(high_address_byte, low_address_byte)
 }
