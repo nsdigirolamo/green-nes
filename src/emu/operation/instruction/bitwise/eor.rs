@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -26,8 +29,12 @@ impl Operation for EOR {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             EOR::Immediate => panic!("eor immediate not implemented"),
-            EOR::ZeroPageX => panic!("eor zero page x not implemented"),
-            EOR::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, eor_zero_page]),
+            EOR::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                eor_zero_page_x_indexed,
+            ]),
+            EOR::ZeroPage => VecDeque::from([fetch_low_operand, eor_zero_page]),
             EOR::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, eor_absolute]),
             EOR::AbsoluteX => panic!("eor absolute x not implemented"),
             EOR::AbsoluteY => panic!("eor absolute y not implemented"),
@@ -51,5 +58,10 @@ fn eor_absolute(state: &mut State) {
 
 fn eor_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    eor(state);
+}
+
+fn eor_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     eor(state);
 }

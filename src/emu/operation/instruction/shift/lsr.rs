@@ -5,7 +5,8 @@ use crate::emu::{
     operation::{
         Operation,
         addressing::{
-            read_at_effective_absolute_address, read_at_effective_zero_page_address,
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
             write_to_effective_absolute_address, write_to_effective_zero_page_address,
         },
         instruction::{fetch_high_operand, fetch_low_operand},
@@ -26,10 +27,15 @@ impl Operation for LSR {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             LSR::Accumulator => panic!("lsr accumulator not implemented"),
-            LSR::ZeroPageX => panic!("lsr zero page x not implemented"),
+            LSR::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                read_at_effective_zero_page_x_indexed_address,
+                lsr,
+                write_to_effective_zero_page_address,
+            ]),
             LSR::ZeroPage => VecDeque::from([
                 fetch_low_operand,
-                fetch_high_operand,
                 read_at_effective_zero_page_address,
                 lsr,
                 write_to_effective_zero_page_address,

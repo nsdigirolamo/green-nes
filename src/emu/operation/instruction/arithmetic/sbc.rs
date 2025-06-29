@@ -6,7 +6,10 @@ use crate::{
         Event,
         operation::{
             Operation,
-            addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+            addressing::{
+                get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+                read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+            },
             instruction::{fetch_high_operand, fetch_low_operand},
         },
         state::State,
@@ -29,8 +32,12 @@ impl Operation for SBC {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             SBC::Immediate => panic!("sbc immediate not implemented"),
-            SBC::ZeroPageX => panic!("sbc zero page x not implemented"),
-            SBC::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, sbc_zero_page]),
+            SBC::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                sbc_zero_page_x_indexed,
+            ]),
+            SBC::ZeroPage => VecDeque::from([fetch_low_operand, sbc_zero_page]),
             SBC::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sbc_absolute]),
             SBC::AbsoluteX => panic!("sbc absolute x not implemented"),
             SBC::AbsoluteY => panic!("sbc absolute y not implemented"),
@@ -63,5 +70,10 @@ fn sbc_absolute(state: &mut State) {
 
 fn sbc_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    sbc(state);
+}
+
+fn sbc_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     sbc(state);
 }

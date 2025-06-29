@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -26,8 +29,12 @@ impl Operation for AND {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             AND::Immediate => panic!("and immediate not implemented"),
-            AND::ZeroPageX => panic!("and zero page x not implemented"),
-            AND::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, and_zero_page]),
+            AND::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                and_zero_page_x_indexed,
+            ]),
+            AND::ZeroPage => VecDeque::from([fetch_low_operand, and_zero_page]),
             AND::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, and_absolute]),
             AND::AbsoluteX => panic!("and absolute x not implemented"),
             AND::AbsoluteY => panic!("and absolute y not implemented"),
@@ -51,5 +58,10 @@ fn and_absolute(state: &mut State) {
 
 fn and_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    and(state);
+}
+
+fn and_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     and(state);
 }

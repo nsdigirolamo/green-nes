@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -23,8 +26,12 @@ impl Operation for LDX {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             LDX::Immediate => panic!("ldx immediate not implemented"),
-            LDX::ZeroPageX => panic!("ldx zero page x not implemented"),
-            LDX::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, ldx_zero_page]),
+            LDX::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                ldx_zero_page_x_indexed,
+            ]),
+            LDX::ZeroPage => VecDeque::from([fetch_low_operand, ldx_zero_page]),
             LDX::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, ldx_absolute]),
             LDX::AbsoluteY => panic!("ldx absolute y not implemented"),
         }
@@ -45,5 +52,10 @@ fn ldx_absolute(state: &mut State) {
 
 fn ldx_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    ldx(state);
+}
+
+fn ldx_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     ldx(state);
 }

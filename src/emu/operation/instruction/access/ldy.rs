@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -23,8 +26,12 @@ impl Operation for LDY {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             LDY::Immediate => panic!("ldy immediate not implemented"),
-            LDY::ZeroPageX => panic!("ldy zero page x not implemented"),
-            LDY::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, ldy_zero_page]),
+            LDY::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                ldy_zero_page_x_indexed,
+            ]),
+            LDY::ZeroPage => VecDeque::from([fetch_low_operand, ldy_zero_page]),
             LDY::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, ldy_absolute]),
             LDY::AbsoluteX => panic!("ldy absolute x not implemented"),
         }
@@ -45,5 +52,10 @@ fn ldy_absolute(state: &mut State) {
 
 fn ldy_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    ldy(state);
+}
+
+fn ldy_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     ldy(state);
 }

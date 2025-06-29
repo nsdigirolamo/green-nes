@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{write_to_effective_absolute_address, write_to_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, write_to_effective_absolute_address,
+            write_to_effective_zero_page_address, write_to_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -20,8 +23,12 @@ pub enum STY {
 impl Operation for STY {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
-            STY::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, sty_zero_page]),
-            STY::ZeroPageX => panic!("sty zero page x not implemented"),
+            STY::ZeroPage => VecDeque::from([fetch_low_operand, sty_zero_page]),
+            STY::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                sty_zero_page_x_indexed,
+            ]),
             STY::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sty_absolute]),
         }
     }
@@ -40,4 +47,9 @@ fn sty_absolute(state: &mut State) {
 fn sty_zero_page(state: &mut State) {
     sty(state);
     write_to_effective_zero_page_address(state);
+}
+
+fn sty_zero_page_x_indexed(state: &mut State) {
+    sty(state);
+    write_to_effective_zero_page_x_indexed_address(state);
 }

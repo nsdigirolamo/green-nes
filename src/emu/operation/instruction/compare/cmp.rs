@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
+        addressing::{
+            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
+            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -26,8 +29,12 @@ impl Operation for CMP {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             CMP::Immediate => panic!("cmp immediate not implemented"),
-            CMP::ZeroPageX => panic!("cmp zero page x not implemented"),
-            CMP::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, cmp_zero_page]),
+            CMP::ZeroPageX => VecDeque::from([
+                fetch_low_operand,
+                get_effective_zero_page_x_indexed_address,
+                cmp_zero_page_x_indexed,
+            ]),
+            CMP::ZeroPage => VecDeque::from([fetch_low_operand, cmp_zero_page]),
             CMP::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, cmp_absolute]),
             CMP::AbsoluteX => panic!("cmp absolute x not implemented"),
             CMP::AbsoluteY => panic!("cmp absolute y not implemented"),
@@ -52,5 +59,10 @@ fn cmp_absolute(state: &mut State) {
 
 fn cmp_zero_page(state: &mut State) {
     read_at_effective_zero_page_address(state);
+    cmp(state);
+}
+
+fn cmp_zero_page_x_indexed(state: &mut State) {
+    read_at_effective_zero_page_x_indexed_address(state);
     cmp(state);
 }

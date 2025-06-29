@@ -18,12 +18,10 @@ pub enum BIT {
 
 impl Operation for BIT {
     fn get_events(&self) -> VecDeque<Event> {
-        let do_bit = match *self {
-            BIT::ZeroPage => bit_zero_page,
-            BIT::Absolute => bit_absolute,
-        };
-
-        VecDeque::from([fetch_low_operand, fetch_high_operand, do_bit])
+        match *self {
+            BIT::ZeroPage => VecDeque::from([fetch_low_operand, bit_zero_page]),
+            BIT::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, bit_absolute]),
+        }
     }
 }
 
