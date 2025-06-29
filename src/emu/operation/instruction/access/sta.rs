@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::write_to_effective_absolute_address,
+        addressing::{write_to_effective_absolute_address, write_to_effective_zero_page_address},
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -25,7 +25,7 @@ impl Operation for STA {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             STA::ZeroPageX => panic!("sta zero page x not implemented"),
-            STA::ZeroPage => panic!("sta zero page not implemented"),
+            STA::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, sta_zero_page]),
             STA::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sta_absolute]),
             STA::AbsoluteX => panic!("sta absolute x not implemented"),
             STA::AbsoluteY => panic!("sta absolute y not implemented"),
@@ -35,9 +35,17 @@ impl Operation for STA {
     }
 }
 
-fn sta_absolute(state: &mut State) {
+fn sta(state: &mut State) {
     let data = state.registers.accumulator;
-
     state.cycle_data.acting_data = data;
+}
+
+fn sta_absolute(state: &mut State) {
+    sta(state);
     write_to_effective_absolute_address(state);
+}
+
+fn sta_zero_page(state: &mut State) {
+    sta(state);
+    write_to_effective_zero_page_address(state);
 }

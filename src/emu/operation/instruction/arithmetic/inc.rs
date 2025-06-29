@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, write_to_effective_absolute_address},
+        addressing::{
+            read_at_effective_absolute_address, read_at_effective_zero_page_address,
+            write_to_effective_absolute_address, write_to_effective_zero_page_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -22,7 +25,13 @@ impl Operation for INC {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             INC::ZeroPageX => panic!("inc zero page x not implemented"),
-            INC::ZeroPage => panic!("inc zero page not implemented"),
+            INC::ZeroPage => VecDeque::from([
+                fetch_low_operand,
+                fetch_high_operand,
+                read_at_effective_zero_page_address,
+                inc,
+                write_to_effective_zero_page_address,
+            ]),
             INC::Absolute => VecDeque::from([
                 fetch_low_operand,
                 fetch_high_operand,

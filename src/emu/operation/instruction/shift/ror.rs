@@ -4,7 +4,10 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{read_at_effective_absolute_address, write_to_effective_absolute_address},
+        addressing::{
+            read_at_effective_absolute_address, read_at_effective_zero_page_address,
+            write_to_effective_absolute_address, write_to_effective_zero_page_address,
+        },
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -24,7 +27,13 @@ impl Operation for ROR {
         match *self {
             ROR::Accumulator => panic!("ror accumulator not implemented"),
             ROR::ZeroPageX => panic!("ror zero page x not implemented"),
-            ROR::ZeroPage => panic!("ror zero page not implemented"),
+            ROR::ZeroPage => VecDeque::from([
+                fetch_low_operand,
+                fetch_high_operand,
+                read_at_effective_zero_page_address,
+                ror,
+                write_to_effective_zero_page_address,
+            ]),
             ROR::Absolute => VecDeque::from([
                 fetch_low_operand,
                 fetch_high_operand,

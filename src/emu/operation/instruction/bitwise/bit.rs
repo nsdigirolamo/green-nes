@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::read_at_effective_absolute_address,
+        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -18,20 +18,29 @@ pub enum BIT {
 
 impl Operation for BIT {
     fn get_events(&self) -> VecDeque<Event> {
-        match *self {
-            BIT::ZeroPage => panic!("bit zero page not implemented"),
-            BIT::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, bit_absolute]),
-        }
+        let do_bit = match *self {
+            BIT::ZeroPage => bit_zero_page,
+            BIT::Absolute => bit_absolute,
+        };
+
+        VecDeque::from([fetch_low_operand, fetch_high_operand, do_bit])
     }
+}
+
+fn bit(state: &mut State) {
+    let data = state.cycle_data.acting_data;
+    let result = state.registers.accumulator & data;
+    state.set_zero_flag(result == 0);
+    state.set_overflow_flag((data & 0b_0100_0000) != 0);
+    state.set_negative_flag((data & 0b_1000_0000) != 0);
 }
 
 fn bit_absolute(state: &mut State) {
     read_at_effective_absolute_address(state);
-    let data = state.cycle_data.acting_data;
+    bit(state);
+}
 
-    let result = state.registers.accumulator & data;
-
-    state.set_zero_flag(result == 0);
-    state.registers.processor_status &= data & 0b01000000;
-    state.registers.processor_status &= data & 0b10000000;
+fn bit_zero_page(state: &mut State) {
+    read_at_effective_zero_page_address(state);
+    bit(state);
 }

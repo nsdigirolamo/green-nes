@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::read_at_effective_absolute_address,
+        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -27,7 +27,7 @@ impl Operation for LDA {
         match *self {
             LDA::Immediate => panic!("lda immediate not implemented"),
             LDA::ZeroPageX => panic!("lda zero page x not implemented"),
-            LDA::ZeroPage => panic!("lda zero page not implemented"),
+            LDA::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, lda_zero_page]),
             LDA::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, lda_absolute]),
             LDA::AbsoluteX => panic!("lda absolute x not implemented"),
             LDA::AbsoluteY => panic!("lda absolute y not implemented"),
@@ -37,11 +37,19 @@ impl Operation for LDA {
     }
 }
 
-fn lda_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
+fn lda(state: &mut State) {
     let data = state.cycle_data.acting_data;
-
     state.registers.accumulator = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
+}
+
+fn lda_absolute(state: &mut State) {
+    read_at_effective_absolute_address(state);
+    lda(state);
+}
+
+fn lda_zero_page(state: &mut State) {
+    read_at_effective_zero_page_address(state);
+    lda(state);
 }

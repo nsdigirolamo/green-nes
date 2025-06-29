@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::read_at_effective_absolute_address,
+        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -27,7 +27,7 @@ impl Operation for AND {
         match *self {
             AND::Immediate => panic!("and immediate not implemented"),
             AND::ZeroPageX => panic!("and zero page x not implemented"),
-            AND::ZeroPage => panic!("and zero page not implemented"),
+            AND::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, and_zero_page]),
             AND::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, and_absolute]),
             AND::AbsoluteX => panic!("and absolute x not implemented"),
             AND::AbsoluteY => panic!("and absolute y not implemented"),
@@ -37,11 +37,19 @@ impl Operation for AND {
     }
 }
 
-fn and_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
+fn and(state: &mut State) {
     let data = state.cycle_data.acting_data;
-
     state.registers.accumulator &= data;
     state.set_zero_flag(data == 0);
-    state.set_negative_flag(data >> 7 == 1);
+    state.set_negative_flag((data & 0b_1000_0000) != 0);
+}
+
+fn and_absolute(state: &mut State) {
+    read_at_effective_absolute_address(state);
+    and(state);
+}
+
+fn and_zero_page(state: &mut State) {
+    read_at_effective_zero_page_address(state);
+    and(state);
 }

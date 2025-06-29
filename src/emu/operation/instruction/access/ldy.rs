@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::read_at_effective_absolute_address,
+        addressing::{read_at_effective_absolute_address, read_at_effective_zero_page_address},
         instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
@@ -24,18 +24,26 @@ impl Operation for LDY {
         match *self {
             LDY::Immediate => panic!("ldy immediate not implemented"),
             LDY::ZeroPageX => panic!("ldy zero page x not implemented"),
-            LDY::ZeroPage => panic!("ldy zero page not implemented"),
+            LDY::ZeroPage => VecDeque::from([fetch_low_operand, fetch_high_operand, ldy_zero_page]),
             LDY::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, ldy_absolute]),
             LDY::AbsoluteX => panic!("ldy absolute x not implemented"),
         }
     }
 }
 
-fn ldy_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
+fn ldy(state: &mut State) {
     let data = state.cycle_data.acting_data;
-
     state.registers.y_index = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
+}
+
+fn ldy_absolute(state: &mut State) {
+    read_at_effective_absolute_address(state);
+    ldy(state);
+}
+
+fn ldy_zero_page(state: &mut State) {
+    read_at_effective_zero_page_address(state);
+    ldy(state);
 }
