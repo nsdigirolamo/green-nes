@@ -4,7 +4,7 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        instruction::{fetch_high_operand, fetch_low_operand},
+        instruction::{fetch_high_effective_address_byte, fetch_low_effective_address_byte},
     },
     state::State,
 };
@@ -17,7 +17,11 @@ pub enum NOP {
 impl Operation for NOP {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
-            NOP::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, nop]),
+            NOP::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                nop,
+            ]),
         }
     }
 }

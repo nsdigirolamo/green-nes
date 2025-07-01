@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            read_from_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -30,12 +30,16 @@ impl Operation for LDA {
         match *self {
             LDA::Immediate => panic!("lda immediate not implemented"),
             LDA::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                lda_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                lda,
             ]),
-            LDA::ZeroPage => VecDeque::from([fetch_low_operand, lda_zero_page]),
-            LDA::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, lda_absolute]),
+            LDA::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, lda]),
+            LDA::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                lda,
+            ]),
             LDA::AbsoluteX => panic!("lda absolute x not implemented"),
             LDA::AbsoluteY => panic!("lda absolute y not implemented"),
             LDA::IndirectX => panic!("lda indirect x not implemented"),
@@ -45,23 +49,10 @@ impl Operation for LDA {
 }
 
 fn lda(state: &mut State) {
+    read_from_effective_address(state);
+
     let data = state.cycle_data.acting_data;
     state.registers.accumulator = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
-}
-
-fn lda_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
-    lda(state);
-}
-
-fn lda_zero_page(state: &mut State) {
-    read_at_effective_zero_page_address(state);
-    lda(state);
-}
-
-fn lda_zero_page_x_indexed(state: &mut State) {
-    read_at_effective_zero_page_x_indexed_address(state);
-    lda(state);
 }

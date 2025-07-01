@@ -1,10 +1,14 @@
+use std::collections::VecDeque;
+
+use crate::emu::Event;
+
 pub const MAX_MEMORY_ADDRESS: u16 = 65535;
 pub const MAX_STACK_ADDRESS: u16 = 0x00FF;
 pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 
-#[derive(Clone, Copy, Default, Debug)]
+#[derive(Default, Debug)]
 pub struct Registers {
     pub accumulator: u8,
     pub x_index: u8,
@@ -14,21 +18,25 @@ pub struct Registers {
     pub processor_status: u8,
 }
 
-/// Data used by the "micro-instructions" on a per-cycle basis.
-#[derive(Clone, Copy, Default, Debug)]
+/// Data used by the "micro-instructions" on a per-cycle basis. This is an
+/// abstraction of processes internal to the microprocessor and shouldn't be
+/// available to anything besides the parent `State`.
+#[derive(Default, Debug)]
 pub struct CycleData {
-    pub opcode: u8,             // Used as if it were the instruction register (IR)
-    pub low_operand: u8,        // Low operand of the instruction in memory.
-    pub high_operand: u8,       // High operand of the instruction in memory.
-    pub effective_address: u16, // The memory address that the current instruction is working on.
-    pub acting_data: u8,        // The data that the current instruction is working on.
+    pub opcode: u8,                  // Used as if it were the instruction register (IR)
+    pub low_operand: u8,             // Low operand of the instruction in memory.
+    pub high_operand: u8,            // High operand of the instruction in memory.
+    pub effective_address: (u8, u8), // The memory address that the current instruction is working on.
+    pub acting_data: u8,             // The data that the current instruction is working on.
+    pub crossed_page: bool,          // Denotes a crossed page boundary for some addressing modes.
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct State {
     memory: [u8; MEMORY_LENGTH],
     pub registers: Registers,
     pub cycle_data: CycleData,
+    pub event_queue: VecDeque<Event>,
 }
 
 impl Default for State {
@@ -37,6 +45,7 @@ impl Default for State {
             memory: [0u8; MEMORY_LENGTH],
             registers: Registers::default(),
             cycle_data: CycleData::default(),
+            event_queue: VecDeque::default(),
         }
     }
 }
@@ -85,6 +94,10 @@ impl State {
         let address = self.registers.program_counter;
 
         self.read_from_memory(address)
+    }
+
+    pub fn increment_pc_address(&mut self) {
+        self.registers.program_counter += 1;
     }
 
     pub fn get_negative_flag(&self) -> bool {

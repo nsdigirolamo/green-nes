@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            read_from_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -27,35 +27,26 @@ impl Operation for LDY {
         match *self {
             LDY::Immediate => panic!("ldy immediate not implemented"),
             LDY::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                ldy_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                ldy,
             ]),
-            LDY::ZeroPage => VecDeque::from([fetch_low_operand, ldy_zero_page]),
-            LDY::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, ldy_absolute]),
+            LDY::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, ldy]),
+            LDY::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                ldy,
+            ]),
             LDY::AbsoluteX => panic!("ldy absolute x not implemented"),
         }
     }
 }
 
 fn ldy(state: &mut State) {
+    read_from_effective_address(state);
+
     let data = state.cycle_data.acting_data;
     state.registers.y_index = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
-}
-
-fn ldy_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
-    ldy(state);
-}
-
-fn ldy_zero_page(state: &mut State) {
-    read_at_effective_zero_page_address(state);
-    ldy(state);
-}
-
-fn ldy_zero_page_x_indexed(state: &mut State) {
-    read_at_effective_zero_page_x_indexed_address(state);
-    ldy(state);
 }

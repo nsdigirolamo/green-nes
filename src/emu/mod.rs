@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, path::Path};
+use std::path::Path;
 
 use crate::emu::{
     error::{EmuError, LoadError},
@@ -35,32 +35,28 @@ type Event = fn(&mut State);
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(state: &mut State) -> Result<State, EmuError> {
+pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
     let mut is_halted = false;
     let mut cycle_count = 0u64;
 
-    let mut event_queue: VecDeque<Event> = VecDeque::new();
-
     while !is_halted {
-        match event_queue.pop_front() {
-            Some(event) => event(state),
+        match state.event_queue.pop_front() {
+            Some(do_event) => do_event(state),
             None => {
                 fetch_opcode(state);
-                let opcode = state.cycle_data.opcode;
-                let operation = get_operation(opcode);
+                let operation = get_operation(state.cycle_data.opcode);
                 let mut new_events = operation.get_events();
-
-                event_queue.extend(new_events.drain(..));
+                state.event_queue.extend(new_events.drain(..));
             }
         }
 
         cycle_count += 1;
-        is_halted = cycle_count > 100; // @TODO: Determine how to halt (haha halting problem)
+        is_halted = cycle_count > 100; // @TODO: Determine when to halt
     }
 
     println!("Cycles completed: {cycle_count}");
 
-    Ok(*state)
+    Ok(state)
 }
 
 pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, LoadError> {

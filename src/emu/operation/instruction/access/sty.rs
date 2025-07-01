@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, write_to_effective_absolute_address,
-            write_to_effective_zero_page_address, write_to_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            write_to_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -23,13 +23,17 @@ pub enum STY {
 impl Operation for STY {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
-            STY::ZeroPage => VecDeque::from([fetch_low_operand, sty_zero_page]),
+            STY::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, sty]),
             STY::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                sty_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                sty,
             ]),
-            STY::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sty_absolute]),
+            STY::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                sty,
+            ]),
         }
     }
 }
@@ -37,19 +41,6 @@ impl Operation for STY {
 fn sty(state: &mut State) {
     let data = state.registers.y_index;
     state.cycle_data.acting_data = data;
-}
 
-fn sty_absolute(state: &mut State) {
-    sty(state);
-    write_to_effective_absolute_address(state);
-}
-
-fn sty_zero_page(state: &mut State) {
-    sty(state);
-    write_to_effective_zero_page_address(state);
-}
-
-fn sty_zero_page_x_indexed(state: &mut State) {
-    sty(state);
-    write_to_effective_zero_page_x_indexed_address(state);
+    write_to_effective_address(state);
 }

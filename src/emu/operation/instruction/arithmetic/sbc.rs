@@ -6,11 +6,11 @@ use crate::{
         Event,
         operation::{
             Operation,
-            addressing::{
-                get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-                read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+            instruction::{
+                do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+                fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+                read_from_effective_address,
             },
-            instruction::{fetch_high_operand, fetch_low_operand},
         },
         state::State,
     },
@@ -33,12 +33,16 @@ impl Operation for SBC {
         match *self {
             SBC::Immediate => panic!("sbc immediate not implemented"),
             SBC::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                sbc_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                sbc,
             ]),
-            SBC::ZeroPage => VecDeque::from([fetch_low_operand, sbc_zero_page]),
-            SBC::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sbc_absolute]),
+            SBC::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, sbc]),
+            SBC::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                sbc,
+            ]),
             SBC::AbsoluteX => panic!("sbc absolute x not implemented"),
             SBC::AbsoluteY => panic!("sbc absolute y not implemented"),
             SBC::IndirectX => panic!("sbc indirect x not implemented"),
@@ -48,6 +52,8 @@ impl Operation for SBC {
 }
 
 fn sbc(state: &mut State) {
+    read_from_effective_address(state);
+
     let data = !state.cycle_data.acting_data;
     let accumulator = state.registers.accumulator;
     let carry = state.get_carry_flag() as u8;
@@ -61,19 +67,4 @@ fn sbc(state: &mut State) {
     state.set_zero_flag(data == 0);
     state.set_overflow_flag(did_signed_overflow);
     state.set_negative_flag((data & 0b_1000_0000) != 0);
-}
-
-fn sbc_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
-    sbc(state);
-}
-
-fn sbc_zero_page(state: &mut State) {
-    read_at_effective_zero_page_address(state);
-    sbc(state);
-}
-
-fn sbc_zero_page_x_indexed(state: &mut State) {
-    read_at_effective_zero_page_x_indexed_address(state);
-    sbc(state);
 }

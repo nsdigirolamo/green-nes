@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            read_from_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -30,12 +30,16 @@ impl Operation for EOR {
         match *self {
             EOR::Immediate => panic!("eor immediate not implemented"),
             EOR::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                eor_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                eor,
             ]),
-            EOR::ZeroPage => VecDeque::from([fetch_low_operand, eor_zero_page]),
-            EOR::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, eor_absolute]),
+            EOR::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, eor]),
+            EOR::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                eor,
+            ]),
             EOR::AbsoluteX => panic!("eor absolute x not implemented"),
             EOR::AbsoluteY => panic!("eor absolute y not implemented"),
             EOR::IndirectX => panic!("eor indirect x not implemented"),
@@ -45,23 +49,10 @@ impl Operation for EOR {
 }
 
 fn eor(state: &mut State) {
+    read_from_effective_address(state);
+
     let data = state.cycle_data.acting_data;
     state.registers.accumulator ^= data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag((data & 0b_1000_0000) != 0);
-}
-
-fn eor_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
-    eor(state);
-}
-
-fn eor_zero_page(state: &mut State) {
-    read_at_effective_zero_page_address(state);
-    eor(state);
-}
-
-fn eor_zero_page_x_indexed(state: &mut State) {
-    read_at_effective_zero_page_x_indexed_address(state);
-    eor(state);
 }

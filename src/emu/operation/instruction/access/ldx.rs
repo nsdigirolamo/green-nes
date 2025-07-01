@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_y_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            read_from_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -17,7 +17,7 @@ use crate::emu::{
 pub enum LDX {
     Immediate,
     ZeroPage,
-    ZeroPageX,
+    ZeroPageY,
     Absolute,
     AbsoluteY,
 }
@@ -26,36 +26,27 @@ impl Operation for LDX {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             LDX::Immediate => panic!("ldx immediate not implemented"),
-            LDX::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                ldx_zero_page_x_indexed,
+            LDX::ZeroPageY => VecDeque::from([
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_y_index,
+                ldx,
             ]),
-            LDX::ZeroPage => VecDeque::from([fetch_low_operand, ldx_zero_page]),
-            LDX::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, ldx_absolute]),
+            LDX::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, ldx]),
+            LDX::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                ldx,
+            ]),
             LDX::AbsoluteY => panic!("ldx absolute y not implemented"),
         }
     }
 }
 
 fn ldx(state: &mut State) {
+    read_from_effective_address(state);
+
     let data = state.cycle_data.acting_data;
     state.registers.x_index = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
-}
-
-fn ldx_absolute(state: &mut State) {
-    read_at_effective_absolute_address(state);
-    ldx(state);
-}
-
-fn ldx_zero_page(state: &mut State) {
-    read_at_effective_zero_page_address(state);
-    ldx(state);
-}
-
-fn ldx_zero_page_x_indexed(state: &mut State) {
-    read_at_effective_zero_page_x_indexed_address(state);
-    ldx(state);
 }

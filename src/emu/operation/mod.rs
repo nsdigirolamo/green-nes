@@ -14,7 +14,6 @@ use crate::emu::{
     state::State,
 };
 
-pub mod addressing;
 pub mod instruction;
 
 pub trait Operation: fmt::Debug {

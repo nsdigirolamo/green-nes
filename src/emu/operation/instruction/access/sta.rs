@@ -4,11 +4,11 @@ use crate::emu::{
     Event,
     operation::{
         Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, write_to_effective_absolute_address,
-            write_to_effective_zero_page_address, write_to_effective_zero_page_x_indexed_address,
+        instruction::{
+            do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+            fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+            write_to_effective_address,
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
     },
     state::State,
 };
@@ -28,12 +28,16 @@ impl Operation for STA {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
             STA::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                sta_zero_page_x_indexed,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                sta,
             ]),
-            STA::ZeroPage => VecDeque::from([fetch_low_operand, sta_zero_page]),
-            STA::Absolute => VecDeque::from([fetch_low_operand, fetch_high_operand, sta_absolute]),
+            STA::ZeroPage => VecDeque::from([fetch_effective_zero_page_address, sta]),
+            STA::Absolute => VecDeque::from([
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                sta,
+            ]),
             STA::AbsoluteX => panic!("sta absolute x not implemented"),
             STA::AbsoluteY => panic!("sta absolute y not implemented"),
             STA::IndirectX => panic!("sta indirect x not implemented"),
@@ -45,19 +49,6 @@ impl Operation for STA {
 fn sta(state: &mut State) {
     let data = state.registers.accumulator;
     state.cycle_data.acting_data = data;
-}
 
-fn sta_absolute(state: &mut State) {
-    sta(state);
-    write_to_effective_absolute_address(state);
-}
-
-fn sta_zero_page(state: &mut State) {
-    sta(state);
-    write_to_effective_zero_page_address(state);
-}
-
-fn sta_zero_page_x_indexed(state: &mut State) {
-    sta(state);
-    write_to_effective_zero_page_x_indexed_address(state);
+    write_to_effective_address(state);
 }

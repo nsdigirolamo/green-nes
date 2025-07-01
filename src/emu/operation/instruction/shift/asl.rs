@@ -1,17 +1,19 @@
 use std::collections::VecDeque;
 
-use crate::emu::{
-    Event,
-    operation::{
-        Operation,
-        addressing::{
-            get_effective_zero_page_x_indexed_address, read_at_effective_absolute_address,
-            read_at_effective_zero_page_address, read_at_effective_zero_page_x_indexed_address,
-            write_to_effective_absolute_address, write_to_effective_zero_page_address,
+use crate::{
+    concat_u8,
+    emu::{
+        Event,
+        operation::{
+            Operation,
+            instruction::{
+                do_effective_zero_page_address_x_index, fetch_effective_zero_page_address,
+                fetch_high_effective_address_byte, fetch_low_effective_address_byte,
+                read_from_effective_address, write_to_effective_address,
+            },
         },
-        instruction::{fetch_high_operand, fetch_low_operand},
+        state::State,
     },
-    state::State,
 };
 
 #[derive(Debug)]
@@ -28,24 +30,24 @@ impl Operation for ASL {
         match *self {
             ASL::Accumulator => panic!("asl accumulator not implemented"),
             ASL::ZeroPageX => VecDeque::from([
-                fetch_low_operand,
-                get_effective_zero_page_x_indexed_address,
-                read_at_effective_zero_page_x_indexed_address,
+                fetch_effective_zero_page_address,
+                do_effective_zero_page_address_x_index,
+                read_from_effective_address,
                 asl,
-                write_to_effective_zero_page_address,
+                write_to_effective_address,
             ]),
             ASL::ZeroPage => VecDeque::from([
-                fetch_low_operand,
-                read_at_effective_zero_page_address,
+                fetch_effective_zero_page_address,
+                read_from_effective_address,
                 asl,
-                write_to_effective_zero_page_address,
+                write_to_effective_address,
             ]),
             ASL::Absolute => VecDeque::from([
-                fetch_low_operand,
-                fetch_high_operand,
-                read_at_effective_absolute_address,
+                fetch_low_effective_address_byte,
+                fetch_high_effective_address_byte,
+                read_from_effective_address,
                 asl,
-                write_to_effective_absolute_address,
+                write_to_effective_address,
             ]),
             ASL::AbsoluteX => panic!("asl absolute x not implemented"),
         }
@@ -53,7 +55,10 @@ impl Operation for ASL {
 }
 
 fn asl(state: &mut State) {
-    let address = state.cycle_data.effective_address;
+    let address = concat_u8!(
+        state.cycle_data.effective_address.0,
+        state.cycle_data.effective_address.1
+    );
     let data = state.cycle_data.acting_data;
     state.write_to_memory(address, data);
 

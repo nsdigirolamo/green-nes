@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 
-use crate::emu::{Event, operation::Operation, state::State};
+use crate::{
+    concat_u8,
+    emu::{Event, operation::Operation, state::State},
+};
 
 pub mod access;
 pub mod arithmetic;
@@ -133,18 +136,95 @@ impl Operation for Instruction {
     }
 }
 
-fn fetch_high_operand(state: &mut State) {
-    let data = state.read_from_pc_address();
-    state.cycle_data.high_operand = data;
-
-    let pc = state.registers.program_counter;
-    state.registers.program_counter = pc.wrapping_add(1);
+/**
+Reads the contents of the program counter, loads it into the high byte of the
+effective address, and then increments the program counter.
+*/
+fn fetch_high_effective_address_byte(state: &mut State) {
+    let high_address_byte = state.read_from_pc_address();
+    state.cycle_data.effective_address.0 = high_address_byte;
+    state.increment_pc_address();
 }
 
-fn fetch_low_operand(state: &mut State) {
-    let data = state.read_from_pc_address();
-    state.cycle_data.low_operand = data;
+/**
+Reads the contents of the program counter, loads it into the low byte of the
+effective address, and then increments the program counter.
+*/
+fn fetch_low_effective_address_byte(state: &mut State) {
+    let low_address_byte = state.read_from_pc_address();
+    state.cycle_data.effective_address.1 = low_address_byte;
+    state.increment_pc_address();
+}
 
-    let pc = state.registers.program_counter;
-    state.registers.program_counter = pc.wrapping_add(1);
+/**
+Reads the contents of the program counter, loads it into the effective address
+as a location in page zero, and then increments the program counter.
+*/
+fn fetch_effective_zero_page_address(state: &mut State) {
+    let low_address_byte = state.read_from_pc_address();
+    state.cycle_data.effective_address = (0x00, low_address_byte);
+}
+
+/**
+Adds the contents of the X Index register to the zero page effective address.
+*/
+fn do_effective_zero_page_address_x_index(state: &mut State) {
+    let address = concat_u8!(
+        state.cycle_data.effective_address.0,
+        state.cycle_data.effective_address.1
+    );
+
+    // TODO: Determine if the data read from memory needs to be stored in the
+    // location being operated on. Example: Does `LDA ($01, X)` need to load the
+    // contents of 0x0001 into the accumulator here? Or does the accumulator
+    // only need to be loaded during the final cycle?
+
+    // This memory read is required for cycle accuracy.
+    let _ = state.read_from_memory(address);
+    // Add X Index to low byte. High byte is always 0x00.
+    let low_address_byte = state.cycle_data.effective_address.1;
+    let offset = state.registers.x_index;
+    let low_address_byte = low_address_byte.wrapping_add(offset);
+    state.cycle_data.effective_address = (0x00, low_address_byte);
+}
+
+/**
+Adds the contents of the Y Index register to the zero page effective address.
+*/
+fn do_effective_zero_page_address_y_index(state: &mut State) {
+    let address = concat_u8!(
+        state.cycle_data.effective_address.0,
+        state.cycle_data.effective_address.1
+    );
+
+    // TODO: Determine if the data read from memory needs to be stored in the
+    // location being operated on. Example: Does `LDX ($01, Y)` need to load the
+    // contents of 0x0001 into the x index register here? Or does the x index
+    // only need to be loaded during the final cycle?
+
+    // This memory read is required for cycle accuracy.
+    let _ = state.read_from_memory(address);
+    // Add Y Index to low byte. High byte is always 0x00.
+    let low_address_byte = state.cycle_data.effective_address.1;
+    let offset = state.registers.y_index;
+    let low_address_byte = low_address_byte.wrapping_add(offset);
+    state.cycle_data.effective_address = (0x00, low_address_byte);
+}
+
+fn read_from_effective_address(state: &mut State) {
+    let address = concat_u8!(
+        state.cycle_data.effective_address.0,
+        state.cycle_data.effective_address.1
+    );
+    let data = state.read_from_memory(address);
+    state.cycle_data.acting_data = data;
+}
+
+fn write_to_effective_address(state: &mut State) {
+    let address = concat_u8!(
+        state.cycle_data.effective_address.0,
+        state.cycle_data.effective_address.1
+    );
+    let data = state.cycle_data.acting_data;
+    state.write_to_memory(address, data);
 }

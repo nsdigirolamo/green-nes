@@ -4,7 +4,7 @@ use crate::{
     concat_u8,
     emu::{
         Event,
-        operation::{Operation, instruction::fetch_low_operand},
+        operation::{Operation, instruction::fetch_low_effective_address_byte},
         state::State,
     },
 };
@@ -18,7 +18,7 @@ pub enum JMP {
 impl Operation for JMP {
     fn get_events(&self) -> VecDeque<Event> {
         match *self {
-            JMP::Absolute => VecDeque::from([fetch_low_operand, jmp_absolute]),
+            JMP::Absolute => VecDeque::from([fetch_low_effective_address_byte, jmp_absolute]),
             JMP::Indirect => panic!("jmp indirect not implemented"),
         }
     }
