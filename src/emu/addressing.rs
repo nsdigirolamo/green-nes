@@ -3,6 +3,18 @@ use crate::{
     emu::state::{Cycle, Instruction, State, StateOperation},
 };
 
+/*
+ * A lot of the below code contains reads/writes to memory that exist only to
+ * ensure each instruction is "cycle-accurate." The writes to memory actually
+ * occur, but the memory reads don't ever actually influence any other part of
+ * the machine state. For example, these "redundant" reads don't load the memory
+ * value into the Accumulator when the operation otherwise would.
+ *
+ * TODO: Do these "redundant" reads need to actually store the read value
+ * anywhere? Or is it enough to simply read the memory location and make sure
+ * the read is "visible" on the bus?
+ */
+
 pub enum AbsoluteAddressing {
     Jump,
     Read,
@@ -136,16 +148,88 @@ pub enum AbsoluteXIndexedAddressing {
 
 impl Instruction for AbsoluteXIndexedAddressing {
     fn get_cycles(&self, operation: StateOperation) -> Vec<Cycle> {
-        // TODO: This assumes the `operation`` fixes the high byte itself,
-        // and then queues another cycle if necessary. Is there a way to instead
-        // do these steps outside of the `operation`?
         match self {
+            AbsoluteXIndexedAddressing::Read => vec![
+                cycle![fetch_low_effective_address_byte],
+                cycle![fetch_high_effective_address_byte_absolute_x_indexed],
+                /*
+                 * The below cycle assumes the `operation` parameter fixes the
+                 * high address byte and queues another cycle if necessary.
+                 * Ideally this would be the responsibility of this function
+                 * instead.
+                 *
+                 * TODO: Determine how to handle high address byte fix and cycle
+                 * re-queue from outside of the `operation` parameter
+                 */
+                cycle![read_from_effective_address, operation],
+            ],
+            AbsoluteXIndexedAddressing::ReadModifyWrite => vec![
+                cycle![fetch_low_effective_address_byte],
+                cycle![fetch_high_effective_address_byte_absolute_x_indexed],
+                cycle![
+                    read_from_effective_address,
+                    fix_high_effective_address_byte_absolute_indexed
+                ],
+                cycle![read_from_effective_address],
+                cycle![write_to_effective_address, operation],
+                cycle![write_to_effective_address],
+            ],
             AbsoluteXIndexedAddressing::Write => vec![
                 cycle![fetch_low_effective_address_byte],
                 cycle![fetch_high_effective_address_byte_absolute_x_indexed],
+                cycle![
+                    read_from_effective_address,
+                    fix_high_effective_address_byte_absolute_indexed
+                ],
+                cycle![operation, write_to_effective_address],
+            ],
+        }
+    }
+}
+
+pub enum AbsoluteYIndexedAddressing {
+    Read,
+    ReadModifyWrite,
+    Write,
+}
+
+impl Instruction for AbsoluteYIndexedAddressing {
+    fn get_cycles(&self, operation: StateOperation) -> Vec<Cycle> {
+        match self {
+            AbsoluteYIndexedAddressing::Read => vec![
+                cycle![fetch_low_effective_address_byte],
+                cycle![fetch_high_effective_address_byte_absolute_y_indexed],
+                /*
+                 * The below cycle assumes the `operation` parameter fixes the
+                 * high address byte and queues another cycle if necessary.
+                 * Ideally this would be the responsibility of this function
+                 * instead.
+                 *
+                 * TODO: Determine how to handle high address byte fix and cycle
+                 * re-queue from outside of the `operation` parameter
+                 */
                 cycle![read_from_effective_address, operation],
             ],
-            _ => panic!("help"),
+            AbsoluteYIndexedAddressing::ReadModifyWrite => vec![
+                cycle![fetch_low_effective_address_byte],
+                cycle![fetch_high_effective_address_byte_absolute_y_indexed],
+                cycle![
+                    read_from_effective_address,
+                    fix_high_effective_address_byte_absolute_indexed
+                ],
+                cycle![read_from_effective_address],
+                cycle![write_to_effective_address, operation],
+                cycle![write_to_effective_address],
+            ],
+            AbsoluteYIndexedAddressing::Write => vec![
+                cycle![fetch_low_effective_address_byte],
+                cycle![fetch_high_effective_address_byte_absolute_y_indexed],
+                cycle![
+                    read_from_effective_address,
+                    fix_high_effective_address_byte_absolute_indexed
+                ],
+                cycle![operation, write_to_effective_address],
+            ],
         }
     }
 }
@@ -249,6 +333,10 @@ fn do_effective_zero_page_address_y_index(state: &mut State) {
     state.cycle_data.effective_address = (0x00, low_address_byte);
 }
 
+/**
+Fetches the high effective address byte and then adds the X Index register to
+the low effective address byte.
+*/
 fn fetch_high_effective_address_byte_absolute_x_indexed(state: &mut State) {
     // Fetch high byte of address
     fetch_high_effective_address_byte(state);
@@ -262,6 +350,26 @@ fn fetch_high_effective_address_byte_absolute_x_indexed(state: &mut State) {
     state.cycle_data.crossed_page = overflow;
 }
 
+/**
+Fetches the high effective address byte and then adds the Y Index register to
+the low effective address byte.
+*/
+fn fetch_high_effective_address_byte_absolute_y_indexed(state: &mut State) {
+    // Fetch high byte of address
+    fetch_high_effective_address_byte(state);
+
+    // Add index register to low address byte
+    let low_address_byte = state.cycle_data.effective_address.1;
+    let offset = state.registers.y_index;
+    let (low_address_byte, overflow) = low_address_byte.overflowing_add(offset);
+
+    state.cycle_data.effective_address.1 = low_address_byte;
+    state.cycle_data.crossed_page = overflow;
+}
+
+/**
+Fixes the high effective address byte for absolute indexed addressing modes.
+*/
 pub fn fix_high_effective_address_byte_absolute_indexed(state: &mut State) {
     let high_address_byte = state.cycle_data.effective_address.0;
     // TODO: If this wraps, do we need to adjust the low address byte?
