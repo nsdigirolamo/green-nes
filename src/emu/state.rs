@@ -1,12 +1,25 @@
 use std::collections::VecDeque;
 
-use crate::emu::Event;
-
 pub const MAX_MEMORY_ADDRESS: u16 = 65535;
 pub const MAX_STACK_ADDRESS: u16 = 0x00FF;
 pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
+
+pub type StateOperation = fn(&mut State);
+pub type Cycle = Vec<StateOperation>;
+pub trait Instruction {
+    fn get_cycles(&self, operation: StateOperation) -> Vec<Cycle>;
+}
+
+#[macro_export]
+macro_rules! cycle {
+    ( $( $f:expr ),* ) => {
+        {
+            vec![$( $f as fn(&mut State), )*]
+        }
+    };
+}
 
 #[derive(Default, Debug)]
 pub struct Registers {
@@ -36,7 +49,7 @@ pub struct State {
     memory: [u8; MEMORY_LENGTH],
     pub registers: Registers,
     pub cycle_data: CycleData,
-    pub event_queue: VecDeque<Event>,
+    pub cycle_queue: VecDeque<Cycle>,
 }
 
 impl Default for State {
@@ -45,7 +58,7 @@ impl Default for State {
             memory: [0u8; MEMORY_LENGTH],
             registers: Registers::default(),
             cycle_data: CycleData::default(),
-            event_queue: VecDeque::default(),
+            cycle_queue: VecDeque::default(),
         }
     }
 }

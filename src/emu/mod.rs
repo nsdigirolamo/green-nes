@@ -2,12 +2,13 @@ use std::path::Path;
 
 use crate::emu::{
     error::{EmuError, LoadError},
-    operation::{Operation, fetch_opcode, get_operation},
-    state::{PROGRAM_START_ADDRESS, State},
+    instructions::{fetch_opcode, get_operation},
+    state::{Cycle, PROGRAM_START_ADDRESS, State},
 };
 
+pub mod addressing;
 pub mod error;
-pub mod operation;
+pub mod instructions;
 pub mod state;
 
 #[macro_export]
@@ -31,8 +32,6 @@ macro_rules! did_signed_overflow {
     };
 }
 
-type Event = fn(&mut State);
-
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
 pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
@@ -40,15 +39,16 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
     let mut cycle_count = 0u64;
 
     while !is_halted {
-        match state.event_queue.pop_front() {
-            Some(do_event) => do_event(state),
+        match state.cycle_queue.pop_front() {
+            Some(cycle) => {
+                cycle.iter().for_each(|operation| operation(state));
+            }
             None => {
                 fetch_opcode(state);
-                let operation = get_operation(state.cycle_data.opcode);
-                let mut new_events = operation.get_events();
-                state.event_queue.extend(new_events.drain(..));
+                let new_cycles: Vec<Cycle> = get_operation(state.cycle_data.opcode);
+                state.cycle_queue.extend(new_cycles.into_iter());
             }
-        }
+        };
 
         cycle_count += 1;
         is_halted = cycle_count > 100; // @TODO: Determine when to halt
