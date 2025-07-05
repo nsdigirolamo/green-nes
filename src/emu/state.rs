@@ -1,116 +1,68 @@
 use std::collections::VecDeque;
 
+use crate::{concat_u8, split_u16};
+
 pub const MAX_MEMORY_ADDRESS: u16 = 65535;
 pub const MAX_STACK_ADDRESS: u16 = 0x00FF;
-pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
+pub const PROGRAM_START_ADDRESS: (u8, u8) = (0xC0, 0x00);
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 
-pub type StateOperation = fn(&mut State);
-pub type Cycle = Vec<StateOperation>;
-pub trait Instruction {
-    fn get_cycles(&self, operation: StateOperation) -> Vec<Cycle>;
-}
-
-#[macro_export]
-macro_rules! cycle {
-    ( $( $f:expr ),* ) => {
-        {
-            vec![$( $f as fn(&mut State), )*]
-        }
-    };
-}
+pub type HalfCycle = fn(&mut State);
+pub type Cycle = [HalfCycle; 2];
 
 #[derive(Default, Debug)]
 pub struct Registers {
     pub accumulator: u8,
     pub x_index: u8,
     pub y_index: u8,
-    pub program_counter: u16,
+    pub program_counter: (u8, u8), // (high pc byte, low pc byte)
     pub stack_pointer: u8,
     pub processor_status: u8,
-}
-
-/// Data used by the "micro-instructions" on a per-cycle basis. This is an
-/// abstraction of processes internal to the microprocessor and shouldn't be
-/// available to anything besides the parent `State`.
-#[derive(Default, Debug)]
-pub struct CycleData {
-    pub opcode: u8,                  // Used as if it were the instruction register (IR)
-    pub low_operand: u8,             // Low operand of the instruction in memory.
-    pub high_operand: u8,            // High operand of the instruction in memory.
-    pub effective_address: (u8, u8), // The memory address that the current instruction is working on.
-    pub acting_data: u8,             // The data that the current instruction is working on.
-    pub crossed_page: bool,          // Denotes a crossed page boundary for some addressing modes.
+    pub instruction: u8,
 }
 
 #[derive(Debug)]
 pub struct State {
+    pub cycle_queue: VecDeque<Cycle>,
     memory: [u8; MEMORY_LENGTH],
     pub registers: Registers,
-    pub cycle_data: CycleData,
-    pub cycle_queue: VecDeque<Cycle>,
+    pub address_bus: (u8, u8), // external effective address (high address byte, low address byte)
+    pub data_bus: u8,          // external data
+    pub address_low: u8,       // internal address low byte
+    pub address_high: u8,      // internal address high byte
 }
 
 impl Default for State {
     fn default() -> Self {
         State {
+            cycle_queue: VecDeque::default(),
             memory: [0u8; MEMORY_LENGTH],
             registers: Registers::default(),
-            cycle_data: CycleData::default(),
-            cycle_queue: VecDeque::default(),
+            address_bus: (0x00, 0x00),
+            data_bus: 0x00,
+            address_low: 0x00,
+            address_high: 0x00,
         }
     }
 }
 
-// impl fmt::Display for State {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let pc = self.registers.program_counter;
-//         let opcode = self.read_from_memory(pc);
-//         let operand_1 = self.read_from_memory(pc.wrapping_add(1));
-//         let operand_2 = self.read_from_memory(pc.wrapping_add(2));
-
-//         let next_instruction = fetch_next_operation(*self);
-//         let next_instruction_size = next_instruction.get_size();
-
-//         let address_string = format!("{:04X}", pc);
-
-//         let instruction_bytes_string = if next_instruction_size == 1 {
-//             format!("{:02X}", opcode)
-//         } else if next_instruction_size == 2 {
-//             format!("{:02X} {:02X}", opcode, operand_1)
-//         } else {
-//             format!("{:02X} {:02X} {:02X}", opcode, operand_1, operand_2)
-//         };
-//         let instruction_bytes_string = format!("{:8}", instruction_bytes_string);
-
-//         let instruction_name = format!("{:?}", next_instruction);
-
-//         write!(
-//             f,
-//             "{}  {}  {}",
-//             address_string, instruction_bytes_string, instruction_name
-//         )
-//     }
-// }
-
 impl State {
-    pub fn read_from_memory(&self, address: u16) -> u8 {
-        self.memory[address as usize]
+    pub fn read_from_memory(&self, address: (u8, u8)) -> u8 {
+        self.memory[concat_u8!(address.0, address.1) as usize]
     }
 
-    pub fn write_to_memory(&mut self, address: u16, data: u8) {
-        self.memory[address as usize] = data;
-    }
-
-    pub fn read_from_pc_address(&self) -> u8 {
-        let address = self.registers.program_counter;
-
-        self.read_from_memory(address)
+    pub fn write_to_memory(&mut self, address: (u8, u8), data: u8) {
+        self.memory[concat_u8!(address.0, address.1) as usize] = data;
     }
 
     pub fn increment_pc_address(&mut self) {
-        self.registers.program_counter += 1;
+        let address = concat_u8!(
+            self.registers.program_counter.0,
+            self.registers.program_counter.1
+        );
+        let address = address.wrapping_add(1);
+        self.registers.program_counter = split_u16!(address);
     }
 
     pub fn get_negative_flag(&self) -> bool {

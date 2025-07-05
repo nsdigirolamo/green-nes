@@ -1,14 +1,14 @@
 use std::path::Path;
 
 use crate::emu::{
+    cycles::FETCH_INSTRUCTION,
     error::{EmuError, LoadError},
-    instructions::{fetch_opcode, get_operation},
     state::{Cycle, PROGRAM_START_ADDRESS, State},
 };
 
-pub mod addressing;
+pub mod cycles;
 pub mod error;
-pub mod instructions;
+pub mod operations;
 pub mod state;
 
 #[macro_export]
@@ -40,13 +40,17 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
 
     while !is_halted {
         match state.cycle_queue.pop_front() {
-            Some(cycle) => {
-                cycle.iter().for_each(|operation| operation(state));
+            Some([phase1, phase2]) => {
+                phase1(state);
+                phase2(state);
             }
             None => {
-                fetch_opcode(state);
-                let new_cycles: Vec<Cycle> = get_operation(state.cycle_data.opcode);
-                state.cycle_queue.extend(new_cycles.into_iter());
+                let [phase1, phase2] = FETCH_INSTRUCTION;
+                phase1(state);
+                phase2(state);
+
+                let new_cycles = get_cycles(state.registers.instruction);
+                state.cycle_queue.extend(new_cycles.iter());
             }
         };
 
@@ -71,7 +75,7 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
         return Err(LoadError::MissingHeader);
     }
 
-    let starting_addr: u16 = PROGRAM_START_ADDRESS;
+    let starting_addr = PROGRAM_START_ADDRESS;
     state.registers.program_counter = starting_addr;
 
     let program = &program[PROGRAM_HEADER_LENGTH..];
@@ -84,8 +88,8 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     // }
 
     for (index, &data) in program.iter().enumerate() {
-        let address = starting_addr + index as u16;
-        state.write_to_memory(address, data);
+        let address = concat_u8!(starting_addr.0, starting_addr.1).wrapping_add(index as u16);
+        state.write_to_memory(split_u16!(address), data);
 
         if address == 0xFFFF {
             break;
@@ -93,4 +97,8 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     }
 
     Ok(state)
+}
+
+pub fn get_cycles(_opcode: u8) -> Vec<Cycle> {
+    panic!("not implemented")
 }
