@@ -2,6 +2,7 @@ use crate::emu::state::State;
 
 pub fn asl(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
+
     let result = data << 1;
 
     state.data_bus = result;
@@ -12,6 +13,7 @@ pub fn asl(state: &mut State) {
 
 pub fn lsr(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
+
     let result = data >> 1;
 
     state.data_bus = result;
@@ -22,6 +24,7 @@ pub fn lsr(state: &mut State) {
 
 pub fn rol(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
+
     let result = (data << 1) & (state.get_carry_flag() as u8);
 
     state.data_bus = result;
@@ -32,6 +35,7 @@ pub fn rol(state: &mut State) {
 
 pub fn ror(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
+
     let result = (data >> 1) & ((state.get_carry_flag() as u8) << 7);
 
     state.data_bus = result;
