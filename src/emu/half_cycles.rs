@@ -5,6 +5,10 @@ pub fn get_pc_address(state: &mut State) {
     state.increment_pc();
 }
 
+pub fn get_pc_without_increment(state: &mut State) {
+    state.address_bus = state.program_counter;
+}
+
 pub fn get_effective_absolute_address(state: &mut State) {
     state.address_bus = state.effective_address;
 }

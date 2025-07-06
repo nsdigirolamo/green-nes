@@ -100,11 +100,11 @@ impl State {
         self.processor_status_register = new_status;
     }
 
-    pub fn get_break_command_flag(&self) -> bool {
+    pub fn get_break_flag(&self) -> bool {
         (self.processor_status_register & 0b00010000) != 0
     }
 
-    pub fn set_break_command_flag(&mut self, flag: bool) {
+    pub fn set_break_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.processor_status_register | 0b00010000
         } else {
@@ -118,7 +118,7 @@ impl State {
         (self.processor_status_register & 0b00001000) != 0
     }
 
-    pub fn set_decimal_mode_command_flag(&mut self, flag: bool) {
+    pub fn set_decimal_mode_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.processor_status_register | 0b00001000
         } else {
@@ -132,7 +132,7 @@ impl State {
         (self.processor_status_register & 0b00000100) != 0
     }
 
-    pub fn set_interrupt_disable_command_flag(&mut self, flag: bool) {
+    pub fn set_interrupt_disable_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.processor_status_register | 0b00000100
         } else {

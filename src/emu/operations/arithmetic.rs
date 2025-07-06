@@ -4,18 +4,54 @@ pub fn inc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
     let result = data.wrapping_add(1);
 
-    state.data_bus = result;
     state.set_zero_flag(result == 0);
     state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.write_to_memory(state.address_bus, result);
+}
+
+pub fn inx(state: &mut State) {
+    let data = state.x_index_register;
+    let result = data.wrapping_add(1);
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.x_index_register = result;
+}
+
+pub fn iny(state: &mut State) {
+    let data = state.y_index_register;
+    let result = data.wrapping_add(1);
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.y_index_register = result;
 }
 
 pub fn dec(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
     let result = data.wrapping_sub(1);
 
-    state.data_bus = result;
     state.set_zero_flag(result == 0);
     state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.write_to_memory(state.address_bus, result);
+}
+
+pub fn dex(state: &mut State) {
+    let data = state.x_index_register;
+    let result = data.wrapping_sub(1);
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.x_index_register = result;
+}
+
+pub fn dey(state: &mut State) {
+    let data = state.y_index_register;
+    let result = data.wrapping_sub(1);
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.y_index_register = result;
 }
 
 pub fn adc(state: &mut State) {
