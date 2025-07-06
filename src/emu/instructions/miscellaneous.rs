@@ -18,15 +18,21 @@ pub enum Miscellaneous {
 impl Instruction for Miscellaneous {
     fn get_cycles(&self, _operation: HalfCycle) -> Vec<Cycle> {
         match self {
-            Miscellaneous::Push => panic!("help"),
-            Miscellaneous::Pull => panic!("help"),
-            Miscellaneous::JumpToSubroutine => panic!("help"),
-            Miscellaneous::Break => panic!("help"),
-            Miscellaneous::ReturnFromInterrupt => panic!("help"),
-            Miscellaneous::JumpAbsolute => panic!("help"),
-            Miscellaneous::JumpIndirect => panic!("help"),
-            Miscellaneous::ReturnFromSubroutine => panic!("help"),
-            Miscellaneous::Branch => panic!("help"),
+            Miscellaneous::Push => panic!("miscellaneous push not implemented"),
+            Miscellaneous::Pull => panic!("miscellaneous pull not implemented"),
+            Miscellaneous::JumpToSubroutine => {
+                panic!("miscellaneous jump to subroutine not implemented")
+            }
+            Miscellaneous::Break => panic!("miscellaneous break not implemented"),
+            Miscellaneous::ReturnFromInterrupt => {
+                panic!("miscellaneous return from interrupt not implemented")
+            }
+            Miscellaneous::JumpAbsolute => panic!("miscellaneous jump absolute not implemented"),
+            Miscellaneous::JumpIndirect => panic!("miscellaneous jump indirect not implemented"),
+            Miscellaneous::ReturnFromSubroutine => {
+                panic!("miscellaneous return from subroutine not implemented")
+            }
+            Miscellaneous::Branch => panic!("miscellaneous branch not implemented"),
         };
     }
 }

@@ -1,9 +1,9 @@
 use std::path::Path;
 
 use crate::emu::{
-    cycles::FETCH_INSTRUCTION,
+    cycles::{FETCH_INSTRUCTION, get_cycles},
     error::{EmuError, LoadError},
-    state::{Cycle, PROGRAM_START_ADDRESS, State},
+    state::{PROGRAM_START_ADDRESS, State},
 };
 
 pub mod cycles;
@@ -99,8 +99,4 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     }
 
     Ok(state)
-}
-
-pub fn get_cycles(_opcode: u8) -> Vec<Cycle> {
-    panic!("not implemented")
 }
