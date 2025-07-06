@@ -3,6 +3,8 @@ pub mod arithmetic;
 pub mod bitwise;
 pub mod compare;
 pub mod flags;
+pub mod jump;
 pub mod other;
 pub mod shift;
+pub mod stack;
 pub mod transfer;

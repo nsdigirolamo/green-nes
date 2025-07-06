@@ -9,6 +9,20 @@ pub fn get_pc_without_increment(state: &mut State) {
     state.address_bus = state.program_counter;
 }
 
+pub fn get_sp_address(state: &mut State) {
+    state.address_bus = (0x10, state.stack_pointer);
+}
+
+pub fn push_stack(state: &mut State) {
+    state.address_bus = (0x10, state.stack_pointer);
+    state.stack_pointer = state.stack_pointer.wrapping_sub(1);
+}
+
+pub fn pop_stack(state: &mut State) {
+    state.address_bus = (0x10, state.stack_pointer);
+    state.stack_pointer = state.stack_pointer.wrapping_add(1);
+}
+
 pub fn get_effective_absolute_address(state: &mut State) {
     state.address_bus = state.effective_address;
 }
@@ -119,13 +133,17 @@ pub fn read_low_base_address_byte(state: &mut State) {
 }
 
 pub fn read_data(state: &mut State) {
-    let data = state.read_from_memory(state.address_bus);
-
-    state.data_bus = data;
+    state.read_from_memory(state.address_bus);
 }
 
 pub fn write_data(state: &mut State) {
-    let data = state.data_bus;
+    state.write_to_memory(state.address_bus, state.data_bus);
+}
 
-    state.write_to_memory(state.address_bus, data);
+pub fn write_pc_high(state: &mut State) {
+    state.write_to_memory(state.address_bus, state.program_counter.0);
+}
+
+pub fn write_pc_low(state: &mut State) {
+    state.write_to_memory(state.address_bus, state.program_counter.1);
 }

@@ -77,7 +77,7 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
         return Err(LoadError::MissingHeader);
     }
 
-    let starting_addr = PROGRAM_START_ADDRESS;
+    let starting_addr = split_u16!(PROGRAM_START_ADDRESS);
     state.program_counter = starting_addr;
 
     let program = &program[PROGRAM_HEADER_LENGTH..];

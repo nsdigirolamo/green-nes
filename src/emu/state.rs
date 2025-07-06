@@ -2,9 +2,8 @@ use std::collections::VecDeque;
 
 use crate::{concat_u8, split_u16};
 
-pub const MAX_MEMORY_ADDRESS: u16 = 65535;
-pub const MAX_STACK_ADDRESS: u16 = 0x00FF;
-pub const PROGRAM_START_ADDRESS: (u8, u8) = (0xC0, 0x00);
+pub const MAX_MEMORY_ADDRESS: u16 = 0xFFFF;
+pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 
@@ -18,13 +17,13 @@ pub struct State {
     memory: [u8; MEMORY_LENGTH],
     pub crossed_page: bool,
     // Registers
-    pub accumulator: u8,           // A
-    pub x_index_register: u8,      // X
-    pub y_index_register: u8,      // Y
-    pub program_counter: (u8, u8), // (PCH, PCL)
-    pub stack_pointer: u8,         // SP
-    processor_status_register: u8, // PSR
-    pub instruction_register: u8,  // IR
+    pub accumulator: u8,               // A
+    pub x_index_register: u8,          // X
+    pub y_index_register: u8,          // Y
+    pub program_counter: (u8, u8),     // (PCH, PCL)
+    pub stack_pointer: u8,             // SP
+    pub processor_status_register: u8, // PSR
+    pub instruction_register: u8,      // IR
     // External Buses
     pub address_bus: (u8, u8), // (ABH, ABL)
     pub data_bus: u8,
@@ -43,8 +42,8 @@ impl Default for State {
             x_index_register: 0,
             y_index_register: 0,
             program_counter: (0, 0),
-            stack_pointer: 0,
-            processor_status_register: 0,
+            stack_pointer: 0xFF,
+            processor_status_register: 0b_0010_0000,
             instruction_register: 0,
             address_bus: (0, 0),
             data_bus: 0,
@@ -70,6 +69,14 @@ impl State {
     pub fn increment_pc(&mut self) {
         let address = concat_u8!(self.program_counter.0, self.program_counter.1);
         self.program_counter = split_u16!(address.wrapping_add(1));
+    }
+
+    pub fn push_stack(&mut self) {
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+    }
+
+    pub fn pop_stack(&mut self) {
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
     }
 
     pub fn get_negative_flag(&self) -> bool {
