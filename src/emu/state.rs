@@ -11,27 +11,26 @@ pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 pub type HalfCycle = fn(&mut State);
 pub type Cycle = [HalfCycle; 2];
 
-#[derive(Default, Debug)]
-pub struct Registers {
-    pub accumulator: u8,
-    pub x_index: u8,
-    pub y_index: u8,
-    pub program_counter: (u8, u8), // (high pc byte, low pc byte)
-    pub stack_pointer: u8,
-    pub processor_status: u8,
-    pub instruction: u8,
-}
-
 #[derive(Debug)]
 pub struct State {
+    // Abstracted Fields
     pub cycle_queue: VecDeque<Cycle>,
     memory: [u8; MEMORY_LENGTH],
-    pub registers: Registers,
-    pub address_bus: (u8, u8), // external effective address (high address byte, low address byte)
-    pub data_bus: u8,          // external data
-    pub address_low: u8,       // internal address low byte
-    pub address_high: u8,      // internal address high byte
     pub crossed_page: bool,
+    // Registers
+    pub accumulator: u8,           // A
+    pub x_index_register: u8,      // X
+    pub y_index_register: u8,      // Y
+    pub program_counter: (u8, u8), // (PCH, PCL)
+    pub stack_pointer: u8,         // SP
+    processor_status_register: u8, // PSR
+    pub instruction_register: u8,  // IR
+    // External Buses
+    pub address_bus: (u8, u8), // (ABH, ABL)
+    pub data_bus: u8,
+    // Internal Buses
+    pub base_address: (u8, u8),      // (BAH, BAL)
+    pub effective_address: (u8, u8), // (ADH, ADL)
 }
 
 impl Default for State {
@@ -39,129 +38,135 @@ impl Default for State {
         State {
             cycle_queue: VecDeque::default(),
             memory: [0u8; MEMORY_LENGTH],
-            registers: Registers::default(),
-            address_bus: (0x00, 0x00),
-            data_bus: 0x00,
-            address_low: 0x00,
-            address_high: 0x00,
             crossed_page: false,
+            accumulator: 0,
+            x_index_register: 0,
+            y_index_register: 0,
+            program_counter: (0, 0),
+            stack_pointer: 0,
+            processor_status_register: 0,
+            instruction_register: 0,
+            address_bus: (0, 0),
+            data_bus: 0,
+            base_address: (0, 0),
+            effective_address: (0, 0),
         }
     }
 }
 
 impl State {
-    pub fn read_from_memory(&self, address: (u8, u8)) -> u8 {
-        self.memory[concat_u8!(address.0, address.1) as usize]
+    pub fn read_from_memory(&mut self, address: (u8, u8)) -> u8 {
+        let data = self.memory[concat_u8!(address.0, address.1) as usize];
+        self.data_bus = data;
+
+        data
     }
 
     pub fn write_to_memory(&mut self, address: (u8, u8), data: u8) {
+        self.data_bus = data;
         self.memory[concat_u8!(address.0, address.1) as usize] = data;
     }
 
-    pub fn increment_pc_address(&mut self) {
-        let address = concat_u8!(
-            self.registers.program_counter.0,
-            self.registers.program_counter.1
-        );
-        let address = address.wrapping_add(1);
-        self.registers.program_counter = split_u16!(address);
+    pub fn increment_pc(&mut self) {
+        let address = concat_u8!(self.program_counter.0, self.program_counter.1);
+        self.program_counter = split_u16!(address.wrapping_add(1));
     }
 
     pub fn get_negative_flag(&self) -> bool {
-        (self.registers.processor_status & 0b10000000) != 0
+        (self.processor_status_register & 0b10000000) != 0
     }
 
     pub fn set_negative_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b10000000
+            self.processor_status_register | 0b10000000
         } else {
-            self.registers.processor_status & 0b01111111
+            self.processor_status_register & 0b01111111
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_overflow_flag(&self) -> bool {
-        (self.registers.processor_status & 0b01000000) != 0
+        (self.processor_status_register & 0b01000000) != 0
     }
 
     pub fn set_overflow_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b01000000
+            self.processor_status_register | 0b01000000
         } else {
-            self.registers.processor_status & 0b10111111
+            self.processor_status_register & 0b10111111
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_break_command_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00010000) != 0
+        (self.processor_status_register & 0b00010000) != 0
     }
 
     pub fn set_break_command_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b00010000
+            self.processor_status_register | 0b00010000
         } else {
-            self.registers.processor_status & 0b11101111
+            self.processor_status_register & 0b11101111
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_decimal_mode_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00001000) != 0
+        (self.processor_status_register & 0b00001000) != 0
     }
 
     pub fn set_decimal_mode_command_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b00001000
+            self.processor_status_register | 0b00001000
         } else {
-            self.registers.processor_status & 0b11110111
+            self.processor_status_register & 0b11110111
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_interrupt_disable_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000100) != 0
+        (self.processor_status_register & 0b00000100) != 0
     }
 
     pub fn set_interrupt_disable_command_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b00000100
+            self.processor_status_register | 0b00000100
         } else {
-            self.registers.processor_status & 0b11111011
+            self.processor_status_register & 0b11111011
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_zero_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000010) != 0
+        (self.processor_status_register & 0b00000010) != 0
     }
 
     pub fn set_zero_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b00000010
+            self.processor_status_register | 0b00000010
         } else {
-            self.registers.processor_status & 0b11111101
+            self.processor_status_register & 0b11111101
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 
     pub fn get_carry_flag(&self) -> bool {
-        (self.registers.processor_status & 0b00000001) != 0
+        (self.processor_status_register & 0b00000001) != 0
     }
 
     pub fn set_carry_flag(&mut self, flag: bool) {
         let new_status = if flag {
-            self.registers.processor_status | 0b00000001
+            self.processor_status_register | 0b00000001
         } else {
-            self.registers.processor_status & 0b11111110
+            self.processor_status_register & 0b11111110
         };
 
-        self.registers.processor_status = new_status;
+        self.processor_status_register = new_status;
     }
 }

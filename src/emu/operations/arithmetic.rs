@@ -1,7 +1,4 @@
-use crate::{
-    did_signed_overflow,
-    emu::{operations::get_effective_absolute_address, state::State},
-};
+use crate::{did_signed_overflow, emu::state::State};
 
 pub fn inc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
@@ -23,15 +20,13 @@ pub fn dec(state: &mut State) {
 
 pub fn adc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
-    state.data_bus = data;
-
-    let accumulator = state.registers.accumulator;
+    let accumulator = state.accumulator;
     let (sum, overflow1) = accumulator.overflowing_add(data);
     let (result, overflow2) = sum.overflowing_add(state.get_carry_flag() as u8);
     let did_unsigned_overflow = overflow1 | overflow2;
     let did_signed_overflow = did_signed_overflow!(accumulator, data, result);
 
-    state.registers.accumulator = result;
+    state.accumulator = result;
     state.set_carry_flag(did_unsigned_overflow);
     state.set_zero_flag(data == 0);
     state.set_overflow_flag(did_signed_overflow);
@@ -40,37 +35,15 @@ pub fn adc(state: &mut State) {
 
 pub fn sbc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
-    state.data_bus = data;
-
-    let accumulator = state.registers.accumulator;
+    let accumulator = state.accumulator;
     let (sum, overflow1) = accumulator.overflowing_add(!data);
     let (result, overflow2) = sum.overflowing_add(state.get_carry_flag() as u8);
     let did_unsigned_overflow = overflow1 | overflow2;
     let did_signed_overflow = did_signed_overflow!(accumulator, data, result);
 
-    state.registers.accumulator = result;
+    state.accumulator = result;
     state.set_carry_flag(did_unsigned_overflow);
     state.set_zero_flag(data == 0);
     state.set_overflow_flag(did_signed_overflow);
     state.set_negative_flag((data & 0b_1000_0000) != 0);
-}
-
-pub fn adc_absolute_indexed(state: &mut State) {
-    adc(state);
-    if state.crossed_page {
-        state.address_high = state.address_high.wrapping_add(1);
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, adc]);
-    }
-}
-
-pub fn sbc_absolute_indexed(state: &mut State) {
-    sbc(state);
-    if state.crossed_page {
-        state.address_high = state.address_high.wrapping_add(1);
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, sbc]);
-    }
 }

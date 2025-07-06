@@ -8,6 +8,8 @@ use crate::emu::{
 
 pub mod cycles;
 pub mod error;
+pub mod half_cycles;
+pub mod instructions;
 pub mod operations;
 pub mod state;
 
@@ -49,7 +51,7 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
                 phase1(state);
                 phase2(state);
 
-                let new_cycles = get_cycles(state.registers.instruction);
+                let new_cycles = get_cycles(state.instruction_register);
                 state.cycle_queue.extend(new_cycles.iter());
             }
         };
@@ -76,7 +78,7 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     }
 
     let starting_addr = PROGRAM_START_ADDRESS;
-    state.registers.program_counter = starting_addr;
+    state.program_counter = starting_addr;
 
     let program = &program[PROGRAM_HEADER_LENGTH..];
     // let maximum_program_size = state::MEMORY_LENGTH - starting_addr as usize;
