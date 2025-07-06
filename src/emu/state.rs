@@ -31,6 +31,7 @@ pub struct State {
     pub data_bus: u8,          // external data
     pub address_low: u8,       // internal address low byte
     pub address_high: u8,      // internal address high byte
+    pub crossed_page: bool,
 }
 
 impl Default for State {
@@ -43,6 +44,7 @@ impl Default for State {
             data_bus: 0x00,
             address_low: 0x00,
             address_high: 0x00,
+            crossed_page: false,
         }
     }
 }

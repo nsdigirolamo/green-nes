@@ -41,6 +41,18 @@ pub fn read_high_address_byte(state: &mut State) {
     state.increment_pc_address();
 }
 
+pub fn read_high_address_byte_x_indexed(state: &mut State) {
+    let data = state.read_from_memory(state.address_bus);
+    state.address_high = data;
+
+    let (data, overflow) = state.address_low.overflowing_add(state.registers.x_index);
+    state.address_low = data;
+    state.data_bus = data;
+    state.crossed_page = overflow;
+
+    state.increment_pc_address();
+}
+
 pub fn read_effective_address(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
     state.data_bus = data;
@@ -64,4 +76,10 @@ pub fn add_y_index_to_address(state: &mut State) {
         .wrapping_add(state.registers.y_index);
     state.data_bus = data;
     state.address_low = data;
+}
+
+pub fn fix_high_address_byte(state: &mut State) {
+    if state.crossed_page {
+        state.address_high = state.address_high.wrapping_add(1);
+    }
 }

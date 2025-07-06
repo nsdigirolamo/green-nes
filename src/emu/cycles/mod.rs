@@ -4,6 +4,7 @@ use crate::emu::{
 };
 
 pub mod absolute;
+pub mod absolute_indexed;
 pub mod zero_page;
 pub mod zero_page_indexed;
 
