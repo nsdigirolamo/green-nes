@@ -1,6 +1,7 @@
 pub mod access;
 pub mod arithmetic;
 pub mod bitwise;
+pub mod branch;
 pub mod compare;
 pub mod flags;
 pub mod jump;

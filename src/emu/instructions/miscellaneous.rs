@@ -52,7 +52,7 @@ impl Instruction for Miscellaneous {
             Miscellaneous::ReturnFromSubroutine => {
                 panic!("miscellaneous return from subroutine not implemented")
             }
-            Miscellaneous::Branch => panic!("miscellaneous branch not implemented"),
+            Miscellaneous::Branch => vec![[get_pc_address, operation]],
         }
     }
 }

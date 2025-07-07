@@ -27,6 +27,11 @@ pub fn get_effective_absolute_address(state: &mut State) {
     state.address_bus = state.effective_address;
 }
 
+pub fn get_effective_absolute_address_with_carry(state: &mut State) {
+    state.effective_address.1 = state.effective_address.1.wrapping_add(1);
+    state.address_bus = state.effective_address;
+}
+
 pub fn get_effective_zero_page_address(state: &mut State) {
     state.address_bus = (0x00, state.effective_address.1);
 }
