@@ -30,6 +30,7 @@ pub struct State {
     // Internal Buses
     pub base_address: (u8, u8),      // (BAH, BAL)
     pub effective_address: (u8, u8), // (ADH, ADL)
+    pub indirect_address: (u8, u8),  // (IAH, IAL)
 }
 
 impl Default for State {
@@ -49,6 +50,7 @@ impl Default for State {
             data_bus: 0,
             base_address: (0, 0),
             effective_address: (0, 0),
+            indirect_address: (0, 0),
         }
     }
 }

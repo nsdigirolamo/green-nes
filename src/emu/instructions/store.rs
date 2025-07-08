@@ -8,7 +8,10 @@ use crate::emu::{
         get_effective_absolute_address, get_effective_zero_page_address,
         get_effective_zero_page_x_indexed_address, get_effective_zero_page_y_indexed_address,
         get_indirect_x_indexed_high_address_byte, get_indirect_x_indexed_low_address_byte,
-        read_data, read_high_effective_address_byte, read_low_effective_address_byte,
+        get_indirect_y_indexed_address, get_indirect_zero_page_high_address_byte,
+        get_indirect_zero_page_low_address_byte, get_pc_address, read_data,
+        read_high_base_address_byte, read_high_effective_address_byte, read_low_base_address_byte,
+        read_low_effective_address_byte, read_low_indirect_address_byte,
     },
     instructions::Instruction,
     state::{Cycle, HalfCycle},
@@ -50,7 +53,19 @@ impl Instruction for Store {
                 ],
                 [get_effective_absolute_address, operation],
             ],
-            Store::IndirectY => panic!("store indirect y not implemented"),
+            Store::IndirectY => vec![
+                [get_pc_address, read_low_indirect_address_byte],
+                [
+                    get_indirect_zero_page_low_address_byte,
+                    read_low_base_address_byte,
+                ],
+                [
+                    get_indirect_zero_page_high_address_byte,
+                    read_high_base_address_byte,
+                ],
+                [get_indirect_y_indexed_address, read_data],
+                [get_effective_absolute_address, operation],
+            ],
             Store::AbsoluteX => vec![
                 FETCH_LOW_BASE_ADDRESS_BYTE,
                 FETCH_HIGH_BASE_ADDRESS_BYTE,

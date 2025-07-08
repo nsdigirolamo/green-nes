@@ -1,4 +1,7 @@
-use crate::{did_signed_overflow, emu::state::State};
+use crate::{
+    did_signed_overflow,
+    emu::{half_cycles::get_effective_absolute_address, state::State},
+};
 
 pub fn inc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
@@ -69,6 +72,16 @@ pub fn adc(state: &mut State) {
     state.set_negative_flag((data & 0b_1000_0000) != 0);
 }
 
+pub fn adc_indirect_y(state: &mut State) {
+    adc(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, adc]);
+    }
+}
+
 pub fn sbc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
     let accumulator = state.accumulator;
@@ -82,4 +95,14 @@ pub fn sbc(state: &mut State) {
     state.set_zero_flag(data == 0);
     state.set_overflow_flag(did_signed_overflow);
     state.set_negative_flag((data & 0b_1000_0000) != 0);
+}
+
+pub fn sbc_indirect_y(state: &mut State) {
+    sbc(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, sbc]);
+    }
 }
