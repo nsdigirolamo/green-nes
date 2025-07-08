@@ -18,6 +18,16 @@ pub fn lda_indirect_y(state: &mut State) {
     }
 }
 
+pub fn lda_absolute_indexed(state: &mut State) {
+    lda(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, lda]);
+    }
+}
+
 pub fn ldx(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
 
@@ -26,12 +36,32 @@ pub fn ldx(state: &mut State) {
     state.set_negative_flag(data >> 7 == 1);
 }
 
+pub fn ldx_absolute_indexed(state: &mut State) {
+    ldx(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, ldx]);
+    }
+}
+
 pub fn ldy(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
 
     state.y_index_register = data;
     state.set_zero_flag(data == 0);
     state.set_negative_flag(data >> 7 == 1);
+}
+
+pub fn ldy_absolute_indexed(state: &mut State) {
+    ldy(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, ldy]);
+    }
 }
 
 pub fn sta(state: &mut State) {

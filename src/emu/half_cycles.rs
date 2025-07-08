@@ -54,38 +54,6 @@ pub fn get_effective_zero_page_y_indexed_address(state: &mut State) {
     state.address_bus = (0x00, low_base_address.wrapping_add(y_index));
 }
 
-pub fn get_absolute_x_indexed_address(state: &mut State) {
-    let base_address = state.base_address;
-    let x_index = state.x_index_register;
-    let (low_effective_address_byte, overflow) = base_address.1.overflowing_add(x_index);
-    let high_effective_address_byte = base_address.0.wrapping_add(overflow as u8);
-
-    /*
-     * atarihq.com/danb/files/64doc.txt has different cycle descriptions from
-     * the MCS 6500 Family Hardware Manual. 64doc says the address bus could be
-     * potentially invalid, while the hardware manual implies the effective
-     * address lines should be valid.
-     */
-    state.effective_address = (high_effective_address_byte, low_effective_address_byte);
-    state.address_bus = (base_address.0, low_effective_address_byte)
-}
-
-pub fn get_absolute_y_indexed_address(state: &mut State) {
-    let base_address = state.base_address;
-    let y_index = state.y_index_register;
-    let (low_effective_address_byte, overflow) = base_address.1.overflowing_add(y_index);
-    let high_effective_address_byte = base_address.0.wrapping_add(overflow as u8);
-
-    /*
-     * atarihq.com/danb/files/64doc.txt has different cycle descriptions from
-     * the MCS 6500 Family Hardware Manual. 64doc says the address bus could be
-     * potentially invalid, while the hardware manual implies the effective
-     * address lines should be valid.
-     */
-    state.effective_address = (high_effective_address_byte, low_effective_address_byte);
-    state.address_bus = (base_address.0, low_effective_address_byte)
-}
-
 pub fn get_indirect_x_indexed_low_address_byte(state: &mut State) {
     let low_base_address = state.base_address.1;
     let x_index = state.x_index_register;
@@ -118,12 +86,37 @@ pub fn get_indirect_y_indexed_address(state: &mut State) {
     state.address_bus = (state.base_address.0, low_effective_address)
 }
 
-pub fn get_indirect_y_indexed_address_with_carry(state: &mut State) {
-    let (low_effective_address, overflow) =
-        state.base_address.1.overflowing_add(state.y_index_register);
-    let high_effective_address = state.base_address.0.wrapping_add(overflow as u8);
+/// The address bus high byte is potentially invalid after this half-cycle.
+pub fn get_x_indexed_base_address_with_carry(state: &mut State) {
+    let (base_address_high, base_address_low) = state.base_address;
+    let (effective_address_low, overflow) =
+        base_address_low.overflowing_add(state.x_index_register);
+    let effective_address_high = base_address_high.wrapping_add(overflow as u8);
 
-    state.effective_address = (high_effective_address, low_effective_address);
+    /*
+     * atarihq.com/danb/files/64doc.txt says the address bus could potentially
+     * be invalid here. The MOS MICROCOMPUTERS hardware manual implies the
+     * effective address lines should be valid.
+     */
+    state.address_bus = (base_address_high, effective_address_low);
+    state.effective_address = (effective_address_high, effective_address_low);
+    state.crossed_page = overflow;
+}
+
+/// The address bus high byte is potentially invalid after this half-cycle.
+pub fn get_y_indexed_base_address_with_carry(state: &mut State) {
+    let (base_address_high, base_address_low) = state.base_address;
+    let (effective_address_low, overflow) =
+        base_address_low.overflowing_add(state.y_index_register);
+    let effective_address_high = base_address_high.wrapping_add(overflow as u8);
+
+    /*
+     * atarihq.com/danb/files/64doc.txt says the address bus could potentially
+     * be invalid here. The MOS MICROCOMPUTERS hardware manual implies the
+     * effective address lines should be valid.
+     */
+    state.address_bus = (base_address_high, effective_address_low);
+    state.effective_address = (effective_address_high, effective_address_low);
     state.crossed_page = overflow;
 }
 

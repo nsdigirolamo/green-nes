@@ -82,6 +82,16 @@ pub fn adc_indirect_y(state: &mut State) {
     }
 }
 
+pub fn adc_absolute_indexed(state: &mut State) {
+    adc(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, adc]);
+    }
+}
+
 pub fn sbc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
     let accumulator = state.accumulator;
@@ -98,6 +108,16 @@ pub fn sbc(state: &mut State) {
 }
 
 pub fn sbc_indirect_y(state: &mut State) {
+    sbc(state);
+
+    if state.crossed_page {
+        state
+            .cycle_queue
+            .push_back([get_effective_absolute_address, sbc]);
+    }
+}
+
+pub fn sbc_absolute_indexed(state: &mut State) {
     sbc(state);
 
     if state.crossed_page {
