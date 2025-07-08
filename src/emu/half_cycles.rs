@@ -70,6 +70,17 @@ pub fn get_indirect_x_indexed_high_address_byte(state: &mut State) {
     state.address_bus = (0x00, x_indirect_high_byte_address);
 }
 
+pub fn get_indirect_low_address_byte(state: &mut State) {
+    state.address_bus = (state.indirect_address.0, state.indirect_address.1);
+}
+
+pub fn get_indirect_high_address_byte(state: &mut State) {
+    state.address_bus = (
+        state.indirect_address.0,
+        state.indirect_address.1.wrapping_add(1),
+    );
+}
+
 pub fn get_indirect_zero_page_low_address_byte(state: &mut State) {
     state.address_bus = (0x00, state.indirect_address.1);
 }
@@ -125,6 +136,20 @@ pub fn read_opcode(state: &mut State) {
 
     state.data_bus = data;
     state.instruction_register = data;
+}
+
+pub fn read_high_pc_address_byte(state: &mut State) {
+    let data = state.read_from_memory(state.address_bus);
+
+    state.data_bus = data;
+    state.program_counter.0 = data;
+}
+
+pub fn read_low_pc_address_byte(state: &mut State) {
+    let data = state.read_from_memory(state.address_bus);
+
+    state.data_bus = data;
+    state.program_counter.1 = data;
 }
 
 pub fn read_high_effective_address_byte(state: &mut State) {

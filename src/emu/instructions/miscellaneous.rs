@@ -1,8 +1,10 @@
 use crate::emu::{
     cycles::FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
     half_cycles::{
-        get_pc_address, get_pc_without_increment, get_sp_address, pop_stack, push_stack, read_data,
-        write_pc_high, write_pc_low,
+        get_indirect_high_address_byte, get_indirect_low_address_byte, get_pc_address,
+        get_pc_without_increment, get_sp_address, pop_stack, push_stack, read_data,
+        read_high_indirect_address_byte, read_high_pc_address_byte, read_low_indirect_address_byte,
+        read_low_pc_address_byte, write_pc_high, write_pc_low,
     },
     instructions::Instruction,
     operations::jump::jmp_absolute,
@@ -41,17 +43,30 @@ impl Instruction for Miscellaneous {
                 [get_pc_address, operation],
             ],
             Miscellaneous::Break => panic!("miscellaneous break not implemented"),
-            Miscellaneous::ReturnFromInterrupt => {
-                panic!("miscellaneous return from interrupt not implemented")
-            }
+            Miscellaneous::ReturnFromInterrupt => vec![
+                [get_pc_address, read_data],
+                [pop_stack, read_data],
+                [pop_stack, operation],
+                [pop_stack, read_low_pc_address_byte],
+                [pop_stack, read_high_pc_address_byte],
+            ],
             Miscellaneous::JumpAbsolute => vec![
                 FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
                 [get_pc_address, jmp_absolute],
             ],
-            Miscellaneous::JumpIndirect => panic!("miscellaneous jump indirect not implemented"),
-            Miscellaneous::ReturnFromSubroutine => {
-                panic!("miscellaneous return from subroutine not implemented")
-            }
+            Miscellaneous::JumpIndirect => vec![
+                [get_pc_address, read_low_indirect_address_byte],
+                [get_pc_address, read_high_indirect_address_byte],
+                [get_indirect_low_address_byte, read_low_pc_address_byte],
+                [get_indirect_high_address_byte, read_high_pc_address_byte],
+            ],
+            Miscellaneous::ReturnFromSubroutine => vec![
+                [get_pc_address, read_data],
+                [pop_stack, read_data],
+                [pop_stack, read_low_pc_address_byte],
+                [pop_stack, read_high_pc_address_byte],
+                [get_pc_address, read_data],
+            ],
             Miscellaneous::Branch => vec![[get_pc_address, operation]],
         }
     }
