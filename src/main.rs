@@ -34,7 +34,8 @@ fn main() {
                 }
             };
 
-            println!("{final_state:?}");
+            let cycle_count = final_state.half_cycle_count / 2;
+            println!("Completed {cycle_count} cycles. Final State:\n{final_state:?}");
 
             process::exit(0);
         }

@@ -37,10 +37,7 @@ macro_rules! did_signed_overflow {
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
 pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
-    let mut is_halted = false;
-    let mut cycle_count = 0u64;
-
-    while !is_halted {
+    while !state.is_halted {
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
                 phase1(state);
@@ -56,11 +53,13 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
             }
         };
 
-        cycle_count += 1;
-        is_halted = cycle_count > 100; // @TODO: Determine when to halt
-    }
+        let half_cycle_count = state.half_cycle_count;
+        let phase = if half_cycle_count % 2 == 0 { 'A' } else { 'B' };
+        println!("{half_cycle_count:5}-{phase} {state:?}");
 
-    println!("Cycles completed: {cycle_count}");
+        state.half_cycle_count += 1;
+        state.is_halted = half_cycle_count >= 100; // @TODO: Determine when to halt
+    }
 
     Ok(state)
 }

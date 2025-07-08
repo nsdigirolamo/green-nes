@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt};
 
 use crate::{concat_u8, split_u16};
 
@@ -10,10 +10,11 @@ pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 pub type HalfCycle = fn(&mut State);
 pub type Cycle = [HalfCycle; 2];
 
-#[derive(Debug)]
 pub struct State {
     // Abstracted Fields
     pub cycle_queue: VecDeque<Cycle>,
+    pub half_cycle_count: u64,
+    pub is_halted: bool,
     memory: [u8; MEMORY_LENGTH],
     pub crossed_page: bool,
     // Registers
@@ -37,6 +38,8 @@ impl Default for State {
     fn default() -> Self {
         State {
             cycle_queue: VecDeque::default(),
+            half_cycle_count: 0,
+            is_halted: false,
             memory: [0u8; MEMORY_LENGTH],
             crossed_page: false,
             accumulator: 0,
@@ -177,5 +180,26 @@ impl State {
         };
 
         self.processor_status_register = new_status;
+    }
+}
+
+impl fmt::Debug for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let accumulator = self.accumulator;
+        let x_index = self.x_index_register;
+        let y_index = self.y_index_register;
+        let (pch, pcl) = self.program_counter;
+        let sp = self.stack_pointer;
+        let psr = self.processor_status_register;
+        let ir = self.instruction_register;
+        let (abh, abl) = self.address_bus;
+        let data = self.data_bus;
+
+        write!(
+            f,
+            "PC:0x{pch:02X}{pcl:02X} IR:0x{ir:02X} NV1BDIZC:0b{psr:08b} \
+            A:0x{accumulator:02X} X:0x{x_index:02X} Y:0x{y_index:02X} \
+            SP:0x{sp:02X} AB:0x{abh:02X}{abl:02X} DB:0x{data:02X}",
+        )
     }
 }
