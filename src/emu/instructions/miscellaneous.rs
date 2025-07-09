@@ -1,10 +1,12 @@
 use crate::emu::{
     cycles::FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
     half_cycles::{
-        get_indirect_high_address_byte, get_indirect_low_address_byte, get_pc_address,
-        get_pc_without_increment, get_sp_address, pop_stack, push_stack, read_data,
-        read_high_indirect_address_byte, read_high_pc_address_byte, read_low_indirect_address_byte,
-        read_low_pc_address_byte, write_pc_high, write_pc_low,
+        get_high_interrupt_vector, get_indirect_high_address_byte, get_indirect_low_address_byte,
+        get_low_interrupt_vector, get_pc_address, get_pc_without_increment, get_sp_address,
+        pop_stack, push_stack, read_data, read_high_effective_address_byte,
+        read_high_indirect_address_byte, read_high_pc_address_byte,
+        read_low_effective_address_byte, read_low_indirect_address_byte, read_low_pc_address_byte,
+        write_pc_high, write_pc_low, write_status,
     },
     instructions::Instruction,
     operations::jump::jmp_absolute,
@@ -42,7 +44,14 @@ impl Instruction for Miscellaneous {
                 [push_stack, write_pc_low],
                 [get_pc_address, operation],
             ],
-            Miscellaneous::Break => panic!("miscellaneous break not implemented"),
+            Miscellaneous::Break => vec![
+                [get_pc_address, read_data],
+                [push_stack, write_pc_high],
+                [push_stack, write_pc_low],
+                [push_stack, write_status],
+                [get_low_interrupt_vector, read_high_effective_address_byte],
+                [get_high_interrupt_vector, read_low_effective_address_byte],
+            ],
             Miscellaneous::ReturnFromInterrupt => vec![
                 [get_pc_address, read_data],
                 [pop_stack, read_data],

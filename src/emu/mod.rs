@@ -58,7 +58,6 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
         println!("{half_cycle_count:5}-{phase} {state:?}");
 
         state.half_cycle_count += 1;
-        state.is_halted = half_cycle_count >= 100; // @TODO: Determine when to halt
     }
 
     Ok(state)

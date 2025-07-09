@@ -23,7 +23,7 @@ pub const FETCH_LOW_BASE_ADDRESS_BYTE: Cycle = [get_pc_address, read_low_base_ad
 
 pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
     match opcode {
-        0x00 => panic!("Opcode 0x00 not implemented"),
+        0x00 => Miscellaneous::Break.get_cycles(other::nop),
         0x01 => Read::IndirectX.get_cycles(bitwise::ora),
         0x02 => panic!("Opcode 0x02 not implemented"),
         0x03 => panic!("Opcode 0x03 not implemented"),
@@ -119,7 +119,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0x5D => Read::AbsoluteX.get_cycles(bitwise::eor_absolute_indexed),
         0x5E => ReadModifyWrite::AbsoluteX.get_cycles(shift::lsr),
         0x5F => panic!("Opcode 0x5F not implemented"),
-        0x60 => panic!("Opcode 0x60 not implemented"),
+        0x60 => Miscellaneous::ReturnFromSubroutine.get_cycles(other::nop), // RTS needs no operation
         0x61 => Read::IndirectX.get_cycles(arithmetic::adc),
         0x62 => panic!("Opcode 0x62 not implemented"),
         0x63 => panic!("Opcode 0x63 not implemented"),

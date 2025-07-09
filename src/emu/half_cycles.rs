@@ -131,6 +131,14 @@ pub fn get_y_indexed_base_address_with_carry(state: &mut State) {
     state.crossed_page = overflow;
 }
 
+pub fn get_low_interrupt_vector(state: &mut State) {
+    state.address_bus = (0xFF, 0xFE);
+}
+
+pub fn get_high_interrupt_vector(state: &mut State) {
+    state.address_bus = (0xFF, 0xFF);
+}
+
 pub fn read_opcode(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
 
@@ -208,4 +216,8 @@ pub fn write_pc_high(state: &mut State) {
 
 pub fn write_pc_low(state: &mut State) {
     state.write_to_memory(state.address_bus, state.program_counter.1);
+}
+
+pub fn write_status(state: &mut State) {
+    state.write_to_memory(state.address_bus, state.processor_status_register);
 }
