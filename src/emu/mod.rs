@@ -37,6 +37,8 @@ macro_rules! did_signed_overflow {
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
 pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
+    state.half_cycle_count = 14;
+
     while !state.is_halted {
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
@@ -44,6 +46,7 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
                 phase2(state);
             }
             None => {
+                println!("{state:?}");
                 let [phase1, phase2] = FETCH_INSTRUCTION;
                 phase1(state);
                 phase2(state);
@@ -53,11 +56,7 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
             }
         };
 
-        let half_cycle_count = state.half_cycle_count;
-        let phase = if half_cycle_count % 2 == 0 { 'A' } else { 'B' };
-        println!("{half_cycle_count:5}-{phase} {state:?}");
-
-        state.half_cycle_count += 1;
+        state.half_cycle_count += 2;
     }
 
     Ok(state)

@@ -4,9 +4,9 @@ use crate::emu::{
         FETCH_LOW_BASE_ADDRESS_BYTE, FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
     },
     half_cycles::{
-        get_base_zero_page_address, get_effective_absolute_address,
-        get_effective_zero_page_address, get_effective_zero_page_x_indexed_address,
-        get_x_indexed_base_address_with_carry, read_data, write_data,
+        get_base_zero_page_address, get_effective_address, get_effective_zero_page_address,
+        get_effective_zero_page_x_indexed_address, get_x_indexed_base_address_with_carry,
+        read_data, write_data,
     },
     instructions::Instruction,
     state::{Cycle, HalfCycle},
@@ -31,9 +31,9 @@ impl Instruction for ReadModifyWrite {
             ReadModifyWrite::Absolute => vec![
                 FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
                 FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                [get_effective_absolute_address, read_data],
-                [get_effective_absolute_address, write_data],
-                [get_effective_absolute_address, operation],
+                [get_effective_address, read_data],
+                [get_effective_address, write_data],
+                [get_effective_address, operation],
             ],
             ReadModifyWrite::ZeroPageX => vec![
                 FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
@@ -46,9 +46,9 @@ impl Instruction for ReadModifyWrite {
                 FETCH_LOW_BASE_ADDRESS_BYTE,
                 FETCH_HIGH_BASE_ADDRESS_BYTE,
                 [get_x_indexed_base_address_with_carry, read_data],
-                [get_effective_absolute_address, read_data],
-                [get_effective_absolute_address, write_data],
-                [get_effective_absolute_address, operation],
+                [get_effective_address, read_data],
+                [get_effective_address, write_data],
+                [get_effective_address, operation],
             ],
         }
     }

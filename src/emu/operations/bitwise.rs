@@ -1,4 +1,4 @@
-use crate::emu::{half_cycles::get_effective_absolute_address, state::State};
+use crate::emu::{half_cycles::get_effective_address, state::State};
 
 pub fn and(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);
@@ -13,9 +13,7 @@ pub fn and_indirect_y(state: &mut State) {
     and(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, and]);
+        state.cycle_queue.push_back([get_effective_address, and]);
     }
 }
 
@@ -23,9 +21,7 @@ pub fn and_absolute_indexed(state: &mut State) {
     and(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, and]);
+        state.cycle_queue.push_back([get_effective_address, and]);
     }
 }
 
@@ -51,9 +47,7 @@ pub fn eor_indirect_y(state: &mut State) {
     eor(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, eor]);
+        state.cycle_queue.push_back([get_effective_address, eor]);
     }
 }
 
@@ -61,9 +55,7 @@ pub fn eor_absolute_indexed(state: &mut State) {
     eor(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, eor]);
+        state.cycle_queue.push_back([get_effective_address, eor]);
     }
 }
 
@@ -80,9 +72,7 @@ pub fn ora_indirect_y(state: &mut State) {
     ora(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, ora]);
+        state.cycle_queue.push_back([get_effective_address, ora]);
     }
 }
 
@@ -90,8 +80,6 @@ pub fn ora_absolute_indexed(state: &mut State) {
     ora(state);
 
     if state.crossed_page {
-        state
-            .cycle_queue
-            .push_back([get_effective_absolute_address, ora]);
+        state.cycle_queue.push_back([get_effective_address, ora]);
     }
 }

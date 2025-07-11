@@ -46,8 +46,8 @@ impl Default for State {
             x_index_register: 0,
             y_index_register: 0,
             program_counter: (0, 0),
-            stack_pointer: 0xFF,
-            processor_status_register: 0b_0010_0000,
+            stack_pointer: 0xFD,
+            processor_status_register: 0b_0010_0100, // NV1B_DIZC
             instruction_register: 0,
             address_bus: (0, 0),
             data_bus: 0,
@@ -185,21 +185,41 @@ impl State {
 
 impl fmt::Debug for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (pch, pcl) = self.program_counter;
+        let ir = self.instruction_register;
         let accumulator = self.accumulator;
         let x_index = self.x_index_register;
         let y_index = self.y_index_register;
-        let (pch, pcl) = self.program_counter;
-        let sp = self.stack_pointer;
         let psr = self.processor_status_register;
-        let ir = self.instruction_register;
-        let (abh, abl) = self.address_bus;
-        let data = self.data_bus;
+        let sp = self.stack_pointer;
+        let cycle_count = self.half_cycle_count / 2;
+
+        let pc0 = concat_u8!(self.program_counter.0, self.program_counter.1);
+        let pc1 = pc0.wrapping_add(1);
+        let pc2 = pc0.wrapping_add(2);
+        let pc_mem0 = self.memory[pc0 as usize];
+        let pc_mem1 = self.memory[pc1 as usize];
+        let pc_mem2 = self.memory[pc2 as usize];
+
+        let sp0 = concat_u8!(0x00, self.stack_pointer);
+        let sp1 = sp0.wrapping_add(1);
+        let sp2 = sp0.wrapping_add(2);
+        let sp_mem0 = self.memory[sp0 as usize];
+        let sp_mem1 = self.memory[sp1 as usize];
+        let sp_mem2 = self.memory[sp2 as usize];
 
         write!(
             f,
-            "PC:0x{pch:02X}{pcl:02X} IR:0x{ir:02X} NV1BDIZC:0b{psr:08b} \
-            A:0x{accumulator:02X} X:0x{x_index:02X} Y:0x{y_index:02X} \
-            SP:0x{sp:02X} AB:0x{abh:02X}{abl:02X} DB:0x{data:02X}",
+            "{pch:02X}{pcl:02X} [{pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}] \
+            IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
+            P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
+            CYC:{cycle_count:5}"
         )
     }
 }
+
+/*
+* "PC:0x{pch:02X}{pcl:02X} IR:0x{ir:02X} NV1BDIZC:0b{psr:08b} \
+           A:0x{accumulator:02X} X:0x{x_index:02X} Y:0x{y_index:02X} \
+           SP:0x{sp:02X} AB:0x{abh:02X}{abl:02X} DB:0x{data:02X}"
+*/

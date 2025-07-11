@@ -1,6 +1,8 @@
 use crate::emu::state::State;
 
-pub fn get_pc_address(state: &mut State) {
+// PC
+
+pub fn get_pc(state: &mut State) {
     state.address_bus = state.program_counter;
     state.increment_pc();
 }
@@ -9,27 +11,40 @@ pub fn get_pc_without_increment(state: &mut State) {
     state.address_bus = state.program_counter;
 }
 
-pub fn get_sp_address(state: &mut State) {
+// SP
+
+pub fn get_sp(state: &mut State) {
     state.address_bus = (0x10, state.stack_pointer);
 }
 
 pub fn push_stack(state: &mut State) {
-    state.address_bus = (0x10, state.stack_pointer);
-    state.stack_pointer = state.stack_pointer.wrapping_sub(1);
+    let new_sp = state.stack_pointer.wrapping_sub(1);
+
+    state.stack_pointer = new_sp;
+    state.address_bus = (0x10, new_sp);
 }
 
 pub fn pop_stack(state: &mut State) {
-    state.address_bus = (0x10, state.stack_pointer);
-    state.stack_pointer = state.stack_pointer.wrapping_add(1);
+    let new_stack_pointer = state.stack_pointer.wrapping_add(1);
+
+    state.stack_pointer = new_stack_pointer;
+    state.address_bus = (0x10, new_stack_pointer);
 }
 
-pub fn get_effective_absolute_address(state: &mut State) {
+// Effective Address
+
+pub fn get_effective_address(state: &mut State) {
     state.address_bus = state.effective_address;
 }
 
-pub fn get_effective_absolute_address_with_carry(state: &mut State) {
-    state.effective_address.1 = state.effective_address.1.wrapping_add(1);
-    state.address_bus = state.effective_address;
+pub fn get_effective_address_with_carry(state: &mut State) {
+    let new_effective_address = (
+        state.effective_address.0,
+        state.effective_address.1.wrapping_add(1),
+    );
+
+    state.effective_address = new_effective_address;
+    state.address_bus = new_effective_address;
 }
 
 pub fn get_effective_zero_page_address(state: &mut State) {
