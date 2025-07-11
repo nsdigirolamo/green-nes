@@ -1,7 +1,5 @@
 use crate::emu::state::State;
 
-// PC
-
 pub fn get_pc(state: &mut State) {
     state.address_bus = state.program_counter;
     state.increment_pc();
@@ -10,8 +8,6 @@ pub fn get_pc(state: &mut State) {
 pub fn get_pc_without_increment(state: &mut State) {
     state.address_bus = state.program_counter;
 }
-
-// SP
 
 pub fn get_sp(state: &mut State) {
     state.address_bus = (0x10, state.stack_pointer);
@@ -30,8 +26,6 @@ pub fn pop_stack(state: &mut State) {
     state.stack_pointer = new_stack_pointer;
     state.address_bus = (0x10, new_stack_pointer);
 }
-
-// Effective Address
 
 pub fn get_effective_address(state: &mut State) {
     state.address_bus = state.effective_address;

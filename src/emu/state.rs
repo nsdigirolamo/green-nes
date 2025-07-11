@@ -217,9 +217,3 @@ impl fmt::Debug for State {
         )
     }
 }
-
-/*
-* "PC:0x{pch:02X}{pcl:02X} IR:0x{ir:02X} NV1BDIZC:0b{psr:08b} \
-           A:0x{accumulator:02X} X:0x{x_index:02X} Y:0x{y_index:02X} \
-           SP:0x{sp:02X} AB:0x{abh:02X}{abl:02X} DB:0x{data:02X}"
-*/
