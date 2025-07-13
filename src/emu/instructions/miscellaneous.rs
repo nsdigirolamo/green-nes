@@ -33,7 +33,7 @@ impl Instruction for Miscellaneous {
             Miscellaneous::Pull => vec![
                 [get_pc_without_increment, read_data],
                 [pop_stack, read_data],
-                [pop_stack, operation],
+                [get_sp, operation],
             ],
             Miscellaneous::JumpToSubroutine => vec![
                 FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
@@ -70,7 +70,7 @@ impl Instruction for Miscellaneous {
                 [get_pc, read_data],
                 [pop_stack, read_data],
                 [pop_stack, read_low_pc_address_byte],
-                [pop_stack, read_high_pc_address_byte],
+                [get_sp, read_high_pc_address_byte],
                 [get_pc, read_data],
             ],
             Miscellaneous::Branch => vec![[get_pc, operation]],

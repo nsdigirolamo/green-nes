@@ -12,9 +12,14 @@ pub fn php(state: &mut State) {
 }
 
 pub fn plp(state: &mut State) {
+    // @TODO: The effect of changing the I flag should be delayed by one instruction.
     state.processor_status_register = state.read_from_memory(state.address_bus);
 }
 
 pub fn pla(state: &mut State) {
-    state.accumulator = state.read_from_memory(state.address_bus);
+    let result = state.read_from_memory(state.address_bus);
+
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
+    state.accumulator = result
 }

@@ -47,7 +47,7 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
             Some([phase1, phase2]) => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
                 if debug_level == DebugLevel::High {
-                    println!("{state:?}");
+                    println!("{state}");
                 }
 
                 phase1(state);
@@ -55,11 +55,10 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
             }
             None => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level != DebugLevel::None {
+                if debug_level == DebugLevel::Low {
                     println!("{state:?}");
-                }
-                // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level == DebugLevel::High {
+                } else if debug_level == DebugLevel::High {
+                    println!("{state}");
                     println!();
                 }
 

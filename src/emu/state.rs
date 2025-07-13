@@ -183,7 +183,7 @@ impl State {
     }
 }
 
-impl fmt::Debug for State {
+impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (pch, pcl) = self.program_counter;
 
@@ -224,6 +224,34 @@ impl fmt::Debug for State {
             IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
             P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
             CYC:{cycle_count:5}"
+        )
+    }
+}
+
+impl fmt::Debug for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (pch, pcl) = self.program_counter;
+
+        let pc0 = concat_u8!(self.program_counter.0, self.program_counter.1);
+        let pc1 = pc0.wrapping_add(1);
+        let pc2 = pc0.wrapping_add(2);
+        let pc_mem0 = self.memory[pc0 as usize];
+        let pc_mem1 = self.memory[pc1 as usize];
+        let pc_mem2 = self.memory[pc2 as usize];
+
+        let ir = self.instruction_register;
+        let accumulator = self.accumulator;
+        let x_index = self.x_index_register;
+        let y_index = self.y_index_register;
+        let psr = self.processor_status_register;
+        let sp = self.stack_pointer;
+        let cycle_count = self.half_cycle_count / 2;
+
+        write!(
+            f,
+            "{pch:02X}{pcl:02X}  {pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}  \
+            IR:{ir:02X}\t\t\t\t\tA:{accumulator:02X} X:{x_index:02X} \
+            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:5}"
         )
     }
 }
