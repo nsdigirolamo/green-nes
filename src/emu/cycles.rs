@@ -85,7 +85,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0x3D => Read::AbsoluteX.get_cycles(bitwise::and_absolute_indexed),
         0x3E => ReadModifyWrite::AbsoluteX.get_cycles(shift::rol),
         0x3F => panic!("Opcode 0x3F not implemented"),
-        0x40 => panic!("Opcode 0x40 not implemented"),
+        0x40 => Miscellaneous::ReturnFromInterrupt.get_cycles(jump::rti),
         0x41 => Read::IndirectX.get_cycles(bitwise::eor),
         0x42 => panic!("Opcode 0x42 not implemented"),
         0x43 => panic!("Opcode 0x43 not implemented"),
