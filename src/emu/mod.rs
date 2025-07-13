@@ -42,11 +42,14 @@ pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
     while !state.is_halted {
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
+                println!("{state:?}");
                 phase1(state);
                 phase2(state);
             }
             None => {
+                println!();
                 println!("{state:?}");
+
                 let [phase1, phase2] = FETCH_INSTRUCTION;
                 phase1(state);
                 phase2(state);

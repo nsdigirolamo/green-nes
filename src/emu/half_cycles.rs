@@ -14,17 +14,17 @@ pub fn get_sp(state: &mut State) {
 }
 
 pub fn push_stack(state: &mut State) {
-    let new_sp = state.stack_pointer.wrapping_sub(1);
+    let new_stack_pointer = state.stack_pointer.wrapping_sub(1);
 
-    state.stack_pointer = new_sp;
-    state.address_bus = (0x10, new_sp);
+    state.address_bus = (0x10, state.stack_pointer);
+    state.stack_pointer = new_stack_pointer;
 }
 
 pub fn pop_stack(state: &mut State) {
     let new_stack_pointer = state.stack_pointer.wrapping_add(1);
 
+    state.address_bus = (0x10, state.stack_pointer);
     state.stack_pointer = new_stack_pointer;
-    state.address_bus = (0x10, new_stack_pointer);
 }
 
 pub fn get_effective_address(state: &mut State) {

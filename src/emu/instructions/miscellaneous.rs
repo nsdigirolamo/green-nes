@@ -8,7 +8,6 @@ use crate::emu::{
         read_low_pc_address_byte, write_pc_high, write_pc_low, write_status,
     },
     instructions::Instruction,
-    operations::jump::jmp_absolute,
     state::{Cycle, HalfCycle},
 };
 
@@ -59,7 +58,7 @@ impl Instruction for Miscellaneous {
                 [pop_stack, read_high_pc_address_byte],
             ],
             Miscellaneous::JumpAbsolute => {
-                vec![FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, jmp_absolute]]
+                vec![FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, operation]]
             }
             Miscellaneous::JumpIndirect => vec![
                 [get_pc, read_low_indirect_address_byte],

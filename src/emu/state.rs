@@ -186,13 +186,6 @@ impl State {
 impl fmt::Debug for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (pch, pcl) = self.program_counter;
-        let ir = self.instruction_register;
-        let accumulator = self.accumulator;
-        let x_index = self.x_index_register;
-        let y_index = self.y_index_register;
-        let psr = self.processor_status_register;
-        let sp = self.stack_pointer;
-        let cycle_count = self.half_cycle_count / 2;
 
         let pc0 = concat_u8!(self.program_counter.0, self.program_counter.1);
         let pc1 = pc0.wrapping_add(1);
@@ -201,7 +194,21 @@ impl fmt::Debug for State {
         let pc_mem1 = self.memory[pc1 as usize];
         let pc_mem2 = self.memory[pc2 as usize];
 
-        let sp0 = concat_u8!(0x00, self.stack_pointer);
+        let (adh, adl) = self.effective_address;
+        let (bah, bal) = self.base_address;
+        let (iah, ial) = self.indirect_address;
+        let (addr_bus_high, addr_bus_low) = self.address_bus;
+        let data_bus = self.data_bus;
+
+        let ir = self.instruction_register;
+        let accumulator = self.accumulator;
+        let x_index = self.x_index_register;
+        let y_index = self.y_index_register;
+        let psr = self.processor_status_register;
+        let sp = self.stack_pointer;
+        let cycle_count = self.half_cycle_count / 2;
+
+        let sp0 = concat_u8!(0x10, self.stack_pointer);
         let sp1 = sp0.wrapping_add(1);
         let sp2 = sp0.wrapping_add(2);
         let sp_mem0 = self.memory[sp0 as usize];
@@ -211,6 +218,9 @@ impl fmt::Debug for State {
         write!(
             f,
             "{pch:02X}{pcl:02X} [{pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}] \
+            AD: {adh:02X}{adl:02X} BA: {bah:02X}{bal:02X} IA: {iah:02X}{ial:02X} \
+            ADDR_BUS: {addr_bus_high:02X}{addr_bus_low:02X} \
+            DATA_BUS: {data_bus:02X} \
             IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
             P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
             CYC:{cycle_count:5}"
