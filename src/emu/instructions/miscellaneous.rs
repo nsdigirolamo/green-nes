@@ -55,7 +55,7 @@ impl Instruction for Miscellaneous {
                 [pop_stack, read_data],
                 [pop_stack, operation],
                 [pop_stack, read_low_pc_address_byte],
-                [pop_stack, read_high_pc_address_byte],
+                [get_sp, read_high_pc_address_byte],
             ],
             Miscellaneous::JumpAbsolute => {
                 vec![FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, operation]]
