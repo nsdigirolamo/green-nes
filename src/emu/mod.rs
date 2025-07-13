@@ -1,9 +1,12 @@
 use std::path::Path;
 
-use crate::emu::{
-    cycles::{FETCH_INSTRUCTION, get_cycles},
-    error::{EmuError, LoadError},
-    state::{PROGRAM_START_ADDRESS, State},
+use crate::{
+    DebugLevel,
+    emu::{
+        cycles::{FETCH_INSTRUCTION, get_cycles},
+        error::{EmuError, LoadError},
+        state::{PROGRAM_START_ADDRESS, State},
+    },
 };
 
 pub mod cycles;
@@ -36,19 +39,29 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(state: &mut State) -> Result<&State, EmuError> {
+pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State, EmuError> {
     state.half_cycle_count = 14;
 
     while !state.is_halted {
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
-                println!("{state:?}");
+                // @TODO: Look into: Do these if statement debug messages impact performance?
+                if debug_level == DebugLevel::High {
+                    println!("{state:?}");
+                }
+
                 phase1(state);
                 phase2(state);
             }
             None => {
-                println!();
-                println!("{state:?}");
+                // @TODO: Look into: Do these if statement debug messages impact performance?
+                if debug_level != DebugLevel::None {
+                    println!("{state:?}");
+                }
+                // @TODO: Look into: Do these if statement debug messages impact performance?
+                if debug_level == DebugLevel::High {
+                    println!();
+                }
 
                 let [phase1, phase2] = FETCH_INSTRUCTION;
                 phase1(state);
