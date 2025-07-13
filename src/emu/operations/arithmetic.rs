@@ -67,9 +67,9 @@ pub fn adc(state: &mut State) {
 
     state.accumulator = result;
     state.set_carry_flag(did_unsigned_overflow);
-    state.set_zero_flag(data == 0);
+    state.set_zero_flag(result == 0);
     state.set_overflow_flag(did_signed_overflow);
-    state.set_negative_flag((data & 0b_1000_0000) != 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
 pub fn adc_indirect_y(state: &mut State) {
@@ -98,9 +98,9 @@ pub fn sbc(state: &mut State) {
 
     state.accumulator = result;
     state.set_carry_flag(did_unsigned_overflow);
-    state.set_zero_flag(data == 0);
+    state.set_zero_flag(result == 0);
     state.set_overflow_flag(did_signed_overflow);
-    state.set_negative_flag((data & 0b_1000_0000) != 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
 pub fn sbc_indirect_y(state: &mut State) {
