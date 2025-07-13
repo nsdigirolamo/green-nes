@@ -58,8 +58,8 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
                 if debug_level == DebugLevel::Low {
                     println!("{state:?}");
                 } else if debug_level == DebugLevel::High {
-                    println!("{state}");
                     println!();
+                    println!("{state}");
                 }
 
                 let [phase1, phase2] = FETCH_INSTRUCTION;

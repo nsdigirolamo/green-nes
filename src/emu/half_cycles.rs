@@ -1,4 +1,4 @@
-use crate::emu::state::State;
+use crate::emu::state::{STACK_PAGE_HIGH_ADDRESS, State};
 
 pub fn get_pc(state: &mut State) {
     state.address_bus = state.program_counter;
@@ -10,20 +10,20 @@ pub fn get_pc_without_increment(state: &mut State) {
 }
 
 pub fn get_sp(state: &mut State) {
-    state.address_bus = (0x10, state.stack_pointer);
+    state.address_bus = (STACK_PAGE_HIGH_ADDRESS, state.stack_pointer);
 }
 
 pub fn push_stack(state: &mut State) {
     let new_stack_pointer = state.stack_pointer.wrapping_sub(1);
 
-    state.address_bus = (0x10, state.stack_pointer);
+    state.address_bus = (STACK_PAGE_HIGH_ADDRESS, state.stack_pointer);
     state.stack_pointer = new_stack_pointer;
 }
 
 pub fn pop_stack(state: &mut State) {
     let new_stack_pointer = state.stack_pointer.wrapping_add(1);
 
-    state.address_bus = (0x10, state.stack_pointer);
+    state.address_bus = (STACK_PAGE_HIGH_ADDRESS, state.stack_pointer);
     state.stack_pointer = new_stack_pointer;
 }
 

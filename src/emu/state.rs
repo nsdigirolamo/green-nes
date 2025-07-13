@@ -4,6 +4,7 @@ use crate::{concat_u8, split_u16};
 
 pub const MAX_MEMORY_ADDRESS: u16 = 0xFFFF;
 pub const PROGRAM_START_ADDRESS: u16 = 0xC000;
+pub const STACK_PAGE_HIGH_ADDRESS: u8 = 0x01;
 
 pub const MEMORY_LENGTH: usize = MAX_MEMORY_ADDRESS as usize + 1;
 
@@ -194,10 +195,14 @@ impl fmt::Display for State {
         let pc_mem1 = self.memory[pc1 as usize];
         let pc_mem2 = self.memory[pc2 as usize];
 
-        let (adh, adl) = self.effective_address;
-        let (bah, bal) = self.base_address;
-        let (iah, ial) = self.indirect_address;
         let (addr_bus_high, addr_bus_low) = self.address_bus;
+        let ab0 = concat_u8!(addr_bus_high, addr_bus_low);
+        let ab1 = ab0.wrapping_add(1);
+        let ab2 = ab0.wrapping_add(2);
+        let ab_mem0 = self.memory[ab0 as usize];
+        let ab_mem1 = self.memory[ab1 as usize];
+        let ab_mem2 = self.memory[ab2 as usize];
+
         let data_bus = self.data_bus;
 
         let ir = self.instruction_register;
@@ -218,8 +223,8 @@ impl fmt::Display for State {
         write!(
             f,
             "{pch:02X}{pcl:02X} [{pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}] \
-            AD: {adh:02X}{adl:02X} BA: {bah:02X}{bal:02X} IA: {iah:02X}{ial:02X} \
             ADDR_BUS: {addr_bus_high:02X}{addr_bus_low:02X} \
+            [{ab_mem0:02X} {ab_mem1:02X} {ab_mem2:02X}] \
             DATA_BUS: {data_bus:02X} \
             IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
             P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
