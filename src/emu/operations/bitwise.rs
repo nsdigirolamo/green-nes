@@ -5,8 +5,8 @@ pub fn and(state: &mut State) {
     let result = state.accumulator & data;
 
     state.accumulator = result;
-    state.set_zero_flag(data == 0);
-    state.set_negative_flag((data & 0b_1000_0000) != 0);
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
 pub fn and_indirect_y(state: &mut State) {
@@ -39,8 +39,8 @@ pub fn eor(state: &mut State) {
     let result = state.accumulator ^ data;
 
     state.accumulator = result;
-    state.set_zero_flag(data == 0);
-    state.set_negative_flag((data & 0b_1000_0000) != 0);
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
 pub fn eor_indirect_y(state: &mut State) {
@@ -64,8 +64,8 @@ pub fn ora(state: &mut State) {
     let result = state.accumulator | data;
 
     state.accumulator = result;
-    state.set_zero_flag(data == 0);
-    state.set_negative_flag((data & 0b_1000_0000) != 0);
+    state.set_zero_flag(result == 0);
+    state.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
 pub fn ora_indirect_y(state: &mut State) {
