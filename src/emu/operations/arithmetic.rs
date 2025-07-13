@@ -94,7 +94,7 @@ pub fn sbc(state: &mut State) {
     let (sum, overflow1) = accumulator.overflowing_add(!data);
     let (result, overflow2) = sum.overflowing_add(state.get_carry_flag() as u8);
     let did_unsigned_overflow = overflow1 | overflow2;
-    let did_signed_overflow = did_signed_overflow!(accumulator, data, result);
+    let did_signed_overflow = did_signed_overflow!(accumulator, !data, result);
 
     state.accumulator = result;
     state.set_carry_flag(did_unsigned_overflow);
