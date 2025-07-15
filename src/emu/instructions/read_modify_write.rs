@@ -23,20 +23,20 @@ impl Instruction for ReadModifyWrite {
     fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle> {
         match self {
             ReadModifyWrite::ZeroPage => vec![
-                FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
+                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
                 [get_effective_zero_page_address, read_data],
                 [get_effective_zero_page_address, write_data],
                 [get_effective_zero_page_address, operation],
             ],
             ReadModifyWrite::Absolute => vec![
-                FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
                 FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+                FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
                 [get_effective_address, read_data],
                 [get_effective_address, write_data],
                 [get_effective_address, operation],
             ],
             ReadModifyWrite::ZeroPageX => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+                FETCH_LOW_BASE_ADDRESS_BYTE,
                 [get_base_zero_page_address, read_data],
                 [get_effective_zero_page_x_indexed_address, read_data],
                 [get_effective_zero_page_x_indexed_address, write_data],
