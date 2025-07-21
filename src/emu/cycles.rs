@@ -129,7 +129,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0x69 => Read::Immediate.get_cycles(arithmetic::adc),
         0x6A => SingleByte::Default.get_cycles(shift::ror_accumulator),
         0x6B => panic!("Opcode 0x6B not implemented"),
-        0x6C => panic!("Opcode 0x6C not implemented"),
+        0x6C => Miscellaneous::JumpIndirect.get_cycles(other::nop), // JMP (Indirect) needs no operation
         0x6D => Read::Absolute.get_cycles(arithmetic::adc),
         0x6E => ReadModifyWrite::Absolute.get_cycles(shift::ror),
         0x6F => panic!("Opcode 0x6F not implemented"),
@@ -206,7 +206,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0xB6 => Read::ZeroPageY.get_cycles(access::ldx),
         0xB7 => panic!("Opcode 0xB7 not implemented"),
         0xB8 => SingleByte::Default.get_cycles(flags::clv),
-        0xB9 => Read::AbsoluteY.get_cycles(access::lda),
+        0xB9 => Read::AbsoluteY.get_cycles(access::lda_absolute_indexed),
         0xBA => SingleByte::Default.get_cycles(transfer::tsx),
         0xBB => panic!("Opcode 0xBB not implemented"),
         0xBC => Read::AbsoluteX.get_cycles(access::ldy_absolute_indexed),
