@@ -211,7 +211,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0xBB => panic!("Opcode 0xBB not implemented"),
         0xBC => Read::AbsoluteX.get_cycles(access::ldy_absolute_indexed),
         0xBD => Read::AbsoluteX.get_cycles(access::lda_absolute_indexed),
-        0xBE => Read::AbsoluteY.get_cycles(access::ldx),
+        0xBE => Read::AbsoluteY.get_cycles(access::ldx_absolute_indexed),
         0xBF => panic!("Opcode 0xBF not implemented"),
         0xC0 => Read::Immediate.get_cycles(compare::cpy),
         0xC1 => Read::IndirectX.get_cycles(compare::cmp),
