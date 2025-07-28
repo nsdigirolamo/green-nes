@@ -256,7 +256,7 @@ pub fn get_cycles(opcode: u8) -> Vec<Cycle> {
         0xE8 => SingleByte::Default.get_cycles(arithmetic::inx),
         0xE9 => Read::Immediate.get_cycles(arithmetic::sbc),
         0xEA => SingleByte::Default.get_cycles(other::nop),
-        0xEB => panic!("Opcode 0xEB not implemented"),
+        0xEB => Read::Immediate.get_cycles(arithmetic::sbc),
         0xEC => Read::Absolute.get_cycles(compare::cpx),
         0xED => Read::Absolute.get_cycles(arithmetic::sbc),
         0xEE => ReadModifyWrite::Absolute.get_cycles(arithmetic::inc),
