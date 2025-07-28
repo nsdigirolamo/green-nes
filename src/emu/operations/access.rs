@@ -94,3 +94,9 @@ pub fn sty(state: &mut State) {
 
     state.write_to_memory(state.address_bus, data);
 }
+
+pub fn sax(state: &mut State) {
+    let data = state.accumulator & state.x_index_register;
+
+    state.write_to_memory(state.address_bus, data);
+}
