@@ -9,3 +9,4 @@ pub mod other;
 pub mod shift;
 pub mod stack;
 pub mod transfer;
+pub mod unofficial;

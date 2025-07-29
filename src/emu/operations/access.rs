@@ -56,27 +56,6 @@ pub fn ldy_absolute_indexed(state: &mut State) {
     }
 }
 
-pub fn lax(state: &mut State) {
-    lda(state);
-    ldx(state);
-}
-
-pub fn lax_indirect_y(state: &mut State) {
-    lax(state);
-
-    if state.crossed_page {
-        state.cycle_queue.push_back([get_effective_address, lax]);
-    }
-}
-
-pub fn lax_absolute_indexed(state: &mut State) {
-    lax(state);
-
-    if state.crossed_page {
-        state.cycle_queue.push_back([get_effective_address, lax]);
-    }
-}
-
 pub fn sta(state: &mut State) {
     let data = state.accumulator;
 
@@ -91,12 +70,6 @@ pub fn stx(state: &mut State) {
 
 pub fn sty(state: &mut State) {
     let data = state.y_index_register;
-
-    state.write_to_memory(state.address_bus, data);
-}
-
-pub fn sax(state: &mut State) {
-    let data = state.accumulator & state.x_index_register;
 
     state.write_to_memory(state.address_bus, data);
 }
