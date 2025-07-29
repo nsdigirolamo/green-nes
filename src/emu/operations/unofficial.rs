@@ -3,7 +3,9 @@ use crate::emu::{
     operations::{
         access::{lda, ldx},
         arithmetic::{dec, inc, sbc},
+        bitwise::ora,
         compare::cmp,
+        shift::asl,
     },
     state::State,
 };
@@ -49,4 +51,9 @@ pub fn dcp(state: &mut State) {
 pub fn isc(state: &mut State) {
     inc(state);
     sbc(state);
+}
+
+pub fn slo(state: &mut State) {
+    asl(state);
+    ora(state);
 }
