@@ -2,7 +2,7 @@ use crate::emu::{
     half_cycles::get_effective_address,
     operations::{
         access::{lda, ldx},
-        arithmetic::{dec, sbc},
+        arithmetic::{dec, inc, sbc},
         compare::cmp,
     },
     state::State,
@@ -44,4 +44,9 @@ pub fn usbc(state: &mut State) {
 pub fn dcp(state: &mut State) {
     dec(state);
     cmp(state);
+}
+
+pub fn isc(state: &mut State) {
+    inc(state);
+    sbc(state);
 }
