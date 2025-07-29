@@ -2,10 +2,13 @@ use crate::emu::{
     half_cycles::get_effective_address,
     operations::{
         access::{lda, ldx},
-        arithmetic::sbc,
+        arithmetic::{dec, sbc},
+        compare::cmp,
     },
     state::State,
 };
+
+// Reference: https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes
 
 pub fn lax(state: &mut State) {
     lda(state);
@@ -36,4 +39,9 @@ pub fn sax(state: &mut State) {
 
 pub fn usbc(state: &mut State) {
     sbc(state);
+}
+
+pub fn dcp(state: &mut State) {
+    dec(state);
+    cmp(state);
 }
