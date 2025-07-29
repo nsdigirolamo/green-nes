@@ -3,9 +3,9 @@ use crate::emu::{
     operations::{
         access::{lda, ldx},
         arithmetic::{dec, inc, sbc},
-        bitwise::ora,
+        bitwise::{and, ora},
         compare::cmp,
-        shift::asl,
+        shift::{asl, rol},
     },
     state::State,
 };
@@ -56,4 +56,9 @@ pub fn isc(state: &mut State) {
 pub fn slo(state: &mut State) {
     asl(state);
     ora(state);
+}
+
+pub fn rla(state: &mut State) {
+    rol(state);
+    and(state);
 }
