@@ -1,5 +1,5 @@
 use crate::emu::{
-    half_cycles::{get_effective_address, get_effective_address_with_carry, read_opcode},
+    half_cycles::{branch_across_page, get_effective_address, read_opcode},
     state::State,
 };
 
@@ -20,7 +20,7 @@ pub fn do_branch(state: &mut State, condition: bool) {
         if state.crossed_page {
             state
                 .cycle_queue
-                .push_back([get_effective_address_with_carry, read_opcode]);
+                .push_back([branch_across_page, read_opcode]);
         } else {
             state.program_counter = (pc_high, pc_low_offset);
         }

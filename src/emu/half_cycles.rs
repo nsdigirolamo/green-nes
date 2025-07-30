@@ -31,14 +31,15 @@ pub fn get_effective_address(state: &mut State) {
     state.address_bus = state.effective_address;
 }
 
-pub fn get_effective_address_with_carry(state: &mut State) {
+pub fn branch_across_page(state: &mut State) {
     let new_effective_address = (
-        state.effective_address.0,
-        state.effective_address.1.wrapping_add(1),
+        state.effective_address.0.wrapping_add(1),
+        state.effective_address.1,
     );
 
     state.effective_address = new_effective_address;
     state.address_bus = new_effective_address;
+    state.program_counter = new_effective_address;
 }
 
 pub fn get_effective_zero_page_address(state: &mut State) {
