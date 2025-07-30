@@ -12,7 +12,7 @@ _**NES CPU Emulation Progress**_:
 
 **243 of 256** total opcodes are implemented (94.92%).
 
-All official opcodes are implemented. The following unofficial opcodes have
+All official opcodes are implemented. The following 11 unofficial opcodes have
 not yet been implemented:
 - `ALC` (`0x4B`)
 - `ANC` (`0x0B`, `0x2B`)
