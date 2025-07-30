@@ -2,10 +2,10 @@ use crate::emu::{
     half_cycles::get_effective_address,
     operations::{
         access::{lda, ldx},
-        arithmetic::{dec, inc, sbc},
+        arithmetic::{adc, dec, inc, sbc},
         bitwise::{and, eor, ora},
         compare::cmp,
-        shift::{asl, lsr, rol},
+        shift::{asl, lsr, rol, ror},
     },
     state::State,
 };
@@ -66,4 +66,9 @@ pub fn rla(state: &mut State) {
 pub fn sre(state: &mut State) {
     lsr(state);
     eor(state);
+}
+
+pub fn rra(state: &mut State) {
+    ror(state);
+    adc(state);
 }
