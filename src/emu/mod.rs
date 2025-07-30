@@ -43,6 +43,11 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
     state.half_cycle_count = 14;
 
     while !state.is_halted {
+        if state.program_counter.0 == 0x00 && state.program_counter.1 == 0x00 {
+            state.is_halted = true;
+            break;
+        }
+
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
