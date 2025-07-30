@@ -13,6 +13,7 @@ use crate::emu::{
         read_low_effective_address_byte, read_low_indirect_address_byte, write_data,
     },
     instructions::Instruction,
+    operations::other::nop,
     state::{Cycle, HalfCycle},
 };
 
@@ -24,6 +25,7 @@ pub enum Unofficial {
     AbsoluteY,
     IndirectX,
     IndirectY,
+    Halt,
 }
 
 /*
@@ -101,6 +103,7 @@ impl Instruction for Unofficial {
                 [get_effective_address, write_data],
                 [get_effective_address, operation],
             ],
+            Unofficial::Halt => vec![[nop, operation]],
         }
     }
 }

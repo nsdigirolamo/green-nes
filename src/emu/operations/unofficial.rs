@@ -72,3 +72,7 @@ pub fn rra(state: &mut State) {
     ror(state);
     adc(state);
 }
+
+pub fn jam(state: &mut State) {
+    state.is_halted = true;
+}
