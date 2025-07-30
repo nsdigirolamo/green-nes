@@ -10,9 +10,21 @@ on to the Pixel Processing Unit (PPU) and Audio Processing Unit (APU).
 
 _**NES CPU Emulation Progress**_:
 
-**196 of 256** total opcodes are implemented (76.56%).
+**243 of 256** total opcodes are implemented (94.92%).
 
-All official opcodes are implemented. I will begin testing/debugging for correctness after every opcode is implemented.
+All official opcodes are implemented. The following unofficial opcodes have
+not yet been implemented:
+- `ALC` (`0x4B`)
+- `ANC` (`0x0B`, `0x2B`)
+- `ARR` (`0x6B`)
+- `ANE` (`0x8B`)
+- `SHA` (`0x9F`, `0x93`)
+- `TAS` (`0x9B`)
+- `SHY` (`0x9C`)
+- `SHX` (`0x9E`)
+- `LXA` (`0xAB`)
+- `LAS` (`0xBB`)
+- `SBX` (`0xCB`)
 
 ## Resources
 
