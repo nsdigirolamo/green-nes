@@ -4,14 +4,14 @@ build-dev:
 build-release:
 	cargo build -r
 
-run-dev:
+dev:
 	target/debug/green-nes -d low run tests/nestest.nes > tests/nestest.out
 
-run-release:
+release:
 	target/release/green-nes -d low run tests/nestest.nes > tests/nestest.out
 
-run-tests:
+test:
 	bash download-tests.sh
 	cargo test
 
-.PHONY: build-dev build-release run-dev
+.PHONY: build-dev build-release dev release test
