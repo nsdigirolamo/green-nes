@@ -39,15 +39,10 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State, EmuError> {
+pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
     state.half_cycle_count = 14;
 
     while !state.is_halted {
-        if state.program_counter.0 == 0x00 && state.program_counter.1 == 0x00 {
-            state.is_halted = true;
-            break;
-        }
-
         match state.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
@@ -55,8 +50,8 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
                     println!("{state}");
                 }
 
-                phase1(state);
-                phase2(state);
+                phase1(&mut state);
+                phase2(&mut state);
             }
             None => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
@@ -68,8 +63,8 @@ pub fn run_emulator(state: &mut State, debug_level: DebugLevel) -> Result<&State
                 }
 
                 let [phase1, phase2] = FETCH_INSTRUCTION;
-                phase1(state);
-                phase2(state);
+                phase1(&mut state);
+                phase2(&mut state);
 
                 let new_cycles = get_cycles(state.instruction_register);
                 state.cycle_queue.extend(new_cycles.iter());
@@ -116,4 +111,28 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     }
 
     Ok(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        DebugLevel,
+        emu::{load_program, run_emulator, state::State},
+    };
+
+    #[test]
+    /// [nestest](http://nickmass.com/images/nestest.nes) with final results
+    /// stored in `0x02` and `0x03` in memory. See the
+    /// [docs](https://www.qmtpro.com/~nes/misc/nestest.txt) for more info.
+    fn nestest() {
+        let state: State = Default::default();
+        let load_result = load_program(state, "tests/nestest.nes");
+        let loaded_state = load_result.unwrap();
+
+        let run_result = run_emulator(loaded_state, DebugLevel::None);
+        let mut final_state = run_result.unwrap();
+
+        assert_eq!(final_state.read_from_memory((0x00, 0x02)), 0x00);
+        assert_eq!(final_state.read_from_memory((0x00, 0x03)), 0x00);
+    }
 }

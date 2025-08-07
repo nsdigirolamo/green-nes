@@ -39,7 +39,7 @@ fn main() {
 
     match cli.command {
         Commands::Run { path } => {
-            let mut state = match load_program(state, path.as_str()) {
+            let state = match load_program(state, path.as_str()) {
                 Ok(state) => state,
                 Err(err) => {
                     eprintln!("Loading program failed: {err}");
@@ -47,7 +47,7 @@ fn main() {
                 }
             };
 
-            let final_state = match run_emulator(&mut state, debug_level) {
+            let mut final_state = match run_emulator(state, debug_level) {
                 Ok(state) => state,
                 Err(err) => {
                     eprintln!("Running program failed: {err}");
@@ -58,8 +58,8 @@ fn main() {
             let cycle_count = final_state.half_cycle_count / 2;
             println!("Completed {cycle_count} cycles. Final State:\n{final_state:?}");
 
-            let status02 = state.read_from_memory((0x00, 0x02));
-            let status03 = state.read_from_memory((0x00, 0x03));
+            let status02 = final_state.read_from_memory((0x00, 0x02));
+            let status03 = final_state.read_from_memory((0x00, 0x03));
             println!("[0x02, 0x03]: [0x{status02:02X}, 0x{status03:02X}]");
         }
     }

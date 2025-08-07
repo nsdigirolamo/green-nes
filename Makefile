@@ -1,14 +1,17 @@
-.PHONY: clean n nestest nh nestest-high
-
-build:
+build-dev:
 	cargo build
 
-n: nestest
+build-release:
+	cargo build -r
 
-nh: nestest-high
+run-dev:
+	target/debug/green-nes -d low run tests/nestest.nes > tests/nestest.out
 
-nestest:
-	target/debug/green-nes -d low run tests/nestest.nes 2>&1 | tee out.txt
+run-release:
+	target/release/green-nes -d low run tests/nestest.nes > tests/nestest.out
 
-nestest-high:
-	target/debug/green-nes -d high run tests/nestest.nes 2>&1 | tee out.txt
+run-tests:
+	bash download-tests.sh
+	cargo test
+
+.PHONY: build-dev build-release run-dev

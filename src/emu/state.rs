@@ -228,7 +228,7 @@ impl fmt::Display for State {
             DATA_BUS: {data_bus:02X} \
             IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
             P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
-            CYC:{cycle_count:5}"
+            CYC:{cycle_count:}"
         )
     }
 }
@@ -244,7 +244,6 @@ impl fmt::Debug for State {
         let pc_mem1 = self.memory[pc1 as usize];
         let pc_mem2 = self.memory[pc2 as usize];
 
-        let ir = self.instruction_register;
         let accumulator = self.accumulator;
         let x_index = self.x_index_register;
         let y_index = self.y_index_register;
@@ -255,8 +254,8 @@ impl fmt::Debug for State {
         write!(
             f,
             "{pch:02X}{pcl:02X}  {pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}  \
-            IR:{ir:02X}\t\t\t\t\tA:{accumulator:02X} X:{x_index:02X} \
-            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:5}"
+            \t\t\t\t\tA:{accumulator:02X} X:{x_index:02X} \
+            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:}"
         )
     }
 }

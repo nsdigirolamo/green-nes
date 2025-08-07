@@ -1,7 +1,4 @@
-# Generated
-/target
-*.txt
-
-# Misc
 /notes
-*.nes
+/out
+/target
+/tests
