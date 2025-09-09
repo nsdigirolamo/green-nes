@@ -1,4 +1,4 @@
-use crate::emu::state::{Cycle, HalfCycle};
+use crate::cpu::state::{Cycle, HalfCycle};
 
 pub mod miscellaneous;
 pub mod read;

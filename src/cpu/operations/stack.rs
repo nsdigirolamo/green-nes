@@ -1,4 +1,4 @@
-use crate::emu::state::State;
+use crate::cpu::state::State;
 
 pub fn pha(state: &mut State) {
     state.write_to_memory(state.address_bus, state.accumulator);

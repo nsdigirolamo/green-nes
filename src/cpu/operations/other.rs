@@ -1,4 +1,4 @@
-use crate::emu::{half_cycles::get_effective_address, state::State};
+use crate::cpu::{half_cycles::get_effective_address, state::State};
 
 pub fn nop(_: &mut State) {}
 

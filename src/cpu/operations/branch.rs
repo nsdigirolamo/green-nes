@@ -1,4 +1,4 @@
-use crate::emu::{
+use crate::cpu::{
     half_cycles::{branch_across_page, get_effective_address, read_opcode},
     state::State,
 };

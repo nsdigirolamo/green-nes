@@ -1,4 +1,4 @@
-use crate::emu::{
+use crate::cpu::{
     half_cycles::get_effective_address,
     operations::{
         access::{lda, ldx},

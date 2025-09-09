@@ -1,4 +1,4 @@
-use crate::emu::{half_cycles::get_effective_address, state::State};
+use crate::cpu::{half_cycles::get_effective_address, state::State};
 
 pub fn and(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);

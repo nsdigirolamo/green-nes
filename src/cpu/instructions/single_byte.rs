@@ -1,4 +1,4 @@
-use crate::emu::{
+use crate::cpu::{
     half_cycles::read_opcode,
     instructions::Instruction,
     state::{Cycle, HalfCycle},

@@ -1,4 +1,4 @@
-use crate::emu::state::State;
+use crate::cpu::state::State;
 
 pub fn tax(state: &mut State) {
     let result = state.accumulator;

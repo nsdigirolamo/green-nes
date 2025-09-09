@@ -1,4 +1,4 @@
-use crate::emu::state::State;
+use crate::cpu::state::State;
 
 pub fn jsr(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);

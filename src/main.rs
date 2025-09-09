@@ -2,9 +2,28 @@ use std::process;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::emu::{load_program, run_emulator, state::State};
+use crate::{
+    cpu::state::State,
+    emu::{load_program, run_emulator},
+};
 
+pub mod cpu;
 pub mod emu;
+pub mod error;
+
+#[macro_export]
+macro_rules! concat_u8 {
+    ($high:expr, $low:expr) => {
+        (($high as u16) << 8) | ($low as u16)
+    };
+}
+
+#[macro_export]
+macro_rules! split_u16 {
+    ($value:expr) => {
+        (($value >> 8) as u8, $value as u8)
+    };
+}
 
 #[derive(clap::Parser)]
 struct Cli {

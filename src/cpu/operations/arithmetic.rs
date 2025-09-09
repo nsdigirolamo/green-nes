@@ -1,7 +1,10 @@
-use crate::{
-    did_signed_overflow,
-    emu::{half_cycles::get_effective_address, state::State},
-};
+use crate::cpu::{half_cycles::get_effective_address, state::State};
+
+macro_rules! did_signed_overflow {
+    ($lhs:expr, $rhs:expr, $result:expr) => {
+        (($lhs ^ $result) & ($rhs ^ $result) & 0x80) != 0
+    };
+}
 
 pub fn inc(state: &mut State) {
     let data = state.read_from_memory(state.address_bus);

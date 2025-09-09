@@ -1,4 +1,4 @@
-use crate::emu::state::State;
+use crate::cpu::state::State;
 
 pub fn sec(state: &mut State) {
     state.set_carry_flag(true);

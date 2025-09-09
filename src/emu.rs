@@ -1,41 +1,14 @@
 use std::path::Path;
 
 use crate::{
-    DebugLevel,
-    emu::{
+    DebugLevel, concat_u8,
+    cpu::{
         cycles::{FETCH_INSTRUCTION, get_cycles},
-        error::{EmuError, LoadError},
         state::{PROGRAM_START_ADDRESS, State},
     },
+    error::{EmuError, LoadError},
+    split_u16,
 };
-
-pub mod cycles;
-pub mod error;
-pub mod half_cycles;
-pub mod instructions;
-pub mod operations;
-pub mod state;
-
-#[macro_export]
-macro_rules! concat_u8 {
-    ($high:expr, $low:expr) => {
-        (($high as u16) << 8) | ($low as u16)
-    };
-}
-
-#[macro_export]
-macro_rules! split_u16 {
-    ($value:expr) => {
-        (($value >> 8) as u8, $value as u8)
-    };
-}
-
-#[macro_export]
-macro_rules! did_signed_overflow {
-    ($lhs:expr, $rhs:expr, $result:expr) => {
-        (($lhs ^ $result) & ($rhs ^ $result) & 0x80) != 0
-    };
-}
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
@@ -117,7 +90,8 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
 mod tests {
     use crate::{
         DebugLevel,
-        emu::{load_program, run_emulator, state::State},
+        cpu::state::State,
+        emu::{load_program, run_emulator},
     };
 
     #[test]
