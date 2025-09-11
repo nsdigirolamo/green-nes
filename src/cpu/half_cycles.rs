@@ -154,84 +154,84 @@ pub fn get_high_interrupt_vector(state: &mut State) {
 }
 
 pub fn read_opcode(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.registers.ir = data;
 }
 
 pub fn read_high_pc_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.registers.pc.0 = data;
 }
 
 pub fn read_low_pc_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.registers.pc.1 = data;
 }
 
 pub fn read_high_effective_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.effective_addr.0 = data;
 }
 
 pub fn read_low_effective_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.effective_addr.1 = data;
 }
 
 pub fn read_high_base_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.base_addr.0 = data;
 }
 
 pub fn read_low_base_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.base_addr.1 = data;
 }
 
 pub fn read_high_indirect_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.indirect_addr.0 = data;
 }
 
 pub fn read_low_indirect_address_byte(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.data = data;
     state.buses.indirect_addr.1 = data;
 }
 
 pub fn read_data(state: &mut State) {
-    state.read_from_memory(state.buses.addr);
+    state.buses.read(state.buses.addr);
 }
 
 pub fn write_data(state: &mut State) {
-    state.write_to_memory(state.buses.addr, state.buses.data);
+    state.buses.write(state.buses.addr, state.buses.data);
 }
 
 pub fn write_pc_high(state: &mut State) {
-    state.write_to_memory(state.buses.addr, state.registers.pc.0);
+    state.buses.write(state.buses.addr, state.registers.pc.0);
 }
 
 pub fn write_pc_low(state: &mut State) {
-    state.write_to_memory(state.buses.addr, state.registers.pc.1);
+    state.buses.write(state.buses.addr, state.registers.pc.1);
 }
 
 pub fn write_status(state: &mut State) {
-    state.write_to_memory(state.buses.addr, state.registers.psr);
+    state.buses.write(state.buses.addr, state.registers.psr);
 }

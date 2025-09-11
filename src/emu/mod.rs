@@ -51,28 +51,30 @@ impl fmt::Display for LoadError {
     }
 }
 
-pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
+pub fn run_emulator(mut state: State, _debug_level: DebugLevel) -> Result<State, EmuError> {
     state.abstracts.half_cycle_count = 14;
 
     while !state.abstracts.is_halted {
         match state.abstracts.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
+                // @TODO: Uncomment once output is fixed.
                 // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level == DebugLevel::High {
-                    println!("{state}");
-                }
+                // if debug_level == DebugLevel::High {
+                //     println!("{state}");
+                // }
 
                 phase1(&mut state);
                 phase2(&mut state);
             }
             None => {
+                // @TODO: Uncomment once output is fixed.
                 // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level == DebugLevel::Low {
-                    println!("{state:?}");
-                } else if debug_level == DebugLevel::High {
-                    println!();
-                    println!("{state}");
-                }
+                // if debug_level == DebugLevel::Low {
+                //     println!("{state:?}");
+                // } else if debug_level == DebugLevel::High {
+                //     println!();
+                //     println!("{state}");
+                // }
 
                 let [phase1, phase2] = FETCH_INSTRUCTION;
                 phase1(&mut state);
@@ -116,7 +118,7 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
 
     for (index, &data) in program.iter().enumerate() {
         let address = concat_u8!(starting_addr.0, starting_addr.1).wrapping_add(index as u16);
-        state.write_to_memory(split_u16!(address), data);
+        state.buses.write(split_u16!(address), data);
 
         if address == 0xFFFF {
             break;
@@ -146,7 +148,7 @@ mod tests {
         let run_result = run_emulator(loaded_state, DebugLevel::None);
         let mut final_state = run_result.unwrap();
 
-        assert_eq!(final_state.read_from_memory((0x00, 0x02)), 0x00);
-        assert_eq!(final_state.read_from_memory((0x00, 0x03)), 0x00);
+        assert_eq!(final_state.buses.read((0x00, 0x02)), 0x00);
+        assert_eq!(final_state.buses.read((0x00, 0x03)), 0x00);
     }
 }

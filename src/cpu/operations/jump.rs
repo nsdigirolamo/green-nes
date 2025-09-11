@@ -1,7 +1,7 @@
 use crate::cpu::state::State;
 
 pub fn jsr(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.effective_addr.0 = data;
     state.buses.data = data;
@@ -9,7 +9,7 @@ pub fn jsr(state: &mut State) {
 }
 
 pub fn jmp_absolute(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
 
     state.buses.effective_addr.0 = data;
     state.buses.data = data;
@@ -18,7 +18,7 @@ pub fn jmp_absolute(state: &mut State) {
 
 pub fn rti(state: &mut State) {
     // B and extra bit are ignored
-    let masked_stack_status = state.read_from_memory(state.buses.addr) & 0b_1100_1111;
+    let masked_stack_status = state.buses.read(state.buses.addr) & 0b_1100_1111;
     let masked_processor_status = state.registers.psr & 0b_0011_0000;
     let new_processor_status = masked_stack_status | masked_processor_status;
 

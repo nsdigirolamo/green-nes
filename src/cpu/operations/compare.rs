@@ -1,7 +1,7 @@
 use crate::cpu::{half_cycles::get_effective_address, state::State};
 
 pub fn cmp(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
     let result = state.registers.a.wrapping_sub(data);
 
     state.set_carry_flag(state.registers.a >= data);
@@ -32,7 +32,7 @@ pub fn cmp_absolute_indexed(state: &mut State) {
 }
 
 pub fn cpx(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
     let result = state.registers.x_index.wrapping_sub(data);
 
     state.set_carry_flag(state.registers.x_index >= data);
@@ -41,7 +41,7 @@ pub fn cpx(state: &mut State) {
 }
 
 pub fn cpy(state: &mut State) {
-    let data = state.read_from_memory(state.buses.addr);
+    let data = state.buses.read(state.buses.addr);
     let result = state.registers.y_index.wrapping_sub(data);
 
     state.set_carry_flag(state.registers.y_index >= data);
