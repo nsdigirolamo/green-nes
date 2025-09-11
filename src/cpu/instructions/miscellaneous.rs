@@ -1,4 +1,4 @@
-use crate::emu::{
+use crate::cpu::{
     cycles::FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
     half_cycles::{
         get_high_interrupt_vector, get_indirect_high_address_byte, get_indirect_low_address_byte,

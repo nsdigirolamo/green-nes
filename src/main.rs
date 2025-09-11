@@ -2,9 +2,14 @@ use std::process;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::emu::{load_program, run_emulator, state::State};
+use crate::{
+    cpu::state::State,
+    emu::{load_program, run_emulator},
+};
 
+pub mod cpu;
 pub mod emu;
+pub mod ppu;
 
 #[derive(clap::Parser)]
 struct Cli {
@@ -55,7 +60,7 @@ fn main() {
                 }
             };
 
-            let cycle_count = final_state.half_cycle_count / 2;
+            let cycle_count = final_state.abstracts.half_cycle_count / 2;
             println!("Completed {cycle_count} cycles. Final State:\n{final_state:?}");
 
             let status02 = final_state.read_from_memory((0x00, 0x02));

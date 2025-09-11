@@ -1,4 +1,4 @@
-use crate::emu::{
+use crate::cpu::{
     half_cycles::get_effective_address,
     operations::{
         access::{lda, ldx},
@@ -20,23 +20,29 @@ pub fn lax(state: &mut State) {
 pub fn lax_indirect_y(state: &mut State) {
     lax(state);
 
-    if state.crossed_page {
-        state.cycle_queue.push_back([get_effective_address, lax]);
+    if state.abstracts.crossed_page {
+        state
+            .abstracts
+            .cycle_queue
+            .push_back([get_effective_address, lax]);
     }
 }
 
 pub fn lax_absolute_indexed(state: &mut State) {
     lax(state);
 
-    if state.crossed_page {
-        state.cycle_queue.push_back([get_effective_address, lax]);
+    if state.abstracts.crossed_page {
+        state
+            .abstracts
+            .cycle_queue
+            .push_back([get_effective_address, lax]);
     }
 }
 
 pub fn sax(state: &mut State) {
-    let data = state.accumulator & state.x_index_register;
+    let data = state.registers.a & state.registers.x_index;
 
-    state.write_to_memory(state.address_bus, data);
+    state.write_to_memory(state.buses.addr, data);
 }
 
 pub fn usbc(state: &mut State) {
@@ -74,5 +80,5 @@ pub fn rra(state: &mut State) {
 }
 
 pub fn jam(state: &mut State) {
-    state.is_halted = true;
+    state.abstracts.is_halted = true;
 }

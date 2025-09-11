@@ -1,28 +1,30 @@
-use crate::emu::{
+use crate::cpu::{
     half_cycles::{branch_across_page, get_effective_address, read_opcode},
     state::State,
 };
 
 pub fn do_branch(state: &mut State, condition: bool) {
-    let offset = state.read_from_memory(state.address_bus);
+    let offset = state.read_from_memory(state.buses.addr);
 
     if condition {
-        let (pc_high, pc_low) = state.program_counter;
+        let (pc_high, pc_low) = state.registers.pc;
         let (pc_low_offset, overflow) = pc_low.overflowing_add_signed(offset as i8);
 
-        state.effective_address = (pc_high, pc_low_offset);
-        state.crossed_page = overflow;
+        state.buses.effective_addr = (pc_high, pc_low_offset);
+        state.abstracts.crossed_page = overflow;
 
         state
+            .abstracts
             .cycle_queue
             .push_back([get_effective_address, read_opcode]);
 
-        if state.crossed_page {
+        if state.abstracts.crossed_page {
             state
+                .abstracts
                 .cycle_queue
                 .push_back([branch_across_page, read_opcode]);
         } else {
-            state.program_counter = (pc_high, pc_low_offset);
+            state.registers.pc = (pc_high, pc_low_offset);
         }
     }
 }

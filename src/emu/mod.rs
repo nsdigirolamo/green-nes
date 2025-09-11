@@ -1,20 +1,15 @@
-use std::path::Path;
+use std::fmt;
 
 use crate::{
     DebugLevel,
-    emu::{
+    cpu::{
         cycles::{FETCH_INSTRUCTION, get_cycles},
-        error::{EmuError, LoadError},
         state::{PROGRAM_START_ADDRESS, State},
     },
+    emu::error::{Error as EmuError, LoadError},
 };
 
-pub mod cycles;
 pub mod error;
-pub mod half_cycles;
-pub mod instructions;
-pub mod operations;
-pub mod state;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -39,11 +34,28 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
-    state.half_cycle_count = 14;
+impl fmt::Display for LoadError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::ProgramTooLarge { maximum_size } => write!(
+                f,
+                "program is too large (exceeds maximum size of {maximum_size} bytes)"
+            ),
+            Self::FileOpenFailed { message } => {
+                write!(f, "failed to open program file: {message}")
+            }
+            Self::MissingHeader => {
+                write!(f, "the program header is missing")
+            }
+        }
+    }
+}
 
-    while !state.is_halted {
-        match state.cycle_queue.pop_front() {
+pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
+    state.abstracts.half_cycle_count = 14;
+
+    while !state.abstracts.is_halted {
+        match state.abstracts.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
                 // @TODO: Look into: Do these if statement debug messages impact performance?
                 if debug_level == DebugLevel::High {
@@ -66,12 +78,12 @@ pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, 
                 phase1(&mut state);
                 phase2(&mut state);
 
-                let new_cycles = get_cycles(state.instruction_register);
-                state.cycle_queue.extend(new_cycles.iter());
+                let new_cycles = get_cycles(state.registers.ir);
+                state.abstracts.cycle_queue.extend(new_cycles.iter());
             }
         };
 
-        state.half_cycle_count += 2;
+        state.abstracts.half_cycle_count += 2;
     }
 
     Ok(state)
@@ -81,16 +93,17 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
     // @TODO: Clean this function up. Should check to ensure the file being
     // loaded is a valid file format.
 
-    let program =
-        std::fs::read(Path::new(path_to_program)).map_err(|e| LoadError::FileOpenFailed {
+    let program = std::fs::read(std::path::Path::new(path_to_program)).map_err(|e| {
+        LoadError::FileOpenFailed {
             message: e.to_string(),
-        })?;
+        }
+    })?;
     if program.len() < PROGRAM_HEADER_LENGTH {
         return Err(LoadError::MissingHeader);
     }
 
     let starting_addr = split_u16!(PROGRAM_START_ADDRESS);
-    state.program_counter = starting_addr;
+    state.registers.pc = starting_addr;
 
     let program = &program[PROGRAM_HEADER_LENGTH..];
     // let maximum_program_size = state::MEMORY_LENGTH - starting_addr as usize;
@@ -117,7 +130,8 @@ pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, Lo
 mod tests {
     use crate::{
         DebugLevel,
-        emu::{load_program, run_emulator, state::State},
+        cpu::state::State,
+        emu::{load_program, run_emulator},
     };
 
     #[test]

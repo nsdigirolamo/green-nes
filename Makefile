@@ -1,3 +1,5 @@
+.PHONY: build-dev build-release dev release test
+
 build-dev:
 	cargo build
 
@@ -13,5 +15,3 @@ release:
 test:
 	bash download-tests.sh
 	cargo test
-
-.PHONY: build-dev build-release dev release test
