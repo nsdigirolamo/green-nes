@@ -1,15 +1,14 @@
-use std::fmt;
-
 use crate::{
     DebugLevel,
     cpu::{
         cycles::{FETCH_INSTRUCTION, get_cycles},
         state::{PROGRAM_START_ADDRESS, State},
     },
-    emu::error::{Error as EmuError, LoadError},
+    emu::error::Error as EmuError,
 };
 
 pub mod error;
+pub mod ines;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -34,34 +33,20 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-impl fmt::Display for LoadError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::ProgramTooLarge { maximum_size } => write!(
-                f,
-                "program is too large (exceeds maximum size of {maximum_size} bytes)"
-            ),
-            Self::FileOpenFailed { message } => {
-                write!(f, "failed to open program file: {message}")
-            }
-            Self::MissingHeader => {
-                write!(f, "the program header is missing")
-            }
-        }
-    }
-}
-
-pub fn run_emulator(mut state: State, _debug_level: DebugLevel) -> Result<State, EmuError> {
+pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
     state.abstracts.half_cycle_count = 14;
+    state.registers.pc = split_u16!(PROGRAM_START_ADDRESS);
+    state.registers.sp = 0xFD;
+    state.registers.psr = 0x24;
 
     while !state.abstracts.is_halted {
         match state.abstracts.cycle_queue.pop_front() {
             Some([phase1, phase2]) => {
                 // @TODO: Uncomment once output is fixed.
                 // @TODO: Look into: Do these if statement debug messages impact performance?
-                // if debug_level == DebugLevel::High {
-                //     println!("{state}");
-                // }
+                if debug_level == DebugLevel::High {
+                    println!("{state}");
+                }
 
                 phase1(&mut state);
                 phase2(&mut state);
@@ -69,12 +54,12 @@ pub fn run_emulator(mut state: State, _debug_level: DebugLevel) -> Result<State,
             None => {
                 // @TODO: Uncomment once output is fixed.
                 // @TODO: Look into: Do these if statement debug messages impact performance?
-                // if debug_level == DebugLevel::Low {
-                //     println!("{state:?}");
-                // } else if debug_level == DebugLevel::High {
-                //     println!();
-                //     println!("{state}");
-                // }
+                if debug_level == DebugLevel::Low {
+                    println!("{state:?}");
+                } else if debug_level == DebugLevel::High {
+                    println!();
+                    println!("{state}");
+                }
 
                 let [phase1, phase2] = FETCH_INSTRUCTION;
                 phase1(&mut state);
@@ -91,49 +76,15 @@ pub fn run_emulator(mut state: State, _debug_level: DebugLevel) -> Result<State,
     Ok(state)
 }
 
-pub fn load_program(mut state: State, path_to_program: &str) -> Result<State, LoadError> {
-    // @TODO: Clean this function up. Should check to ensure the file being
-    // loaded is a valid file format.
-
-    let program = std::fs::read(std::path::Path::new(path_to_program)).map_err(|e| {
-        LoadError::FileOpenFailed {
-            message: e.to_string(),
-        }
-    })?;
-    if program.len() < PROGRAM_HEADER_LENGTH {
-        return Err(LoadError::MissingHeader);
-    }
-
-    let starting_addr = split_u16!(PROGRAM_START_ADDRESS);
-    state.registers.pc = starting_addr;
-
-    let program = &program[PROGRAM_HEADER_LENGTH..];
-    // let maximum_program_size = state::MEMORY_LENGTH - starting_addr as usize;
-
-    // if maximum_program_size < program.len() {
-    //     return Err(LoadError::ProgramTooLarge {
-    //         maximum_size: maximum_program_size,
-    //     });
-    // }
-
-    for (index, &data) in program.iter().enumerate() {
-        let address = concat_u8!(starting_addr.0, starting_addr.1).wrapping_add(index as u16);
-        state.buses.write(split_u16!(address), data);
-
-        if address == 0xFFFF {
-            break;
-        }
-    }
-
-    Ok(state)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
         DebugLevel,
         cpu::state::State,
-        emu::{load_program, run_emulator},
+        emu::{
+            ines::{Cartridge, read_cartridge},
+            run_emulator,
+        },
     };
 
     #[test]
@@ -141,11 +92,10 @@ mod tests {
     /// stored in `0x02` and `0x03` in memory. See the
     /// [docs](https://www.qmtpro.com/~nes/misc/nestest.txt) for more info.
     fn nestest() {
-        let state: State = Default::default();
-        let load_result = load_program(state, "tests/nestest.nes");
-        let loaded_state = load_result.unwrap();
+        let cartridge: Cartridge = read_cartridge("tests/nestest.nes").unwrap();
+        let state: State = State::new(cartridge);
 
-        let run_result = run_emulator(loaded_state, DebugLevel::None);
+        let run_result = run_emulator(state, DebugLevel::None);
         let mut final_state = run_result.unwrap();
 
         assert_eq!(final_state.buses.read((0x00, 0x02)), 0x00);

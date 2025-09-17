@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::{
     cpu::state::State,
-    emu::{load_program, run_emulator},
+    emu::{ines::read_cartridge, run_emulator},
 };
 
 pub mod cpu;
@@ -38,19 +38,19 @@ pub enum DebugLevel {
 
 fn main() {
     let cli = Cli::parse();
-
-    let state: State = Default::default();
     let debug_level = cli.debug;
 
     match cli.command {
         Commands::Run { path } => {
-            let state = match load_program(state, path.as_str()) {
-                Ok(state) => state,
+            let cartridge = match read_cartridge(&path) {
+                Ok(cartridge) => cartridge,
                 Err(err) => {
-                    eprintln!("Loading program failed: {err}");
+                    eprintln!("Loading cartridge failed: {err}");
                     process::exit(1);
                 }
             };
+
+            let state = State::new(cartridge);
 
             let mut final_state = match run_emulator(state, debug_level) {
                 Ok(state) => state,
