@@ -98,7 +98,7 @@ mod tests {
         let run_result = run_emulator(state, DebugLevel::None);
         let mut final_state = run_result.unwrap();
 
-        assert_eq!(final_state.buses.read((0x00, 0x02)), 0x00);
-        assert_eq!(final_state.buses.read((0x00, 0x03)), 0x00);
+        assert_eq!(final_state.mem_read((0x00, 0x02)), 0x00);
+        assert_eq!(final_state.mem_read((0x00, 0x03)), 0x00);
     }
 }

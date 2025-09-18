@@ -5,15 +5,12 @@ const INES_HEADER_LENGTH: usize = 16;
 const INES_PRG_ROM_SIZE_UNITS: usize = 16384;
 const INES_CHR_ROM_SIZE_UNITS: usize = 8192;
 
-#[derive(Default)]
 pub enum NametableMirroring {
-    #[default]
     Horizontal, // Vertically Arranged
-    Vertical, // Horizontally Arranged
+    Vertical,   // Horizontally Arranged
     FourScreen,
 }
 
-#[derive(Default)]
 pub struct Cartridge {
     pub prg_rom: Vec<u8>,
     pub chr_rom: Vec<u8>,

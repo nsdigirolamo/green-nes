@@ -4,12 +4,12 @@ use crate::{
 };
 
 pub fn inc(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = data.wrapping_add(1);
 
     state.set_zero_flag(result == 0);
     state.set_negative_flag((result & 0b_1000_0000) != 0);
-    state.buses.write(state.buses.addr, result);
+    state.mem_write(state.buses.addr, result);
 }
 
 pub fn inx(state: &mut State) {
@@ -31,12 +31,12 @@ pub fn iny(state: &mut State) {
 }
 
 pub fn dec(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = data.wrapping_sub(1);
 
     state.set_zero_flag(result == 0);
     state.set_negative_flag((result & 0b_1000_0000) != 0);
-    state.buses.write(state.buses.addr, result);
+    state.mem_write(state.buses.addr, result);
 }
 
 pub fn dex(state: &mut State) {
@@ -58,7 +58,7 @@ pub fn dey(state: &mut State) {
 }
 
 pub fn adc(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let accumulator = state.registers.a;
     let (sum, overflow1) = accumulator.overflowing_add(data);
     let (result, overflow2) = sum.overflowing_add(state.get_carry_flag() as u8);
@@ -95,7 +95,7 @@ pub fn adc_absolute_indexed(state: &mut State) {
 }
 
 pub fn sbc(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let accumulator = state.registers.a;
     let (sum, overflow1) = accumulator.overflowing_add(!data);
     let (result, overflow2) = sum.overflowing_add(state.get_carry_flag() as u8);

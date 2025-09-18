@@ -42,7 +42,7 @@ pub fn lax_absolute_indexed(state: &mut State) {
 pub fn sax(state: &mut State) {
     let data = state.registers.a & state.registers.x_index;
 
-    state.buses.write(state.buses.addr, data);
+    state.mem_write(state.buses.addr, data);
 }
 
 pub fn usbc(state: &mut State) {

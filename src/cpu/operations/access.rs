@@ -1,7 +1,7 @@
 use crate::cpu::{half_cycles::get_effective_address, state::State};
 
 pub fn lda(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
 
     state.registers.a = data;
     state.set_zero_flag(data == 0);
@@ -31,7 +31,7 @@ pub fn lda_absolute_indexed(state: &mut State) {
 }
 
 pub fn ldx(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
 
     state.registers.x_index = data;
     state.set_zero_flag(data == 0);
@@ -50,7 +50,7 @@ pub fn ldx_absolute_indexed(state: &mut State) {
 }
 
 pub fn ldy(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
 
     state.registers.y_index = data;
     state.set_zero_flag(data == 0);
@@ -71,17 +71,17 @@ pub fn ldy_absolute_indexed(state: &mut State) {
 pub fn sta(state: &mut State) {
     let data = state.registers.a;
 
-    state.buses.write(state.buses.addr, data);
+    state.mem_write(state.buses.addr, data);
 }
 
 pub fn stx(state: &mut State) {
     let data = state.registers.x_index;
 
-    state.buses.write(state.buses.addr, data);
+    state.mem_write(state.buses.addr, data);
 }
 
 pub fn sty(state: &mut State) {
     let data = state.registers.y_index;
 
-    state.buses.write(state.buses.addr, data);
+    state.mem_write(state.buses.addr, data);
 }

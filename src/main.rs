@@ -64,8 +64,8 @@ fn main() {
             // let cycle_count = final_state.abstracts.half_cycle_count / 2;
             // println!("Completed {cycle_count} cycles. Final State:\n{final_state:?}");
 
-            let status02 = final_state.buses.read((0x00, 0x02));
-            let status03 = final_state.buses.read((0x00, 0x03));
+            let status02 = final_state.mem_read((0x00, 0x02));
+            let status03 = final_state.mem_read((0x00, 0x03));
             println!("[0x02, 0x03]: [0x{status02:02X}, 0x{status03:02X}]");
         }
     }

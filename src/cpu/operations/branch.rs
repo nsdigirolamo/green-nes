@@ -4,7 +4,7 @@ use crate::cpu::{
 };
 
 pub fn do_branch(state: &mut State, condition: bool) {
-    let offset = state.buses.read(state.buses.addr);
+    let offset = state.mem_read(state.buses.addr);
 
     if condition {
         let (pc_high, pc_low) = state.registers.pc;

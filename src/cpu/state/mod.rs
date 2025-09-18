@@ -9,6 +9,7 @@ use crate::{
 
 pub mod abstracts;
 pub mod buses;
+pub mod memory;
 pub mod registers;
 
 pub const MAX_MEMORY_ADDRESS: u16 = 0xFFFF;
@@ -33,6 +34,18 @@ impl State {
             registers: Registers::default(),
             buses: Buses::new(cartrige),
         }
+    }
+
+    pub fn mem_peek(&self, address: (u8, u8)) -> u8 {
+        self.buses.peek(address)
+    }
+
+    pub fn mem_read(&mut self, address: (u8, u8)) -> u8 {
+        self.buses.read(address)
+    }
+
+    pub fn mem_write(&mut self, address: (u8, u8), data: u8) {
+        self.buses.write(address, data);
     }
 
     pub fn increment_pc(&mut self) {
@@ -156,17 +169,17 @@ impl fmt::Display for State {
         let pc0 = concat_u8!(self.registers.pc.0, self.registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
-        let pc_mem0 = self.buses.peek(split_u16!(pc0));
-        let pc_mem1 = self.buses.peek(split_u16!(pc1));
-        let pc_mem2 = self.buses.peek(split_u16!(pc2));
+        let pc_mem0 = self.mem_peek(split_u16!(pc0));
+        let pc_mem1 = self.mem_peek(split_u16!(pc1));
+        let pc_mem2 = self.mem_peek(split_u16!(pc2));
 
         let (addr_bus_high, addr_bus_low) = self.buses.addr;
         let ab0 = concat_u8!(addr_bus_high, addr_bus_low);
         let ab1 = ab0.wrapping_add(1);
         let ab2 = ab0.wrapping_add(2);
-        let ab_mem0 = self.buses.peek(split_u16!(ab0));
-        let ab_mem1 = self.buses.peek(split_u16!(ab1));
-        let ab_mem2 = self.buses.peek(split_u16!(ab2));
+        let ab_mem0 = self.mem_peek(split_u16!(ab0));
+        let ab_mem1 = self.mem_peek(split_u16!(ab1));
+        let ab_mem2 = self.mem_peek(split_u16!(ab2));
 
         let data_bus = self.buses.data;
 
@@ -181,9 +194,9 @@ impl fmt::Display for State {
         let sp0 = concat_u8!(0x10, self.registers.sp);
         let sp1 = sp0.wrapping_add(1);
         let sp2 = sp0.wrapping_add(2);
-        let sp_mem0 = self.buses.peek(split_u16!(sp0));
-        let sp_mem1 = self.buses.peek(split_u16!(sp1));
-        let sp_mem2 = self.buses.peek(split_u16!(sp2));
+        let sp_mem0 = self.mem_peek(split_u16!(sp0));
+        let sp_mem1 = self.mem_peek(split_u16!(sp1));
+        let sp_mem2 = self.mem_peek(split_u16!(sp2));
 
         write!(
             f,
@@ -205,9 +218,9 @@ impl fmt::Debug for State {
         let pc0 = concat_u8!(self.registers.pc.0, self.registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
-        let pc_mem0 = self.buses.peek(split_u16!(pc0));
-        let pc_mem1 = self.buses.peek(split_u16!(pc1));
-        let pc_mem2 = self.buses.peek(split_u16!(pc2));
+        let pc_mem0 = self.mem_peek(split_u16!(pc0));
+        let pc_mem1 = self.mem_peek(split_u16!(pc1));
+        let pc_mem2 = self.mem_peek(split_u16!(pc2));
 
         let accumulator = self.registers.a;
         let x_index = self.registers.x_index;

@@ -1,7 +1,7 @@
 use crate::cpu::{half_cycles::get_effective_address, state::State};
 
 pub fn and(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = state.registers.a & data;
 
     state.registers.a = result;
@@ -32,7 +32,7 @@ pub fn and_absolute_indexed(state: &mut State) {
 }
 
 pub fn bit(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = state.registers.a & data;
 
     state.set_zero_flag(result == 0);
@@ -41,7 +41,7 @@ pub fn bit(state: &mut State) {
 }
 
 pub fn eor(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = state.registers.a ^ data;
 
     state.registers.a = result;
@@ -72,7 +72,7 @@ pub fn eor_absolute_indexed(state: &mut State) {
 }
 
 pub fn ora(state: &mut State) {
-    let data = state.buses.read(state.buses.addr);
+    let data = state.mem_read(state.buses.addr);
     let result = state.registers.a | data;
 
     state.registers.a = result;
