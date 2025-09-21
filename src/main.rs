@@ -2,14 +2,9 @@ use std::process;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::{
-    cpu::state::State,
-    emu::{ines::read_cartridge, run_emulator},
-};
+use crate::emu::{cartridge::ines::read_cartridge, cpu::state::State, run_emulator};
 
-pub mod cpu;
 pub mod emu;
-pub mod ppu;
 
 #[derive(clap::Parser)]
 struct Cli {

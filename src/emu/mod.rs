@@ -1,14 +1,16 @@
 use crate::{
     DebugLevel,
-    cpu::{
+    emu::cpu::{
         cycles::{FETCH_INSTRUCTION, get_cycles},
         state::{PROGRAM_START_ADDRESS, State},
     },
     emu::error::Error as EmuError,
 };
 
+pub mod cartridge;
+pub mod cpu;
 pub mod error;
-pub mod ines;
+pub mod ppu;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -80,9 +82,9 @@ pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, 
 mod tests {
     use crate::{
         DebugLevel,
-        cpu::state::State,
         emu::{
-            ines::{Cartridge, read_cartridge},
+            cartridge::{Cartridge, ines::read_cartridge},
+            cpu::state::State,
             run_emulator,
         },
     };
