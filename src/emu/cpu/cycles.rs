@@ -1,18 +1,20 @@
 use crate::emu::cpu::{
     half_cycles::{
-        get_pc, read_high_base_address_byte, read_high_effective_address_byte,
-        read_low_base_address_byte, read_low_effective_address_byte, read_opcode,
+        HalfCycle, get_pc,
+        operations::{
+            access, arithmetic, bitwise, branch, compare, flags, jump, other, shift, stack,
+            transfer, unofficial,
+        },
+        read_high_base_address_byte, read_high_effective_address_byte, read_low_base_address_byte,
+        read_low_effective_address_byte, read_opcode,
     },
     instructions::{
         Instruction, miscellaneous::Miscellaneous, read::Read, read_modify_write::ReadModifyWrite,
         single_byte::SingleByte, store::Store, unofficial::Unofficial,
     },
-    operations::{
-        access, arithmetic, bitwise, branch, compare, flags, jump, other, shift, stack, transfer,
-        unofficial,
-    },
-    state::Cycle,
 };
+
+pub type Cycle = [HalfCycle; 2];
 
 pub const FETCH_INSTRUCTION: Cycle = [get_pc, read_opcode];
 pub const FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc, read_high_effective_address_byte];

@@ -1,14 +1,14 @@
 use crate::emu::cpu::{
-    cycles::FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+    cycles::{Cycle, FETCH_LOW_EFFECTIVE_ADDRESS_BYTE},
     half_cycles::{
-        get_high_interrupt_vector, get_indirect_high_address_byte, get_indirect_low_address_byte,
-        get_low_interrupt_vector, get_pc, get_pc_without_increment, get_sp, pop_stack, push_stack,
-        read_data, read_high_effective_address_byte, read_high_indirect_address_byte,
-        read_high_pc_address_byte, read_low_effective_address_byte, read_low_indirect_address_byte,
-        read_low_pc_address_byte, write_pc_high, write_pc_low, write_status,
+        HalfCycle, get_high_interrupt_vector, get_indirect_high_address_byte,
+        get_indirect_low_address_byte, get_low_interrupt_vector, get_pc, get_pc_without_increment,
+        get_sp, pop_stack, push_stack, read_data, read_high_effective_address_byte,
+        read_high_indirect_address_byte, read_high_pc_address_byte,
+        read_low_effective_address_byte, read_low_indirect_address_byte, read_low_pc_address_byte,
+        write_pc_high, write_pc_low, write_status,
     },
     instructions::Instruction,
-    state::{Cycle, HalfCycle},
 };
 
 pub enum Miscellaneous {

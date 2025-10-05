@@ -1,16 +1,10 @@
-use crate::{
-    DebugLevel,
-    emu::cpu::{
-        cycles::{FETCH_INSTRUCTION, get_cycles},
-        state::{PROGRAM_START_ADDRESS, State},
-    },
-    emu::error::Error as EmuError,
-};
+use crate::{DebugLevel, emu::nes::NES};
 
+pub mod buses;
 pub mod cartridge;
 pub mod cpu;
 pub mod error;
-pub mod ppu;
+pub mod nes;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -35,47 +29,22 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(mut state: State, debug_level: DebugLevel) -> Result<State, EmuError> {
-    state.abstracts.half_cycle_count = 14;
-    state.registers.pc = split_u16!(PROGRAM_START_ADDRESS);
-    state.registers.sp = 0xFD;
-    state.registers.psr = 0x24;
-
-    while !state.abstracts.is_halted {
-        match state.abstracts.cycle_queue.pop_front() {
-            Some([phase1, phase2]) => {
-                // @TODO: Uncomment once output is fixed.
-                // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level == DebugLevel::High {
-                    println!("{state}");
-                }
-
-                phase1(&mut state);
-                phase2(&mut state);
+pub fn run_emulator(mut nes: NES, debug_level: DebugLevel) -> NES {
+    while !nes.cpu.is_halted {
+        match debug_level {
+            DebugLevel::High => {
+                println!("{nes}")
             }
-            None => {
-                // @TODO: Uncomment once output is fixed.
-                // @TODO: Look into: Do these if statement debug messages impact performance?
-                if debug_level == DebugLevel::Low {
-                    println!("{state:?}");
-                } else if debug_level == DebugLevel::High {
-                    println!();
-                    println!("{state}");
-                }
-
-                let [phase1, phase2] = FETCH_INSTRUCTION;
-                phase1(&mut state);
-                phase2(&mut state);
-
-                let new_cycles = get_cycles(state.registers.ir);
-                state.abstracts.cycle_queue.extend(new_cycles.iter());
+            DebugLevel::Low => {
+                println!("{nes:?}")
             }
-        };
+            _ => {}
+        }
 
-        state.abstracts.half_cycle_count += 2;
+        nes.cpu.tick(&mut nes.buses);
     }
 
-    Ok(state)
+    nes
 }
 
 #[cfg(test)]
@@ -84,7 +53,7 @@ mod tests {
         DebugLevel,
         emu::{
             cartridge::{Cartridge, ines::read_cartridge},
-            cpu::state::State,
+            nes::NES,
             run_emulator,
         },
     };
@@ -95,12 +64,10 @@ mod tests {
     /// [docs](https://www.qmtpro.com/~nes/misc/nestest.txt) for more info.
     fn nestest() {
         let cartridge: Cartridge = read_cartridge("tests/nestest.nes").unwrap();
-        let state: State = State::new(cartridge);
+        let nes = NES::new(cartridge);
+        let final_state = run_emulator(nes, DebugLevel::None);
 
-        let run_result = run_emulator(state, DebugLevel::None);
-        let mut final_state = run_result.unwrap();
-
-        assert_eq!(final_state.mem_read((0x00, 0x02)), 0x00);
-        assert_eq!(final_state.mem_read((0x00, 0x03)), 0x00);
+        assert_eq!(final_state.buses.peek((0x00, 0x02)), 0x00);
+        assert_eq!(final_state.buses.peek((0x00, 0x03)), 0x00);
     }
 }

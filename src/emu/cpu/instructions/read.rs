@@ -1,19 +1,19 @@
 use crate::emu::cpu::{
     cycles::{
-        FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE, FETCH_LOW_BASE_ADDRESS_BYTE,
+        Cycle, FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE, FETCH_LOW_BASE_ADDRESS_BYTE,
         FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
     },
     half_cycles::{
-        get_base_zero_page_address, get_effective_address, get_effective_zero_page_address,
-        get_effective_zero_page_x_indexed_address, get_effective_zero_page_y_indexed_address,
-        get_indirect_x_indexed_high_address_byte, get_indirect_x_indexed_low_address_byte,
-        get_indirect_zero_page_high_address_byte, get_indirect_zero_page_low_address_byte, get_pc,
-        get_x_indexed_base_address_with_carry, get_y_indexed_base_address_with_carry, read_data,
-        read_high_base_address_byte, read_high_effective_address_byte, read_low_base_address_byte,
+        HalfCycle, get_base_zero_page_address, get_effective_address,
+        get_effective_zero_page_address, get_effective_zero_page_x_indexed_address,
+        get_effective_zero_page_y_indexed_address, get_indirect_x_indexed_high_address_byte,
+        get_indirect_x_indexed_low_address_byte, get_indirect_zero_page_high_address_byte,
+        get_indirect_zero_page_low_address_byte, get_pc, get_x_indexed_base_address_with_carry,
+        get_y_indexed_base_address_with_carry, read_data, read_high_base_address_byte,
+        read_high_effective_address_byte, read_low_base_address_byte,
         read_low_effective_address_byte, read_low_indirect_address_byte,
     },
     instructions::Instruction,
-    state::{Cycle, HalfCycle},
 };
 
 pub enum Read {

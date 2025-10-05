@@ -1,7 +1,7 @@
 use crate::emu::cpu::{
-    half_cycles::read_opcode,
+    cycles::Cycle,
+    half_cycles::{HalfCycle, read_opcode},
     instructions::Instruction,
-    state::{Cycle, HalfCycle},
 };
 
 pub enum SingleByte {
