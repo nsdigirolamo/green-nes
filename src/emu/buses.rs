@@ -62,15 +62,7 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             CARTRIDGE_ROM_MAPPER_MIN_ADDRESS..=CARTRIDGE_ROM_MAPPER_MAX_ADDRESS => {
-                let mapped_addr = addr - CARTRIDGE_ROM_MAPPER_MIN_ADDRESS;
-
-                let mapped_addr = if self.cart.prg_rom.len() == 0x4000 && mapped_addr >= 0x4000 {
-                    mapped_addr % 0x4000
-                } else {
-                    mapped_addr
-                };
-
-                self.cart.prg_rom[mapped_addr as usize]
+                self.cart.mapper.prg_read(addr)
             }
             _ => {
                 todo!("read 0x{addr:04X} is unmapped")
@@ -95,6 +87,9 @@ impl Buses {
             RAM_MIN_ADDR..=RAM_MIRROR_MAX_ADDR => {
                 let mapped_addr = addr & 0b_0000_0111_1111_1111;
                 self.ram[mapped_addr as usize] = data;
+            }
+            CARTRIDGE_ROM_MAPPER_MIN_ADDRESS..=CARTRIDGE_ROM_MAPPER_MAX_ADDRESS => {
+                self.cart.mapper.prg_write(addr, data)
             }
             _ => {
                 todo!("write {addr} is unmapped")

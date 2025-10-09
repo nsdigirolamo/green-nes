@@ -1,14 +1,8 @@
-pub mod ines;
+use crate::emu::cartridge::mappers::Mapper;
 
-pub enum NametableMirroring {
-    Horizontal, // Vertically Arranged
-    Vertical,   // Horizontally Arranged
-    FourScreen,
-}
+pub mod ines;
+pub mod mappers;
 
 pub struct Cartridge {
-    pub prg_rom: Vec<u8>,
-    pub chr_rom: Vec<u8>,
-    pub mapper: u8,
-    pub nametable_mirroring: NametableMirroring,
+    pub mapper: Box<dyn Mapper>,
 }
