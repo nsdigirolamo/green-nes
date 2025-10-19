@@ -34,5 +34,3 @@ pub struct Registers {
     pub oam_dma: OamDma,             // Spite DMA (0x4014 W)
     pub internal: InternalRegisters, // Internal Registers
 }
-
-impl Registers {}

@@ -70,22 +70,22 @@ impl Buses {
             }
             PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
                 let mapped_addr = addr % 8;
-
                 match mapped_addr {
-                    0 => todo!("ppu_ctrl read not implemented"),
-                    1 => todo!("ppu_mask read not implemented"),
-                    2 => todo!("ppu_status read not implemented"),
-                    3 => todo!("oam_addr read not implemented"),
-                    4 => todo!("oam_data read not implemented"),
-                    5 => todo!("ppu_scroll read not implemented"),
-                    6 => todo!("ppu_addr read not implemented"),
-                    7 => self.ppu.ppu_data_read(addr),
-                    _ => unreachable!("mapped_addr is modulo 8 and cannot be greater than 7"),
+                    0 => self.ppu.read_ppu_ctrl(),
+                    1 => self.ppu.read_ppu_mask(),
+                    2 => self.ppu.read_ppu_status(),
+                    3 => self.ppu.read_oam_addr(),
+                    4 => self.ppu.read_oam_data(),
+                    5 => self.ppu.read_ppu_scroll(),
+                    6 => self.ppu.read_ppu_addr(),
+                    7 => self.ppu.read_ppu_data(),
+                    _ => unreachable!(
+                        "bus read failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
+                    ),
                 }
             }
-
             _ => {
-                todo!("read 0x{addr:04X} is unmapped")
+                todo!("bus read failed: address 0x{addr:04X} is unmapped")
             }
         }
     }
@@ -110,10 +110,10 @@ impl Buses {
                 self.cart.mapper.prg_read(addr)
             }
             PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
-                panic!("Cannot Peek: Address 0x{addr:04X} is a PPU register.")
+                panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
             }
             _ => {
-                todo!("Cannot Peek: Address 0x{addr:04X} is unmapped.")
+                todo!("bus peek failed: address 0x{addr:04X} is unmapped")
             }
         }
     }
@@ -131,8 +131,24 @@ impl Buses {
             CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
                 self.cart.mapper.prg_write(addr, data)
             }
+            PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
+                let mapped_addr = addr % 8;
+                match mapped_addr {
+                    0 => self.ppu.write_ppu_ctrl(data),
+                    1 => self.ppu.write_ppu_mask(data),
+                    2 => self.ppu.write_ppu_status(data),
+                    3 => self.ppu.write_oam_addr(data),
+                    4 => self.ppu.write_oam_data(data),
+                    5 => self.ppu.write_ppu_scroll(data),
+                    6 => self.ppu.write_ppu_addr(data),
+                    7 => self.ppu.write_ppu_data(data),
+                    _ => unreachable!(
+                        "bus write failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
+                    ),
+                }
+            }
             _ => {
-                todo!("write {addr} is unmapped")
+                todo!("bus write failed: address 0x{addr:04X} is unmapped")
             }
         }
     }
