@@ -61,13 +61,15 @@ impl Buses {
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
             CHR_ROM_MIN_ADDR..=CHR_ROM_MAX_ADDR => {
-                todo!("this should go to the cartridge")
+                todo!("ppu read failed: address 0x{addr:04X} should be mapped to chr rom")
             }
             VRAM_MIN_ADDR..=VRAM_MAX_MIRROR_ADDR => self.vram[addr as usize],
             PALETTE_RAM_MIN_ADDR..=PALETTE_RAM_MAX_ADDR => {
-                todo!("this goes to palette")
+                todo!("ppu read failed: address 0x{addr:04X} should be mapped to palette ram")
             }
-            _ => panic!("ppu bus read to 0x{addr:04X} is outside 14-bit address space."),
+            _ => panic!(
+                "ppu read failed: address 0x{addr:04X} is outside of the 14-bit address space"
+            ),
         }
     }
 }
