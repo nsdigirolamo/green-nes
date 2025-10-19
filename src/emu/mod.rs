@@ -5,6 +5,7 @@ pub mod cartridge;
 pub mod cpu;
 pub mod error;
 pub mod nes;
+pub mod ppu;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -67,7 +68,7 @@ mod tests {
         let nes = NES::new(cartridge);
         let final_state = run_emulator(nes, DebugLevel::None);
 
-        assert_eq!(final_state.buses.peek((0x00, 0x02)), 0x00);
-        assert_eq!(final_state.buses.peek((0x00, 0x03)), 0x00);
+        assert_eq!(final_state.buses.peek(0x0002), 0x00);
+        assert_eq!(final_state.buses.peek(0x0003), 0x00);
     }
 }

@@ -48,8 +48,8 @@ fn main() {
             let nes = NES::new(cart);
 
             let final_state = run_emulator(nes, debug_level);
-            let status02 = final_state.buses.peek((0x00, 0x02));
-            let status03 = final_state.buses.peek((0x00, 0x03));
+            let status02 = final_state.buses.peek(0x0002);
+            let status03 = final_state.buses.peek(0x0003);
             println!("[0x02, 0x03]: [0x{status02:02X}, 0x{status03:02X}]");
         }
     }

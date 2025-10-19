@@ -3,7 +3,6 @@ use std::fmt;
 use crate::{
     concat_u8,
     emu::{buses::Buses, cartridge::Cartridge, cpu::CPU},
-    split_u16,
 };
 
 pub struct NES {
@@ -27,17 +26,17 @@ impl fmt::Display for NES {
         let pc0 = concat_u8!(self.cpu.registers.pc.0, self.cpu.registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
-        let pc_mem0 = self.buses.peek(split_u16!(pc0));
-        let pc_mem1 = self.buses.peek(split_u16!(pc1));
-        let pc_mem2 = self.buses.peek(split_u16!(pc2));
+        let pc_mem0 = self.buses.peek(pc0);
+        let pc_mem1 = self.buses.peek(pc1);
+        let pc_mem2 = self.buses.peek(pc2);
 
         let (addr_bus_high, addr_bus_low) = self.buses.addr;
         let ab0 = concat_u8!(addr_bus_high, addr_bus_low);
         let ab1 = ab0.wrapping_add(1);
         let ab2 = ab0.wrapping_add(2);
-        let ab_mem0 = self.buses.peek(split_u16!(ab0));
-        let ab_mem1 = self.buses.peek(split_u16!(ab1));
-        let ab_mem2 = self.buses.peek(split_u16!(ab2));
+        let ab_mem0 = self.buses.peek(ab0);
+        let ab_mem1 = self.buses.peek(ab1);
+        let ab_mem2 = self.buses.peek(ab2);
 
         let data_bus = self.buses.data;
 
@@ -52,9 +51,9 @@ impl fmt::Display for NES {
         let sp0 = concat_u8!(0x10, self.cpu.registers.sp);
         let sp1 = sp0.wrapping_add(1);
         let sp2 = sp0.wrapping_add(2);
-        let sp_mem0 = self.buses.peek(split_u16!(sp0));
-        let sp_mem1 = self.buses.peek(split_u16!(sp1));
-        let sp_mem2 = self.buses.peek(split_u16!(sp2));
+        let sp_mem0 = self.buses.peek(sp0);
+        let sp_mem1 = self.buses.peek(sp1);
+        let sp_mem2 = self.buses.peek(sp2);
 
         write!(
             f,
@@ -76,9 +75,9 @@ impl fmt::Debug for NES {
         let pc0 = concat_u8!(self.cpu.registers.pc.0, self.cpu.registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
-        let pc_mem0 = self.buses.peek(split_u16!(pc0));
-        let pc_mem1 = self.buses.peek(split_u16!(pc1));
-        let pc_mem2 = self.buses.peek(split_u16!(pc2));
+        let pc_mem0 = self.buses.peek(pc0);
+        let pc_mem1 = self.buses.peek(pc1);
+        let pc_mem2 = self.buses.peek(pc2);
 
         let accumulator = self.cpu.registers.a;
         let x_index = self.cpu.registers.x_index;
