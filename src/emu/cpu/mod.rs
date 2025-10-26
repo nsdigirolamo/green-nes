@@ -8,7 +8,15 @@ use crate::{
     concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
-        cpu::cycles::{Cycle, FETCH_INSTRUCTION, get_cycles},
+        cpu::{
+            cycles::{Cycle, FETCH_INSTRUCTION, get_cycles},
+            half_cycles::{
+                HalfCycle, get_high_irq_vector, get_high_nmi_vector, get_low_irq_vector,
+                get_low_nmi_vector, get_pc, push_stack, read_data,
+                read_high_effective_address_byte, read_low_effective_address_byte, write_pc_high,
+                write_pc_low, write_status,
+            },
+        },
     },
     split_u16,
 };
@@ -41,7 +49,10 @@ pub struct CPU {
     pub is_halted: bool,
     pub registers: Registers,
     pub buses: Buses, // Internal CPU Busesess
-    pub crossed_page: bool,
+    crossed_page: bool,
+    pub irq_occurred: bool,
+    pub nmi_occurred: bool,
+    pub nmi_flip_flop: bool, // Stores the previous state of NMI on the bus.
 }
 
 impl Default for CPU {
@@ -61,16 +72,70 @@ impl Default for CPU {
             },
             buses: Buses::default(),
             crossed_page: false,
+            irq_occurred: false,
+            nmi_occurred: false,
+            nmi_flip_flop: false,
         }
     }
 }
 
 impl CPU {
+    pub fn do_first_phase(&mut self, buses: &mut ExternalBuses, phase: HalfCycle) {
+        phase(self, buses)
+    }
+
+    pub fn do_second_phase(&mut self, buses: &mut ExternalBuses, phase: HalfCycle) {
+        phase(self, buses)
+    }
+
+    pub fn set_irq(&mut self, buses: &ExternalBuses) {
+        self.irq_occurred = !buses.get_irq()
+    }
+
+    pub fn set_nmi(&mut self, buses: &ExternalBuses) {
+        if self.nmi_flip_flop && !buses.get_nmi() {
+            self.nmi_occurred = true;
+        }
+    }
+
     pub fn do_cycle(&mut self, buses: &mut ExternalBuses, cycle: Cycle) {
         let [phase1, phase2] = cycle;
+
         phase1(self, buses);
         phase2(self, buses);
+
+        self.set_irq(buses);
+        self.set_nmi(buses);
+
         self.half_cycle_count += 2;
+    }
+
+    pub fn handle_irq(&mut self) {
+        let interrupt = [
+            FETCH_INSTRUCTION,
+            [get_pc, read_data],
+            [push_stack, write_pc_high],
+            [push_stack, write_pc_low],
+            [push_stack, write_status],
+            [get_low_irq_vector, read_high_effective_address_byte],
+            [get_high_irq_vector, read_low_effective_address_byte],
+        ];
+
+        self.cycle_queue.extend(interrupt.iter())
+    }
+
+    pub fn handle_nmi(&mut self) {
+        let interrupt = [
+            FETCH_INSTRUCTION,
+            [get_pc, read_data],
+            [push_stack, write_pc_high],
+            [push_stack, write_pc_low],
+            [push_stack, write_status],
+            [get_low_nmi_vector, read_high_effective_address_byte],
+            [get_high_nmi_vector, read_low_effective_address_byte],
+        ];
+
+        self.cycle_queue.extend(interrupt.iter());
     }
 
     pub fn tick(&mut self, buses: &mut ExternalBuses) {
@@ -78,6 +143,16 @@ impl CPU {
         match cycle {
             Some(cycle) => self.do_cycle(buses, cycle),
             None => {
+                if self.nmi_occurred {
+                    self.handle_nmi();
+                    return;
+                }
+
+                if self.irq_occurred {
+                    self.handle_irq();
+                    return;
+                }
+
                 self.do_cycle(buses, FETCH_INSTRUCTION);
                 let new_cycles = get_cycles(self.registers.ir);
                 self.cycle_queue.extend(new_cycles.iter());

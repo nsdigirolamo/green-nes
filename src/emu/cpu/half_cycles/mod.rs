@@ -145,12 +145,20 @@ pub fn get_y_indexed_base_address_with_carry(cpu: &mut CPU, buses: &mut Buses) {
     cpu.crossed_page = overflow;
 }
 
-pub fn get_low_interrupt_vector(_: &mut CPU, buses: &mut Buses) {
+pub fn get_low_irq_vector(_: &mut CPU, buses: &mut Buses) {
     buses.addr = (0xFF, 0xFE);
 }
 
-pub fn get_high_interrupt_vector(_: &mut CPU, buses: &mut Buses) {
+pub fn get_high_irq_vector(_: &mut CPU, buses: &mut Buses) {
     buses.addr = (0xFF, 0xFF);
+}
+
+pub fn get_low_nmi_vector(_: &mut CPU, buses: &mut Buses) {
+    buses.addr = (0xFF, 0xFA);
+}
+
+pub fn get_high_nmi_vector(_: &mut CPU, buses: &mut Buses) {
+    buses.addr = (0xFF, 0xFB)
 }
 
 pub fn read_opcode(cpu: &mut CPU, buses: &mut Buses) {

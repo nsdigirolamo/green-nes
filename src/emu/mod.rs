@@ -30,22 +30,25 @@ macro_rules! did_signed_overflow {
 
 pub const PROGRAM_HEADER_LENGTH: usize = 16;
 
-pub fn run_emulator(mut nes: NES, debug_level: DebugLevel) -> NES {
+pub fn run_emulator(nes: &mut NES, debug_level: DebugLevel) -> &NES {
     while !nes.cpu.is_halted {
-        match debug_level {
-            DebugLevel::High => {
-                println!("{nes}")
-            }
-            DebugLevel::Low => {
-                println!("{nes:?}")
-            }
-            _ => {}
-        }
-
+        do_debug(nes, debug_level);
         nes.cpu.tick(&mut nes.buses);
     }
 
     nes
+}
+
+pub fn do_debug(nes: &NES, debug_level: DebugLevel) {
+    match debug_level {
+        DebugLevel::High => {
+            println!("{nes}")
+        }
+        DebugLevel::Low => {
+            println!("{nes:?}")
+        }
+        _ => {}
+    }
 }
 
 #[cfg(test)]
@@ -65,8 +68,8 @@ mod tests {
     /// [docs](https://www.qmtpro.com/~nes/misc/nestest.txt) for more info.
     fn nestest() {
         let cartridge: Cartridge = read_cartridge("tests/nestest.nes").unwrap();
-        let nes = NES::new(cartridge);
-        let final_state = run_emulator(nes, DebugLevel::None);
+        let mut nes = NES::new(cartridge);
+        let final_state = run_emulator(&mut nes, DebugLevel::None);
 
         assert_eq!(final_state.buses.peek(0x0002), 0x00);
         assert_eq!(final_state.buses.peek(0x0003), 0x00);

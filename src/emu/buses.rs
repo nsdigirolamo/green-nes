@@ -44,6 +44,8 @@ pub struct Buses {
     pub addr: (u8, u8),
     pub data: u8,
     cart: Cartridge,
+    irq: bool,
+    nmi: bool,
     ppu: PPU,
 }
 
@@ -54,6 +56,8 @@ impl Buses {
             addr: (0, 0),
             data: 0,
             cart,
+            nmi: true,
+            irq: true,
             ppu: PPU::default(),
         }
     }
@@ -151,5 +155,13 @@ impl Buses {
                 todo!("bus write failed: address 0x{addr:04X} is unmapped")
             }
         }
+    }
+
+    pub fn get_irq(&self) -> bool {
+        self.irq
+    }
+
+    pub fn get_nmi(&self) -> bool {
+        self.nmi
     }
 }
