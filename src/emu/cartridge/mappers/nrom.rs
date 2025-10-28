@@ -78,7 +78,7 @@ impl Mapper for NROM {
         }
     }
 
-    fn prg_write(&self, addr: u16, data: u8) {
+    fn prg_write(&mut self, addr: u16, data: u8) {
         panic!("NROM mapper does not support writing {data:04X} to PRG ROM address 0x{addr:04X}")
     }
 
@@ -92,7 +92,7 @@ impl Mapper for NROM {
         }
     }
 
-    fn chr_write(&self, addr: u16, data: u8) {
+    fn chr_write(&mut self, addr: u16, data: u8) {
         panic!("NROM mapper does not support writing {data:04X} to CHR ROM address 0x{addr:04X}")
     }
 }

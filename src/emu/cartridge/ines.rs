@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::emu::{
     cartridge::{
         Cartridge,
@@ -45,7 +47,7 @@ pub fn read_cartridge(path_to_ines_file: &str) -> Result<Cartridge, Error> {
     let mapper = create_mapper(mapper_index, prg_rom, chr_rom)?;
 
     Ok(Cartridge {
-        mapper: Box::new(mapper),
+        mapper: Rc::new(RefCell::new(mapper)),
     })
 }
 

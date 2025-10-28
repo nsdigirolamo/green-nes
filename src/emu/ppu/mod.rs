@@ -1,13 +1,15 @@
 use crate::{
     concat_u8,
-    emu::ppu::{buses::Buses, registers::Registers},
+    emu::{
+        cartridge::Cartridge,
+        ppu::{buses::Buses, registers::Registers},
+    },
     split_u16,
 };
 
 pub mod buses;
 pub mod registers;
 
-#[derive(Default)]
 pub struct PPU {
     registers: Registers,
     buses: Buses,
@@ -15,6 +17,14 @@ pub struct PPU {
 }
 
 impl PPU {
+    pub fn new(cart: Cartridge) -> Self {
+        PPU {
+            registers: Registers::default(),
+            buses: Buses::new(cart),
+            ppu_data_read_buffer: 0,
+        }
+    }
+
     pub fn read_ppu_ctrl(&self) -> u8 {
         panic!("invalid read: PPUCTRL is write-only")
     }

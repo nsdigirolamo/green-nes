@@ -42,6 +42,8 @@ Total Memory Size: 16384 (14-bit address space)
 └─────────────────────────────────────────┘
 */
 
+use crate::emu::cartridge::Cartridge;
+
 const VRAM_SIZE: usize = 0x00E0;
 
 const CHR_ROM_MIN_ADDR: u16 = 0x0000;
@@ -55,14 +57,20 @@ const PALETTE_RAM_MAX_ADDR: u16 = 0x3FFF;
 
 pub struct Buses {
     vram: [u8; VRAM_SIZE],
+    cart: Cartridge,
 }
 
 impl Buses {
+    pub fn new(cart: Cartridge) -> Self {
+        Buses {
+            vram: [0u8; VRAM_SIZE],
+            cart,
+        }
+    }
+
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
-            CHR_ROM_MIN_ADDR..=CHR_ROM_MAX_ADDR => {
-                todo!("ppu read failed: address 0x{addr:04X} should be mapped to chr rom")
-            }
+            CHR_ROM_MIN_ADDR..=CHR_ROM_MAX_ADDR => self.cart.mapper.borrow().chr_read(addr),
             VRAM_MIN_ADDR..=VRAM_MAX_MIRROR_ADDR => self.vram[addr as usize],
             PALETTE_RAM_MIN_ADDR..=PALETTE_RAM_MAX_ADDR => {
                 todo!("ppu read failed: address 0x{addr:04X} should be mapped to palette ram")
@@ -70,14 +78,6 @@ impl Buses {
             _ => panic!(
                 "ppu read failed: address 0x{addr:04X} is outside of the 14-bit address space"
             ),
-        }
-    }
-}
-
-impl Default for Buses {
-    fn default() -> Self {
-        Buses {
-            vram: [0u8; VRAM_SIZE],
         }
     }
 }

@@ -55,10 +55,10 @@ impl Buses {
             ram: [0; RAM_SIZE],
             addr: (0, 0),
             data: 0,
-            cart,
+            cart: cart.clone(),
             nmi: true,
             irq: true,
-            ppu: PPU::default(),
+            ppu: PPU::new(cart.clone()),
         }
     }
 
@@ -70,7 +70,7 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.prg_read(addr)
+                self.cart.mapper.borrow().prg_read(addr)
             }
             PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
                 let mapped_addr = addr % 8;
@@ -111,7 +111,7 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.prg_read(addr)
+                self.cart.mapper.borrow().prg_read(addr)
             }
             PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
                 panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
@@ -133,7 +133,7 @@ impl Buses {
                 self.ram[mapped_addr as usize] = data;
             }
             CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.prg_write(addr, data)
+                self.cart.mapper.borrow_mut().prg_write(addr, data)
             }
             PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
                 let mapped_addr = addr % 8;
