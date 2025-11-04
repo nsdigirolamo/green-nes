@@ -13,7 +13,7 @@ pub mod ppu_mask;
 pub mod ppu_scroll;
 pub mod ppu_status;
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct InternalRegisters {
     pub v: (u8, u8),
     pub t: (u8, u8),
@@ -21,7 +21,7 @@ pub struct InternalRegisters {
     pub w: bool, // Write Latch
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct Registers {
     pub ppu_ctrl: PpuControl,        // Miscellaneous Settings (0x2000 W)
     pub ppu_mask: PpuMask,           // Rendering Settings (0x2001 W)

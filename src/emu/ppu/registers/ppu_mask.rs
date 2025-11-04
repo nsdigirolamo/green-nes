@@ -1,4 +1,4 @@
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct PpuMask {
     pub data: u8,
 }

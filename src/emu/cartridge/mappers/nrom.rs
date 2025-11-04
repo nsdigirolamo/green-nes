@@ -1,5 +1,7 @@
 use crate::emu::{
-    cartridge::mappers::Mapper,
+    cartridge::mappers::{
+        Mapper, PATTERN_TABLE_0_START_ADDR, PATTERN_TABLE_1_START_ADDR, PATTERN_TABLE_SIZE,
+    },
     error::{CartridgeError, Error},
 };
 
@@ -94,5 +96,19 @@ impl Mapper for NROM {
 
     fn chr_write(&mut self, addr: u16, data: u8) {
         panic!("NROM mapper does not support writing {data:04X} to CHR ROM address 0x{addr:04X}")
+    }
+
+    fn dump_pattern_tables(&self) -> Vec<[u8; PATTERN_TABLE_SIZE]> {
+        let mut pattern_tables = vec![[0u8; PATTERN_TABLE_SIZE], [0u8; PATTERN_TABLE_SIZE]];
+
+        for addr in 0..PATTERN_TABLE_SIZE {
+            pattern_tables[0][addr] = self.chr_read(PATTERN_TABLE_0_START_ADDR + addr as u16)
+        }
+
+        for addr in 0..PATTERN_TABLE_SIZE {
+            pattern_tables[1][addr] = self.chr_read(PATTERN_TABLE_1_START_ADDR + addr as u16)
+        }
+
+        pattern_tables
     }
 }

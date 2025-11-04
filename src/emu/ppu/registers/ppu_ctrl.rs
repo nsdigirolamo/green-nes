@@ -1,4 +1,4 @@
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct PpuControl {
     pub data: u8,
 }

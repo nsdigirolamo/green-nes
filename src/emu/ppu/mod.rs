@@ -2,18 +2,20 @@ use crate::{
     concat_u8,
     emu::{
         cartridge::Cartridge,
-        ppu::{buses::Buses, registers::Registers},
+        ppu::{buses::Buses, registers::Registers, screen::Screen},
     },
     split_u16,
 };
 
 pub mod buses;
 pub mod registers;
+pub mod screen;
 
 pub struct PPU {
     registers: Registers,
     buses: Buses,
     ppu_data_read_buffer: u8,
+    screen: Screen,
 }
 
 impl PPU {
@@ -22,7 +24,12 @@ impl PPU {
             registers: Registers::default(),
             buses: Buses::new(cart),
             ppu_data_read_buffer: 0,
+            screen: Screen::default(),
         }
+    }
+
+    pub fn get_screen(&self) -> Screen {
+        self.screen
     }
 
     pub fn read_ppu_ctrl(&self) -> u8 {

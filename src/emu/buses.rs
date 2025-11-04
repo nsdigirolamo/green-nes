@@ -46,7 +46,7 @@ pub struct Buses {
     cart: Cartridge,
     irq: bool,
     nmi: bool,
-    ppu: PPU,
+    pub ppu: PPU,
 }
 
 impl Buses {
@@ -60,6 +60,14 @@ impl Buses {
             irq: true,
             ppu: PPU::new(cart.clone()),
         }
+    }
+
+    pub fn get_irq(&self) -> bool {
+        self.irq
+    }
+
+    pub fn get_nmi(&self) -> bool {
+        self.nmi
     }
 
     /// Returns a byte from the given memory address.
@@ -155,13 +163,5 @@ impl Buses {
                 todo!("bus write failed: address 0x{addr:04X} is unmapped")
             }
         }
-    }
-
-    pub fn get_irq(&self) -> bool {
-        self.irq
-    }
-
-    pub fn get_nmi(&self) -> bool {
-        self.nmi
     }
 }
