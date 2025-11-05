@@ -1,16 +1,10 @@
 use std::time::Duration;
 
-use sdl3::{event::Event, keyboard::Keycode, pixels::Color, rect::Point};
+use sdl2::{event::Event, keyboard::Keycode, pixels::Color, rect::Point};
 
 use crate::{
     DebugLevel,
-    emu::{
-        cartridge::{
-            Cartridge,
-            mappers::{COLS_PER_PATTERN_TABLE, PLANE_COUNT, TILE_WIDTH, TILES_PER_PATTERN_TABLE},
-        },
-        nes::NES,
-    },
+    emu::{cartridge::Cartridge, nes::NES, screen::create_pattern_table_screen},
 };
 
 pub mod buses;
@@ -19,6 +13,7 @@ pub mod cpu;
 pub mod error;
 pub mod nes;
 pub mod ppu;
+pub mod screen;
 
 #[macro_export]
 macro_rules! concat_u8 {
@@ -55,96 +50,30 @@ pub fn run_emulator(cart: Cartridge, debug_level: DebugLevel) -> NES {
 }
 
 pub fn display_pattern_tables(cart: Cartridge) {
-    let pattern_tables = cart.mapper.borrow().dump_pattern_tables();
+    let screen = create_pattern_table_screen(cart);
 
-    // 8x8 pixel map where colors are determined by two bit values.
-    type Tile = [(bool, bool); TILE_WIDTH * TILE_WIDTH];
-
-    let mut patterns: Vec<[Tile; TILES_PER_PATTERN_TABLE]> = Vec::new();
-
-    for pattern_table in pattern_tables {
-        let mut new_patterns = [[(false, false); TILE_WIDTH * TILE_WIDTH]; TILES_PER_PATTERN_TABLE];
-
-        for (tile, pixels) in new_patterns
-            .iter_mut()
-            .enumerate()
-            .take(TILES_PER_PATTERN_TABLE)
-        {
-            let bytes_per_tile = TILE_WIDTH * PLANE_COUNT;
-            let start_index = tile * bytes_per_tile;
-
-            for row in 0..TILE_WIDTH {
-                let low_bits = pattern_table[start_index + row];
-                let high_bits = pattern_table[start_index + row + TILE_WIDTH];
-
-                for col in 0..TILE_WIDTH {
-                    let bit_mask = 0b_1000_0000 >> col;
-                    let pattern: (bool, bool) =
-                        ((high_bits & bit_mask) != 0, (low_bits & bit_mask) != 0);
-
-                    let pixel_index = (row * TILE_WIDTH) + col;
-
-                    pixels[pixel_index] = pattern;
-                }
-            }
-        }
-
-        patterns.push(new_patterns)
-    }
-
-    let sdl_context = sdl3::init().unwrap();
+    let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let window = video_subsystem
-        .window("Green NES", 500, 500)
+        .window("Green NES", screen.get_width() * 2, screen.get_height() * 2)
         .position_centered()
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas();
+    let mut canvas = window.into_canvas().build().unwrap();
+    canvas
+        .set_logical_size(screen.get_width(), screen.get_height())
+        .unwrap();
 
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
+    canvas.set_draw_color(Color::BLACK);
     canvas.clear();
 
-    for (table_index, table) in patterns.iter().enumerate() {
-        for (tile_index, tile) in table.iter().enumerate() {
-            for (pixel_index, pixel) in tile.iter().enumerate() {
-                let table_margins = Point::new(
-                    2 + (table_index * ((COLS_PER_PATTERN_TABLE * 2) + 2)) as i32,
-                    2,
-                );
-
-                let table_origin = Point::new(
-                    (table_index * (TILE_WIDTH * COLS_PER_PATTERN_TABLE)) as i32,
-                    0,
-                ) + table_margins;
-
-                let tile_offset = Point::new(
-                    ((tile_index % COLS_PER_PATTERN_TABLE) * TILE_WIDTH) as i32,
-                    ((tile_index / COLS_PER_PATTERN_TABLE) * TILE_WIDTH) as i32,
-                );
-
-                let pixel_offset = Point::new(
-                    (pixel_index % TILE_WIDTH) as i32,
-                    (pixel_index / TILE_WIDTH) as i32,
-                );
-
-                let margin_offset = Point::new(
-                    ((tile_index % COLS_PER_PATTERN_TABLE) * 2) as i32,
-                    ((tile_index / COLS_PER_PATTERN_TABLE) * 2) as i32,
-                );
-
-                let pixel_origin = table_origin + tile_offset + pixel_offset + margin_offset;
-
-                match pixel {
-                    (false, false) => canvas.set_draw_color(Color::RGB(0, 23, 155)),
-                    (true, false) => canvas.set_draw_color(Color::RGB(160, 4, 226)),
-                    (false, true) => canvas.set_draw_color(Color::RGB(252, 165, 15)),
-                    (true, true) => canvas.set_draw_color(Color::WHITE),
-                }
-
-                canvas.draw_point(pixel_origin).unwrap();
-            }
+    for row in 0..screen.get_height() as i32 {
+        for col in 0..screen.get_width() as i32 {
+            let color = screen.get_pixel(Point::new(col, row));
+            canvas.set_draw_color(color);
+            canvas.draw_point(Point::new(col, row)).unwrap();
         }
     }
 

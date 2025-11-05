@@ -2,12 +2,13 @@ use std::fmt;
 
 use crate::{
     concat_u8,
-    emu::{buses::Buses, cartridge::Cartridge, cpu::CPU},
+    emu::{buses::Buses, cartridge::Cartridge, cpu::CPU, screen::Screen},
 };
 
 pub struct NES {
     pub buses: Buses,
     pub cpu: CPU,
+    pub screen: Screen,
 }
 
 impl NES {
@@ -15,6 +16,7 @@ impl NES {
         Self {
             buses: Buses::new(cart),
             cpu: CPU::default(),
+            screen: Screen::default(),
         }
     }
 }
