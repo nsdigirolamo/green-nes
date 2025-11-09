@@ -4,6 +4,12 @@ use std::{cell::RefCell, rc::Rc};
 pub mod ines;
 pub mod mappers;
 
+#[derive(Copy, Clone)]
+pub enum NametableMirroring {
+    Horizontal,
+    Vertical,
+}
+
 #[derive(Clone)]
 pub struct Cartridge {
     // Use Rc<RefCell<T>> for interior mutability and derived Clone trait.

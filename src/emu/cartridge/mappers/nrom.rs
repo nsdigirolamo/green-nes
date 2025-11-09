@@ -1,6 +1,10 @@
 use crate::emu::{
-    cartridge::mappers::{
-        Mapper, PATTERN_TABLE_0_START_ADDR, PATTERN_TABLE_1_START_ADDR, PATTERN_TABLE_SIZE,
+    cartridge::{
+        NametableMirroring,
+        ines::INes,
+        mappers::{
+            Mapper, PATTERN_TABLE_0_START_ADDR, PATTERN_TABLE_1_START_ADDR, PATTERN_TABLE_SIZE,
+        },
     },
     error::{CartridgeError, Error},
 };
@@ -17,14 +21,23 @@ const CHR_ROM_SIZE: usize = (CHR_MAX_ADDR - CHR_MIN_ADDR + 1) as usize;
 pub struct NROM {
     prg_rom: [u8; PRG_ROM_SIZE],
     chr_rom: [u8; CHR_ROM_SIZE],
+    nametable_arrangement: NametableMirroring,
 }
 
 impl NROM {
-    pub fn new(prg_data: Vec<u8>, chr_data: Vec<u8>) -> Result<Self, Error> {
-        let prg_rom = create_prg_rom(prg_data)?;
-        let chr_rom = create_chr_rom(chr_data)?;
+    pub fn new(ines: INes) -> Result<Self, Error> {
+        let prg_rom = create_prg_rom(ines.prg_data)?;
+        let chr_rom = create_chr_rom(ines.chr_data)?;
+        let nametable_arrangement = match ines.nametable_arrangement {
+            true => NametableMirroring::Horizontal,
+            false => NametableMirroring::Vertical,
+        };
 
-        Ok(NROM { prg_rom, chr_rom })
+        Ok(NROM {
+            prg_rom,
+            chr_rom,
+            nametable_arrangement,
+        })
     }
 }
 
@@ -101,14 +114,22 @@ impl Mapper for NROM {
     fn dump_pattern_tables(&self) -> Vec<[u8; PATTERN_TABLE_SIZE]> {
         let mut pattern_tables = vec![[0u8; PATTERN_TABLE_SIZE], [0u8; PATTERN_TABLE_SIZE]];
 
-        for addr in 0..PATTERN_TABLE_SIZE {
-            pattern_tables[0][addr] = self.chr_read(PATTERN_TABLE_0_START_ADDR + addr as u16)
-        }
+        for (i, table) in pattern_tables.iter_mut().enumerate() {
+            let start_addr = if i == 0 {
+                PATTERN_TABLE_0_START_ADDR
+            } else {
+                PATTERN_TABLE_1_START_ADDR
+            };
 
-        for addr in 0..PATTERN_TABLE_SIZE {
-            pattern_tables[1][addr] = self.chr_read(PATTERN_TABLE_1_START_ADDR + addr as u16)
+            for (offset, byte) in table.iter_mut().enumerate() {
+                *byte = self.chr_read(start_addr + offset as u16)
+            }
         }
 
         pattern_tables
+    }
+
+    fn get_nametable_arrangement(&self) -> NametableMirroring {
+        self.nametable_arrangement
     }
 }

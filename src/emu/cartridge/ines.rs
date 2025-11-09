@@ -21,11 +21,22 @@ const CHR_ROM_SIZE_INDEX: usize = 5;
 const INES_CHR_ROM_SIZE_UNITS: usize = 8192;
 
 const FLAGS_6_INDEX: usize = 6;
+const FLAGS_6_NAMETABLE_ARRANGEMENT_MASK: u8 = 0b_0000_0001;
 const FLAGS_6_TRAINER_MASK: u8 = 0b_0000_0100;
+const FLAGS_6_ALTERNATIVE_NAMETABLE_ARRANGEMENT_MASK: u8 = 0b_0000_1000;
+const FLAGS_6_MAPPER_LOWER_NIBBLE_MASK: u8 = 0b_1111_0000;
 
 const FLAGS_7_INDEX: usize = 7;
 const FLAGS_7_INES2_FORMAT_MASK: u8 = 0b_0000_1100;
 const FLAGS_7_MAPPER_UPPER_NIBBLE_MASK: u8 = 0b_1111_0000;
+
+pub struct INes {
+    pub prg_data: Vec<u8>,
+    pub chr_data: Vec<u8>,
+    pub mapper_index: u8,
+    pub nametable_arrangement: bool,
+    pub alternative_nametable_arrangement: bool,
+}
 
 pub fn read_cartridge(path_to_ines_file: &str) -> Result<Cartridge, Error> {
     let data = read_data(path_to_ines_file)?;
@@ -34,21 +45,45 @@ pub fn read_cartridge(path_to_ines_file: &str) -> Result<Cartridge, Error> {
     let trainer_exists = (data[FLAGS_6_INDEX] & FLAGS_6_TRAINER_MASK) != 0;
     let prg_rom_start = INES_HEADER_SIZE + if trainer_exists { TRAINER_SIZE } else { 0 };
     let prg_rom_end = prg_rom_start + prg_rom_size;
-    let prg_rom = data[prg_rom_start..prg_rom_end].to_vec();
+    let prg_data = data[prg_rom_start..prg_rom_end].to_vec();
 
     let chr_rom_size = (data[CHR_ROM_SIZE_INDEX] as usize) * INES_CHR_ROM_SIZE_UNITS;
     let chr_rom_start = prg_rom_end;
     let chr_rom_end = chr_rom_start + chr_rom_size;
-    let chr_rom = data[chr_rom_start..chr_rom_end].to_vec();
+    let chr_data = data[chr_rom_start..chr_rom_end].to_vec();
 
-    let mapper_index =
-        (data[FLAGS_7_INDEX] & FLAGS_7_MAPPER_UPPER_NIBBLE_MASK) | (data[FLAGS_6_INDEX] >> 4);
+    let mapper_index = get_mapper_index(&data);
+    let nametable_arrangement = get_nametable_arrangement(&data);
+    let alternative_nametable_arrangement = get_alternative_nametable_arrangement(&data);
 
-    let mapper = create_mapper(mapper_index, prg_rom, chr_rom)?;
+    let ines = INes {
+        prg_data,
+        chr_data,
+        mapper_index,
+        nametable_arrangement,
+        alternative_nametable_arrangement,
+    };
+
+    let mapper = create_mapper(ines)?;
 
     Ok(Cartridge {
         mapper: Rc::new(RefCell::new(mapper)),
     })
+}
+
+fn get_mapper_index(data: &[u8]) -> u8 {
+    let upper_nibble = data[FLAGS_7_INDEX] & FLAGS_7_MAPPER_UPPER_NIBBLE_MASK;
+    let lower_nibble = data[FLAGS_6_INDEX] & FLAGS_6_MAPPER_LOWER_NIBBLE_MASK;
+
+    upper_nibble | lower_nibble
+}
+
+fn get_nametable_arrangement(data: &[u8]) -> bool {
+    data[FLAGS_6_INDEX] & FLAGS_6_NAMETABLE_ARRANGEMENT_MASK != 0
+}
+
+fn get_alternative_nametable_arrangement(data: &[u8]) -> bool {
+    data[FLAGS_6_INDEX] & FLAGS_6_ALTERNATIVE_NAMETABLE_ARRANGEMENT_MASK != 0
 }
 
 fn read_data(path_to_ines_file: &str) -> Result<Vec<u8>, Error> {
@@ -80,15 +115,11 @@ fn read_data(path_to_ines_file: &str) -> Result<Vec<u8>, Error> {
     Ok(data)
 }
 
-pub fn create_mapper(
-    mapper_index: u8,
-    prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
-) -> Result<impl Mapper, Error> {
-    match mapper_index {
-        0 => NROM::new(prg_rom, chr_rom),
-        _ => Err(CartridgeError::NotSupported {
-            message: format!("mapper {mapper_index} is not supported"),
+pub fn create_mapper(ines: INes) -> Result<impl Mapper, Error> {
+    match ines.mapper_index {
+        0 => NROM::new(ines),
+        i => Err(CartridgeError::NotSupported {
+            message: format!("mapper {i} is not supported"),
         }
         .into()),
     }

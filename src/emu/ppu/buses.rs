@@ -1,81 +1,132 @@
-/*
-Total Memory Size: 16384 (14-bit address space)
-┌─────────────────────────────────────────┐
-│ Pattern Table 0 (4096 bytes)            │
-│ 0x0000 - 0x0FFF                         │
-├─────────────────────────────────────────┤
-│ Pattern Table 1 (4096 bytes)            │
-│ 0x1000 - 0x1FFF                         │
-├─────────────────────────────────────────┤
-│ Nametable 0 (960 bytes)                 │
-│ 0x2000 - 0x23BF                         │
-├─────────────────────────────────────────┤
-│ Attribute Table 0 (64 bytes)            │
-│ 0x23C0 - 0x23FF                         │
-├─────────────────────────────────────────┤
-│ Nametable 1 (960 bytes)                 │
-│ 0x2400 - 0x27BF                         │
-├─────────────────────────────────────────┤
-│ Attribute Table 1 (64 bytes)            │
-│ 0x27C0 - 0x27FF                         │
-├─────────────────────────────────────────┤
-│ Nametable 2 (960 bytes)                 │
-│ 0x2800 - 0x2BBF                         │
-├─────────────────────────────────────────┤
-│ Attribute Table 2 (64 bytes)            │
-│ 0x2BC0 - 0x2BFF                         │
-├─────────────────────────────────────────┤
-│ Nametable 3 (960 bytes)                 │
-│ 0x2C00 - 0x2FBF                         │
-├─────────────────────────────────────────┤
-│ Attribute Table 3 (64 bytes)            │
-│ 0x2FC0 - 0x2FFF                         │
-├─────────────────────────────────────────┤
-│ Unused (3840 bytes)                     │
-│ 0x3000 - 0x3EFF                         │
-├─────────────────────────────────────────┤
-│ Palette RAM Indices (32 bytes)          │
-│ 0x3F00 - 0x3F1F                         │
-├─────────────────────────────────────────┤
-│ Palette RAM Indices Mirrors (224 bytes) │
-│ 0x3F20 - 0x3FFF                         │
-└─────────────────────────────────────────┘
-*/
+use crate::emu::{
+    cartridge::{Cartridge, NametableMirroring},
+    ppu::nametable::Nametable,
+};
 
-use crate::emu::cartridge::Cartridge;
+// Character Memory
 
-const CHR_ROM_MIN_ADDR: u16 = 0x0000;
-const CHR_ROM_MAX_ADDR: u16 = 0x1FFF;
+const CHR_ROM_SIZE: u16 = 8192;
 
-const VRAM_MIN_ADDR: u16 = 0x2000;
-const VRAM_MAX_ADDR: u16 = 0x2FFF;
-const VRAM_SIZE: usize = (VRAM_MAX_ADDR - VRAM_MIN_ADDR) as usize + 1;
+const CHR_ROM_START_ADDR: u16 = 0x0000;
+const CHR_ROM_END_ADDR: u16 = CHR_ROM_START_ADDR + CHR_ROM_SIZE;
 
-const PALETTE_RAM_MIN_ADDR: u16 = 0x3F00;
-const PALETTE_RAM_MAX_MIRROR_ADDR: u16 = 0x3FFF;
+// Nametables
+
+const NAMETABLE_SIZE: u16 = 1024;
+
+const NAMETABLE_0_START_ADDR: u16 = CHR_ROM_END_ADDR;
+const NAMETABLE_0_END_ADDR: u16 = NAMETABLE_0_START_ADDR + NAMETABLE_SIZE;
+
+const NAMETABLE_1_START_ADDR: u16 = NAMETABLE_0_END_ADDR;
+const NAMETABLE_1_END_ADDR: u16 = NAMETABLE_1_START_ADDR + NAMETABLE_SIZE;
+
+const NAMETABLE_2_START_ADDR: u16 = NAMETABLE_1_END_ADDR;
+const NAMETABLE_2_END_ADDR: u16 = NAMETABLE_2_START_ADDR + NAMETABLE_SIZE;
+
+const NAMETABLE_3_START_ADDR: u16 = NAMETABLE_2_END_ADDR;
+const NAMETABLE_3_END_ADDR: u16 = NAMETABLE_3_START_ADDR + NAMETABLE_SIZE;
+
+const NAMETABLE_START_ADDR: u16 = NAMETABLE_0_START_ADDR;
+const NAMETABLE_END_ADDR: u16 = NAMETABLE_3_END_ADDR;
+
+// Unused
+
+const UNUSED_SIZE: u16 = 3840;
+
+const UNUSED_START_ADDR: u16 = NAMETABLE_END_ADDR;
+const UNUSED_END_ADDR: u16 = UNUSED_START_ADDR + UNUSED_SIZE;
+
+// Palette Memory
+
+const PALETTE_RAM_SIZE: u16 = 32;
+const MIRRORS_SIZE: u16 = 224;
+
+const PALETTE_RAM_BACKGROUND_START_ADDR: u16 = UNUSED_END_ADDR;
+const PALETTE_RAM_BACKGROUND_END_ADDR: u16 =
+    PALETTE_RAM_BACKGROUND_START_ADDR + (PALETTE_RAM_SIZE / 2);
+
+const PALETTE_RAM_SPRITE_START_ADDR: u16 = PALETTE_RAM_BACKGROUND_END_ADDR;
+const PALETTE_RAM_SPITE_END_ADDR: u16 = PALETTE_RAM_SPRITE_START_ADDR + (PALETTE_RAM_SIZE / 2);
+
+const PALETTE_RAM_START_ADDR: u16 = PALETTE_RAM_BACKGROUND_START_ADDR;
+const PALETTE_RAM_END_ADDR: u16 = PALETTE_RAM_SPITE_END_ADDR;
+
+const MIRRORS_START_ADDR: u16 = PALETTE_RAM_END_ADDR;
+const MIRRORS_END_ADDR: u16 = MIRRORS_START_ADDR + MIRRORS_SIZE;
 
 #[derive(Clone)]
 pub struct Buses {
-    vram: [u8; VRAM_SIZE],
+    nametable_a: Nametable,
+    nametable_b: Nametable,
+    palette_ram: [u8; PALETTE_RAM_SIZE as usize],
     cart: Cartridge,
 }
 
 impl Buses {
     pub fn new(cart: Cartridge) -> Self {
         Buses {
-            vram: [0u8; VRAM_SIZE],
+            nametable_a: Nametable::default(),
+            nametable_b: Nametable::default(),
+            palette_ram: [0; PALETTE_RAM_SIZE as usize],
             cart,
         }
     }
 
     pub fn read(&self, addr: u16) -> u8 {
-        match addr {
-            CHR_ROM_MIN_ADDR..=CHR_ROM_MAX_ADDR => self.cart.mapper.borrow().chr_read(addr),
-            VRAM_MIN_ADDR..=VRAM_MAX_ADDR => self.vram[addr as usize],
-            PALETTE_RAM_MIN_ADDR..=PALETTE_RAM_MAX_MIRROR_ADDR => {
-                todo!("ppu read failed: address 0x{addr:04X} should be mapped to palette ram")
+        let mapped_addr = addr & 0b_0011_1111_1111_1111; // 14-bit address space
+
+        match mapped_addr {
+            CHR_ROM_START_ADDR..CHR_ROM_END_ADDR => self.cart.mapper.borrow().chr_read(mapped_addr),
+            NAMETABLE_START_ADDR..NAMETABLE_END_ADDR => do_nametable_read(
+                self,
+                mapped_addr,
+                self.cart.mapper.borrow().get_nametable_arrangement(),
+            ),
+            UNUSED_START_ADDR..UNUSED_END_ADDR => {
+                todo!("ppu read failed: address 0x{addr:04X} is in unused memory")
             }
-            _ => panic!("ppu read failed: address 0x{addr:04X} is not mapped."),
+            PALETTE_RAM_START_ADDR..PALETTE_RAM_END_ADDR => do_palette_read(self, addr),
+            MIRRORS_START_ADDR..MIRRORS_END_ADDR => do_palette_read(self, addr),
+            _ => unreachable!(
+                "ppu read failed: address 0x{addr:04X} is outside of the 14-bit address space"
+            ),
         }
+    }
+}
+
+fn do_palette_read(buses: &Buses, addr: u16) -> u8 {
+    let mapped_addr = addr % PALETTE_RAM_SIZE;
+
+    buses.palette_ram[mapped_addr as usize]
+}
+
+fn do_nametable_read(buses: &Buses, addr: u16, arrangement: NametableMirroring) -> u8 {
+    match arrangement {
+        NametableMirroring::Horizontal => do_horizontal_nametable_read(buses, addr),
+        NametableMirroring::Vertical => do_vertical_nametable_read(buses, addr),
+    }
+}
+
+fn do_horizontal_nametable_read(buses: &Buses, addr: u16) -> u8 {
+    match addr {
+        NAMETABLE_0_START_ADDR..NAMETABLE_0_END_ADDR => buses.nametable_a.read(addr),
+        NAMETABLE_1_START_ADDR..NAMETABLE_1_END_ADDR => buses.nametable_a.read(addr),
+        NAMETABLE_2_START_ADDR..NAMETABLE_2_END_ADDR => buses.nametable_b.read(addr),
+        NAMETABLE_3_START_ADDR..NAMETABLE_3_END_ADDR => buses.nametable_b.read(addr),
+        _ => panic!(
+            "horizontal nametable read failed: address 0x{addr:04X} is not a valid nametable address"
+        ),
+    }
+}
+
+fn do_vertical_nametable_read(buses: &Buses, addr: u16) -> u8 {
+    match addr {
+        NAMETABLE_0_START_ADDR..NAMETABLE_0_END_ADDR => buses.nametable_a.read(addr),
+        NAMETABLE_1_START_ADDR..NAMETABLE_1_END_ADDR => buses.nametable_b.read(addr),
+        NAMETABLE_2_START_ADDR..NAMETABLE_2_END_ADDR => buses.nametable_a.read(addr),
+        NAMETABLE_3_START_ADDR..NAMETABLE_3_END_ADDR => buses.nametable_b.read(addr),
+        _ => panic!(
+            "vertical nametable read failed: address 0x{addr:04X} is not a valid nametable address"
+        ),
     }
 }

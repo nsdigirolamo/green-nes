@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod buses;
+pub mod nametable;
 pub mod registers;
 
 pub struct PPU {

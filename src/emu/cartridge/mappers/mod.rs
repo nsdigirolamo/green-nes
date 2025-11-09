@@ -1,3 +1,5 @@
+use crate::emu::cartridge::NametableMirroring;
+
 pub mod nrom;
 
 const PATTERN_TABLE_0_START_ADDR: u16 = 0x0000;
@@ -16,4 +18,5 @@ pub trait Mapper {
     fn chr_read(&self, addr: u16) -> u8;
     fn chr_write(&mut self, addr: u16, data: u8);
     fn dump_pattern_tables(&self) -> Vec<[u8; PATTERN_TABLE_SIZE]>;
+    fn get_nametable_arrangement(&self) -> NametableMirroring;
 }
