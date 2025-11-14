@@ -13,12 +13,26 @@ pub mod ppu_mask;
 pub mod ppu_scroll;
 pub mod ppu_status;
 
+/*
+While Rendering:
+- `v`: Scroll position.
+- `t`: Starting coarse x scroll for the next scanline and y scroll for the screen.
+- `x`: fine x scroll of the current scroll, used alongside `v`.
+
+Outside of Rendering:
+- `v`: Current VRAM address.
+- `t`: Holds the scroll, or VRAM address before transferring to `v`.
+
+Other:
+- `w`: Write latch. Toggles on each write to PPUSCROLL or PPUADDR. Clears on
+       reads to PPUSTATUS.
+*/
 #[derive(Default, Copy, Clone)]
 pub struct InternalRegisters {
     pub v: (u8, u8),
     pub t: (u8, u8),
     pub x: u8,
-    pub w: bool, // Write Latch
+    pub w: bool,
 }
 
 #[derive(Default, Copy, Clone)]

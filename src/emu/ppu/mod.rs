@@ -23,6 +23,7 @@ pub struct PPU {
     registers: Registers,
     buses: Buses,
     ppu_data_read_buffer: u8,
+    is_vblank: bool,
     output: Output,
 }
 
@@ -32,6 +33,7 @@ impl PPU {
             registers: Registers::default(),
             buses: Buses::new(cart),
             ppu_data_read_buffer: 0,
+            is_vblank: false,
             output: Output {
                 active: false,
                 location: Point::new(0, 0),
@@ -68,7 +70,11 @@ impl PPU {
         self.registers.ppu_mask.data = data;
     }
 
-    pub fn read_ppu_status(&self) -> u8 {
+    pub fn read_ppu_status(&mut self) -> u8 {
+        // Clear the vertical blanking flag and the internal w register.
+        self.is_vblank = false;
+        self.registers.internal.w = false;
+
         self.registers.ppu_status.data
     }
 
@@ -122,7 +128,7 @@ impl PPU {
         // First, read from the data buffer.
         let data = self.ppu_data_read_buffer;
 
-        // Next, read from the internal v register.
+        // Next, read from the internal v register to get current VRAM address.
         let v = self.registers.internal.v;
         let addr = concat_u8!(v.0, v.1);
         self.ppu_data_read_buffer = self.buses.read(addr);
