@@ -56,8 +56,8 @@ impl Buses {
             addr: (0, 0),
             data: 0,
             cart: cart.clone(),
-            nmi: true,
-            irq: true,
+            nmi: false,
+            irq: false,
             ppu: PPU::new(cart.clone()),
         }
     }

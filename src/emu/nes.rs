@@ -23,9 +23,11 @@ impl NES {
 
 impl fmt::Display for NES {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (pch, pcl) = self.cpu.registers.pc;
+        let registers = self.cpu.get_registers();
 
-        let pc0 = concat_u8!(self.cpu.registers.pc.0, self.cpu.registers.pc.1);
+        let (pch, pcl) = registers.pc;
+
+        let pc0 = concat_u8!(registers.pc.0, registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
         let pc_mem0 = self.buses.peek(pc0);
@@ -42,15 +44,15 @@ impl fmt::Display for NES {
 
         let data_bus = self.buses.data;
 
-        let ir = self.cpu.registers.ir;
-        let accumulator = self.cpu.registers.a;
-        let x_index = self.cpu.registers.x_index;
-        let y_index = self.cpu.registers.y_index;
-        let psr = self.cpu.registers.psr;
-        let sp = self.cpu.registers.sp;
+        let ir = registers.ir;
+        let accumulator = registers.a;
+        let x_index = registers.x_index;
+        let y_index = registers.y_index;
+        let psr = registers.psr;
+        let sp = registers.sp;
         let cycle_count = self.cpu.half_cycle_count / 2;
 
-        let sp0 = concat_u8!(0x10, self.cpu.registers.sp);
+        let sp0 = concat_u8!(0x10, registers.sp);
         let sp1 = sp0.wrapping_add(1);
         let sp2 = sp0.wrapping_add(2);
         let sp_mem0 = self.buses.peek(sp0);
@@ -72,20 +74,22 @@ impl fmt::Display for NES {
 
 impl fmt::Debug for NES {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let (pch, pcl) = self.cpu.registers.pc;
+        let registers = self.cpu.get_registers();
 
-        let pc0 = concat_u8!(self.cpu.registers.pc.0, self.cpu.registers.pc.1);
+        let (pch, pcl) = registers.pc;
+
+        let pc0 = concat_u8!(registers.pc.0, registers.pc.1);
         let pc1 = pc0.wrapping_add(1);
         let pc2 = pc0.wrapping_add(2);
         let pc_mem0 = self.buses.peek(pc0);
         let pc_mem1 = self.buses.peek(pc1);
         let pc_mem2 = self.buses.peek(pc2);
 
-        let accumulator = self.cpu.registers.a;
-        let x_index = self.cpu.registers.x_index;
-        let y_index = self.cpu.registers.y_index;
-        let psr = self.cpu.registers.psr;
-        let sp = self.cpu.registers.sp;
+        let accumulator = registers.a;
+        let x_index = registers.x_index;
+        let y_index = registers.y_index;
+        let psr = registers.psr;
+        let sp = registers.sp;
         let cycle_count = self.cpu.half_cycle_count / 2;
 
         write!(
