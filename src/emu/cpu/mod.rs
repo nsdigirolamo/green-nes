@@ -11,10 +11,9 @@ use crate::{
         cpu::{
             cycles::{Cycle, FETCH_INSTRUCTION, get_cycles},
             half_cycles::{
-                HalfCycle, get_high_irq_vector, get_high_nmi_vector, get_low_irq_vector,
-                get_low_nmi_vector, get_pc, push_stack, read_data,
-                read_high_effective_address_byte, read_low_effective_address_byte, write_pc_high,
-                write_pc_low, write_status,
+                get_high_irq_vector, get_high_nmi_vector, get_low_irq_vector, get_low_nmi_vector,
+                get_pc, push_stack, read_data, read_high_effective_address_byte,
+                read_low_effective_address_byte, write_pc_high, write_pc_low, write_status,
             },
         },
     },
@@ -80,14 +79,6 @@ impl Default for CPU {
 }
 
 impl CPU {
-    pub fn do_first_phase(&mut self, buses: &mut ExternalBuses, phase: HalfCycle) {
-        phase(self, buses)
-    }
-
-    pub fn do_second_phase(&mut self, buses: &mut ExternalBuses, phase: HalfCycle) {
-        phase(self, buses)
-    }
-
     pub fn set_irq(&mut self, buses: &ExternalBuses) {
         self.irq_occurred = !buses.get_irq()
     }
