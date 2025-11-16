@@ -43,6 +43,7 @@ pub fn run_emulator(cart: Cartridge, debug_level: DebugLevel) -> NES {
 
     while !nes.cpu.is_halted() {
         do_debug(&nes, debug_level);
+        nes.buses.tick();
         nes.cpu.tick(&mut nes.buses);
     }
 

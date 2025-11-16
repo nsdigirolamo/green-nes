@@ -6,25 +6,19 @@ use crate::{
     },
     split_u16,
 };
-use sdl2::{pixels::Color, rect::Point};
 
 pub mod buses;
 pub mod nametable;
 pub mod palettes;
 pub mod registers;
 
-struct Output {
-    active: bool,
-    location: Point,
-    color: Color,
-}
-
+#[derive(Clone)]
 pub struct PPU {
     registers: Registers,
     buses: Buses,
     ppu_data_read_buffer: u8,
     is_vblank: bool,
-    output: Output,
+    nmi: bool,
 }
 
 impl PPU {
@@ -34,24 +28,28 @@ impl PPU {
             buses: Buses::new(cart),
             ppu_data_read_buffer: 0,
             is_vblank: false,
-            output: Output {
-                active: false,
-                location: Point::new(0, 0),
-                color: Color::RGB(0, 0, 0),
-            },
+            nmi: false,
         }
     }
 
-    pub fn has_output(&self) -> bool {
-        self.output.active
+    pub fn get_registers(&self) -> Registers {
+        self.registers
     }
 
-    pub fn get_output_location(&self) -> Point {
-        self.output.location
+    pub fn get_buses(&self) -> Buses {
+        self.buses.clone()
     }
 
-    pub fn get_output_color(&self) -> Color {
-        self.output.color
+    pub fn get_data_read_buffer(&self) -> u8 {
+        self.ppu_data_read_buffer
+    }
+
+    pub fn is_vblank(&self) -> bool {
+        self.is_vblank
+    }
+
+    pub fn get_nmi(&self) -> bool {
+        self.nmi
     }
 
     pub fn read_ppu_ctrl(&self) -> u8 {
