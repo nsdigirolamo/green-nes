@@ -41,8 +41,9 @@ pub const PROGRAM_HEADER_LENGTH: usize = 16;
 pub fn run_emulator(cart: Cartridge, debug_level: DebugLevel) -> NES {
     let mut nes = NES::new(cart);
 
-    while !nes.cpu.is_halted {
+    while !nes.cpu.is_halted() {
         do_debug(&nes, debug_level);
+        nes.buses.tick();
         nes.cpu.tick(&mut nes.buses);
     }
 

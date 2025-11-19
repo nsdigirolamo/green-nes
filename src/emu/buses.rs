@@ -2,51 +2,50 @@ use crate::concat_u8;
 use crate::emu::cartridge::Cartridge;
 use crate::emu::ppu::PPU;
 
-/*
-Total Memory Size: 65536 (16-bit address space)
-┌────────────────────────────────────────┐
-│ Internal RAM (2048 bytes)              │
-│ 0x0000 - 0x07FF                        │
-├────────────────────────────────────────┤
-│ Internal RAM Mirrors (6144 bytes)      │
-│ 0x0800 - 0x1FFF                        │
-├────────────────────────────────────────┤
-│ NES PPU Registers (8 bytes)            │
-│ 0x2000 - 0x2007                        │
-├────────────────────────────────────────┤
-│ NES PPU Registers Mirrors (8184 bytes) │
-│ 0x2008 - 0x3FFF                        │
-├────────────────────────────────────────┤
-│ NES APU & IO Registers (24 bytes)      │
-│ 0x4000 - 0x4017                        │
-├────────────────────────────────────────┤
-│ CPU Test Mode Registers (8 bytes)      │
-│ 0x4018 - 0x401F                        │
-├────────────────────────────────────────┤
-│ Unmapped Cartridge Space (49120 bytes) │
-│ 0x4020 - 0xFFFF                        │
-└────────────────────────────────────────┘
-*/
+// Internal RAM
 
-const RAM_MIN_ADDR: u16 = 0x0000;
-const RAM_MAX_ADDR: u16 = 0x07FF;
-const RAM_MIRROR_MAX_ADDR: u16 = 0x1FFF;
-const RAM_SIZE: usize = (RAM_MAX_ADDR - RAM_MIN_ADDR + 1) as usize;
+const RAM_SIZE: usize = 2048;
+const RAM_MIRROR_COUNT: u16 = 4;
 
-const PPU_REGISTERS_MIN_ADDR: u16 = 0x2000;
-const PPU_REGISTERS_MIRROR_MAX_ADDR: u16 = 0x3FFF;
+const RAM_START_ADDR: u16 = 0x0000;
+const RAM_END_ADDR: u16 = RAM_START_ADDR + (RAM_SIZE as u16 * RAM_MIRROR_COUNT);
 
-const CARTRIDGE_ROM_MAPPER_MIN_ADDR: u16 = 0x8000;
-const CARTRIDGE_ROM_MAPPER_MAX_ADDR: u16 = 0xFFFF;
+// PPU Registers
 
+const PPU_REGISTERS_SIZE: usize = 8;
+const PPU_REGISTERS_MIRROR_COUNT: u16 = 1024;
+
+const PPU_REGISTERS_START_ADDR: u16 = RAM_END_ADDR;
+const PPU_REGISTERS_END_ADDR: u16 =
+    PPU_REGISTERS_START_ADDR + (PPU_REGISTERS_SIZE as u16 * PPU_REGISTERS_MIRROR_COUNT);
+
+// APU and I/O
+
+const IO_SIZE: usize = 24;
+const TEST_MODE_SIZE: usize = 8;
+
+const IO_START_ADDR: u16 = PPU_REGISTERS_END_ADDR;
+const IO_END_ADDR: u16 = IO_START_ADDR + IO_SIZE as u16;
+
+const TEST_MODE_START_ADDR: u16 = IO_END_ADDR;
+const TEST_MODE_END_ADDR: u16 = TEST_MODE_START_ADDR + TEST_MODE_SIZE as u16;
+
+// Cartridge (Unmapped)
+
+const CARTRIDGE_ROM_MAPPER_START_ADDR: u16 = TEST_MODE_END_ADDR;
+
+#[derive(Clone)]
 pub struct Buses {
+    // Data
     ram: [u8; RAM_SIZE],
     pub addr: (u8, u8),
     pub data: u8,
+    // Connected Devices
+    ppu: PPU,
     cart: Cartridge,
+    // Misc
     irq: bool,
     nmi: bool,
-    pub ppu: PPU,
 }
 
 impl Buses {
@@ -56,31 +55,24 @@ impl Buses {
             addr: (0, 0),
             data: 0,
             cart: cart.clone(),
-            nmi: true,
-            irq: true,
+            nmi: false,
+            irq: false,
             ppu: PPU::new(cart.clone()),
         }
     }
 
-    pub fn get_irq(&self) -> bool {
-        self.irq
-    }
-
-    pub fn get_nmi(&self) -> bool {
-        self.nmi
+    pub fn tick(&mut self) {
+        self.nmi = self.ppu.get_nmi()
     }
 
     /// Returns a byte from the given memory address.
-    fn get_data(&mut self, addr: u16) -> u8 {
+    fn fetch_data(&mut self, addr: u16) -> u8 {
         match addr {
-            RAM_MIN_ADDR..=RAM_MIRROR_MAX_ADDR => {
+            RAM_START_ADDR..RAM_END_ADDR => {
                 let mapped_addr = addr & 0b_0000_0111_1111_1111;
                 self.ram[mapped_addr as usize]
             }
-            CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.borrow().prg_read(addr)
-            }
-            PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
+            PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
                 let mapped_addr = addr % 8;
                 match mapped_addr {
                     0 => self.ppu.read_ppu_ctrl(),
@@ -96,54 +88,59 @@ impl Buses {
                     ),
                 }
             }
-            _ => {
-                todo!("bus read failed: address 0x{addr:04X} is unmapped")
+            IO_START_ADDR..IO_END_ADDR => {
+                todo!("bus fetch failed: apu address 0x{addr:04X} is unmapped")
             }
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
+                todo!("bus fetch failed: test mode address 0x{addr:04X} is unmapped")
+            }
+            CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
     }
 
-    /// Returns a byte from the memory address specified on the address bus.
+    /// Fetches a byte from the memory address specified on the address bus
+    /// without modifying the data bus. Returns the fetched byte.
+    pub fn peek(&self, addr: u16) -> u8 {
+        match addr {
+            RAM_START_ADDR..RAM_END_ADDR => {
+                let mapped_addr = addr & 0b_0000_0111_1111_1111;
+                self.ram[mapped_addr as usize]
+            }
+            PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
+                panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
+            }
+            IO_START_ADDR..IO_END_ADDR => {
+                todo!("bus peek failed: apu address 0x{addr:04X} is unmapped")
+            }
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
+                todo!("bus peek failed: test mode address 0x{addr:04X} is unmapped")
+            }
+            CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
+        }
+    }
+
+    /// Fetches a byte from the memory address specified on the address bus,
+    /// then places that byte on the data bus. Returns the fetched byte.
     pub fn read(&mut self) -> u8 {
         let addr = concat_u8!(self.addr.0, self.addr.1);
-        let data = self.get_data(addr);
+        let data = self.fetch_data(addr);
         self.data = data;
 
         data
     }
 
-    /// Returns a byte from the given memory address without modification.
-    pub fn peek(&self, addr: u16) -> u8 {
-        match addr {
-            RAM_MIN_ADDR..=RAM_MIRROR_MAX_ADDR => {
-                let mapped_addr = addr & 0b_0000_0111_1111_1111;
-                self.ram[mapped_addr as usize]
-            }
-            CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.borrow().prg_read(addr)
-            }
-            PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
-                panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
-            }
-            _ => {
-                todo!("bus peek failed: address 0x{addr:04X} is unmapped")
-            }
-        }
-    }
-
-    /// Writes the given byte to the memory address specified on the address bus.
+    /// Places the given byte onto the data bus, and then writes that byte to
+    /// the memory address specified on the addres bus.
     pub fn write(&mut self, data: u8) {
         self.data = data;
 
         let addr = concat_u8!(self.addr.0, self.addr.1);
         match addr {
-            RAM_MIN_ADDR..=RAM_MIRROR_MAX_ADDR => {
+            RAM_START_ADDR..RAM_END_ADDR => {
                 let mapped_addr = addr & 0b_0000_0111_1111_1111;
                 self.ram[mapped_addr as usize] = data;
             }
-            CARTRIDGE_ROM_MAPPER_MIN_ADDR..=CARTRIDGE_ROM_MAPPER_MAX_ADDR => {
-                self.cart.mapper.borrow_mut().prg_write(addr, data)
-            }
-            PPU_REGISTERS_MIN_ADDR..=PPU_REGISTERS_MIRROR_MAX_ADDR => {
+            PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
                 let mapped_addr = addr % 8;
                 match mapped_addr {
                     0 => self.ppu.write_ppu_ctrl(data),
@@ -159,9 +156,31 @@ impl Buses {
                     ),
                 }
             }
-            _ => {
-                todo!("bus write failed: address 0x{addr:04X} is unmapped")
+            IO_START_ADDR..IO_END_ADDR => {
+                todo!("bus write failed: apu address 0x{addr:04X} is unmapped")
+            }
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
+                todo!("bus write failed: test mode address 0x{addr:04X} is unmapped")
+            }
+            CARTRIDGE_ROM_MAPPER_START_ADDR.. => {
+                self.cart.mapper.borrow_mut().prg_write(addr, data)
             }
         }
+    }
+
+    pub fn get_ppu(&self) -> PPU {
+        self.ppu.clone()
+    }
+
+    pub fn get_cart(&self) -> Cartridge {
+        self.cart.clone()
+    }
+
+    pub fn get_irq(&self) -> bool {
+        self.irq
+    }
+
+    pub fn get_nmi(&self) -> bool {
+        self.nmi
     }
 }

@@ -1,12 +1,20 @@
+const BASE_NAMETABLE_ADDRESS_MASK: u8 = 0b_0000_0011;
+const VRAM_ADDRESS_INCREMENT_MASK: u8 = 0b_0000_0100;
+const SPRITE_PATTERN_TABLE_ADDRESS_MASK: u8 = 0b_0000_1000;
+const BACKGROUND_PATTERN_TABLE_ADDRESS_MASK: u8 = 0b_0001_0000;
+const SPRITE_SIZE_MASK: u8 = 0b_0010_0000;
+const PPU_SELECT_MASK: u8 = 0b_0100_0000;
+const VBLANK_NMI_ENABLE_MASK: u8 = 0b_1000_0000;
+
 #[derive(Default, Copy, Clone)]
 pub struct PpuControl {
     pub data: u8,
 }
 
 impl PpuControl {
-    /// Gets the base nametable address.
+    /// Returns the base nametable address.
     pub fn get_base_nametable_addr(&self) -> u16 {
-        match self.data & 0b_0000_0011 {
+        match self.data & BASE_NAMETABLE_ADDRESS_MASK {
             0 => 0x2000,
             1 => 0x2400,
             2 => 0x2800,
@@ -15,45 +23,45 @@ impl PpuControl {
         }
     }
 
-    /// Gets the VRAM address increment value.
-    pub fn get_vram_addr_incr(&self) -> u8 {
-        match (self.data >> 2) & 0b_0000_0001 == 1 {
+    /// Returns the VRAM address increment amount per read/write of `PPUDATA`.
+    pub fn get_vram_addr_incr(&self) -> u16 {
+        match self.data & VRAM_ADDRESS_INCREMENT_MASK != 0 {
             true => 32,
             false => 1,
         }
     }
 
-    /// Gets the sprite pattern table address.
+    /// Returns the sprite pattern table address for 8x8 sprites (ignored in
+    /// 8x16 mode).
     pub fn get_sprite_pattern_table_addr(&self) -> u16 {
-        match (self.data >> 3) & 0b_0000_0001 == 1 {
+        match self.data & SPRITE_PATTERN_TABLE_ADDRESS_MASK != 0 {
             true => 0x1000,
             false => 0x0000,
         }
     }
 
-    /// Gets the background pattern table address.
+    /// Returns the background pattern table address.
     pub fn get_background_pattern_table_addr(&self) -> u16 {
-        match (self.data >> 4) & 0b_0000_0001 == 1 {
+        match self.data & BACKGROUND_PATTERN_TABLE_ADDRESS_MASK != 0 {
             true => 0x1000,
             false => 0x0000,
         }
     }
 
-    /// Gets the sprite size. If true sprites are 8x16 and if false sprites are
-    /// 8x8.
+    /// Returns the sprite size, where `false` is 8x8 and `true` is 8x16.
     pub fn is_sprite_size_large(&self) -> bool {
-        (self.data >> 5) & 0b_0000_0001 == 1
+        self.data & SPRITE_SIZE_MASK != 0
     }
 
-    /// Gets the PPU EXT pin selection. If true then output color on EXT pins
-    /// and if false then read backdrop from EXT pins.
+    /// Returns the PPU EXT pin selection, where `false` is backdrop and `true`
+    /// is output color.
     pub fn is_ext_pin_output_color(&self) -> bool {
-        (self.data >> 6) & 0b_0000_0001 == 1
+        self.data & PPU_SELECT_MASK != 0
     }
 
-    /// Gets the vblank NMI status. If true then the NMI is enabled and if false
-    /// NMI is disabled.
+    /// Returns `true` if the vertical blanking non-maskable interrupt is
+    /// enabled.
     pub fn is_vblank_nmi_enabled(&self) -> bool {
-        self.data >> 7 == 1
+        self.data & VBLANK_NMI_ENABLE_MASK != 0
     }
 }

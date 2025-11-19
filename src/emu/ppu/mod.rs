@@ -6,25 +6,23 @@ use crate::{
     },
     split_u16,
 };
-use sdl2::{pixels::Color, rect::Point};
 
 pub mod buses;
 pub mod nametable;
 pub mod palettes;
 pub mod registers;
 
-struct Output {
-    active: bool,
-    location: Point,
-    color: Color,
-}
+const OAM_SPRITE_SIZE: usize = 4;
+const OAM_SPRITE_COUNT: u32 = 64;
+const OAM_SIZE: usize = OAM_SPRITE_SIZE * OAM_SPRITE_COUNT as usize;
 
+#[derive(Clone)]
 pub struct PPU {
     registers: Registers,
     buses: Buses,
+    oam: [u8; OAM_SIZE],
     ppu_data_read_buffer: u8,
-    is_vblank: bool,
-    output: Output,
+    nmi: bool,
 }
 
 impl PPU {
@@ -32,26 +30,26 @@ impl PPU {
         PPU {
             registers: Registers::default(),
             buses: Buses::new(cart),
+            oam: [0; OAM_SIZE],
             ppu_data_read_buffer: 0,
-            is_vblank: false,
-            output: Output {
-                active: false,
-                location: Point::new(0, 0),
-                color: Color::RGB(0, 0, 0),
-            },
+            nmi: false,
         }
     }
 
-    pub fn has_output(&self) -> bool {
-        self.output.active
+    pub fn get_registers(&self) -> Registers {
+        self.registers
     }
 
-    pub fn get_output_location(&self) -> Point {
-        self.output.location
+    pub fn get_buses(&self) -> Buses {
+        self.buses.clone()
     }
 
-    pub fn get_output_color(&self) -> Color {
-        self.output.color
+    pub fn get_data_read_buffer(&self) -> u8 {
+        self.ppu_data_read_buffer
+    }
+
+    pub fn get_nmi(&self) -> bool {
+        self.nmi
     }
 
     pub fn read_ppu_ctrl(&self) -> u8 {
@@ -71,11 +69,12 @@ impl PPU {
     }
 
     pub fn read_ppu_status(&mut self) -> u8 {
-        // Clear the vertical blanking flag and the internal w register.
-        self.is_vblank = false;
-        self.registers.internal.w = false;
+        let data = self.registers.ppu_status.data;
 
-        self.registers.ppu_status.data
+        self.registers.internal.w = false;
+        self.registers.ppu_status.set_vblank_flag(false);
+
+        data
     }
 
     pub fn write_ppu_status(&mut self, _: u8) {
@@ -91,11 +90,14 @@ impl PPU {
     }
 
     pub fn read_oam_data(&self) -> u8 {
-        self.registers.oam_data.data
+        let addr = self.registers.oam_addr.data;
+
+        self.oam[addr as usize]
     }
 
     pub fn write_oam_data(&mut self, data: u8) {
         self.registers.oam_data.data = data;
+        self.registers.oam_addr.data += 1;
     }
 
     pub fn read_ppu_scroll(&self) -> u8 {
@@ -103,7 +105,16 @@ impl PPU {
     }
 
     pub fn write_ppu_scroll(&mut self, data: u8) {
-        self.registers.ppu_scroll.data = data;
+        let is_first_write = !self.registers.internal.w;
+
+        if is_first_write {
+            self.registers.internal.t.0 = data;
+        } else {
+            self.registers.internal.t.1 = data;
+            self.registers.internal.v = self.registers.internal.t;
+        }
+
+        self.registers.internal.w = !self.registers.internal.w;
     }
 
     pub fn read_ppu_addr(&self) -> u8 {
@@ -114,14 +125,13 @@ impl PPU {
         let is_first_write = !self.registers.internal.w;
 
         if is_first_write {
-            // PPU address space is 14-bit. Clear the two most significant bits.
-            self.registers.internal.t.0 = data & 0b_0011_1111;
+            self.registers.internal.t.0 = data;
         } else {
             self.registers.internal.t.1 = data;
             self.registers.internal.v = self.registers.internal.t;
         }
 
-        self.registers.internal.w = !self.registers.internal.w
+        self.registers.internal.w = !self.registers.internal.w;
     }
 
     pub fn read_ppu_data(&mut self) -> u8 {
@@ -135,22 +145,22 @@ impl PPU {
 
         // Finally, increment the address by the value specified in PPUCTRL
         // and store the new value back into the internal v register.
-        let addr_incr = self.registers.ppu_ctrl.get_vram_addr_incr() as u16;
+        let addr_incr = self.registers.ppu_ctrl.get_vram_addr_incr();
         let new_addr = addr.wrapping_add(addr_incr);
         self.registers.internal.v = split_u16!(new_addr);
 
         data
     }
 
-    pub fn write_ppu_data(&mut self, data: u8) {
-        self.registers.ppu_data.data = data;
+    pub fn write_ppu_data(&mut self, _data: u8) {
+        todo!("write to PPUDATA is not implemented")
     }
 
     pub fn read_oam_dma(&self) -> u8 {
         panic!("invalid red: OAMDMA is write-only")
     }
 
-    pub fn write_oam_dma(&mut self, data: u8) {
-        self.registers.oam_dma.data = data;
+    pub fn write_oam_dma(&mut self, _data: u8) {
+        todo!("write to OAMDMA is not implemented")
     }
 }
