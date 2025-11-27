@@ -1,5 +1,7 @@
 use std::fmt;
 
+pub mod debug;
+
 use crate::{
     concat_u8,
     emu::{buses::Buses, cartridge::Cartridge, cpu::CPU, screen::Screen},
