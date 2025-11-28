@@ -17,158 +17,128 @@ pub enum AddressingMode {
     IndirectIndexedY,
 }
 
+/// Returns the debug text for the instruction at the program counter.
 pub fn get_debug_text(nes: &NES) -> String {
-    let (pch, pcl) = nes.cpu.get_registers().pc;
-    let pc = concat_u8!(pch, pcl);
+    let (pc_high_byte, pc_low_byte) = nes.cpu.get_registers().pc;
+    let pc = concat_u8!(pc_high_byte, pc_low_byte);
     let opcode = nes.buses.peek(pc);
 
     let label = get_label(opcode);
     let addressing_mode = get_addressing_mode(opcode);
 
-    get_instruction_text(label, addressing_mode, nes)
-}
-
-pub fn get_instruction_text(label: &str, addressing_mode: AddressingMode, nes: &NES) -> String {
     match addressing_mode {
         AddressingMode::Accumulator => format!("{label} A"),
         AddressingMode::Relative => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let addr = pc + 1;
+            let addr = pc.wrapping_add(1);
             let op = nes.buses.peek(addr);
 
             create_relative_debug_text(label, op, addr)
         }
         AddressingMode::Immediate => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let op = nes.buses.peek(pc + 1);
+            let op = nes.buses.peek(pc.wrapping_add(1));
 
             create_immediate_debug_text(label, op)
         }
         AddressingMode::Absolute => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
+            let addr_low_byte = nes.buses.peek(pc.wrapping_add(1));
+            let addr_high_byte = nes.buses.peek(pc.wrapping_add(2));
+            let addr = concat_u8!(addr_high_byte, addr_low_byte);
 
-            let op1 = nes.buses.peek(pc + 1);
-            let op2 = nes.buses.peek(pc + 2);
-            let addr = concat_u8!(op2, op1);
+            let val = nes.buses.peek(addr);
 
-            create_absolute_debug_text(label, addr, nes.buses.peek(addr))
+            create_absolute_debug_text(label, addr, val)
         }
         AddressingMode::Implied => label.to_string(),
         AddressingMode::ZeroPage => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
+            let op = nes.buses.peek(pc.wrapping_add(1));
 
-            let op = nes.buses.peek(pc + 1);
-            let addr = concat_u8!(0x00, op);
+            let zero_page_addr = concat_u8!(0x00, op);
+            let val = nes.buses.peek(zero_page_addr);
 
-            create_zero_page_debug_text(label, op, nes.buses.peek(addr))
+            create_zero_page_debug_text(label, op, val)
         }
         AddressingMode::Indirect => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
+            let ptr_low_byte = nes.buses.peek(pc.wrapping_add(1));
+            let ptr_high_byte = nes.buses.peek(pc.wrapping_add(2));
+            let ptr = concat_u8!(ptr_high_byte, ptr_low_byte);
 
-            let op1 = nes.buses.peek(pc + 1);
-            let op2 = nes.buses.peek(pc + 2);
-            let pointer = concat_u8!(op2, op1);
-
-            let addr_low_byte = nes.buses.peek(pointer);
-            let addr_high_byte = nes.buses.peek(pointer + 1);
+            let addr_low_byte = nes.buses.peek(ptr);
+            let addr_high_byte = nes.buses.peek(ptr + 1);
             let addr = concat_u8!(addr_high_byte, addr_low_byte);
 
-            create_indirect_debug_text(label, pointer, addr)
+            create_indirect_debug_text(label, ptr, addr)
         }
         AddressingMode::AbsoluteIndexedX => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let op1 = nes.buses.peek(pc + 1);
-            let op2 = nes.buses.peek(pc + 2);
-            let operand = concat_u8!(op2, op1);
+            let op_low_byte = nes.buses.peek(pc.wrapping_add(1));
+            let op_high_byte = nes.buses.peek(pc.wrapping_add(2));
+            let op = concat_u8!(op_high_byte, op_low_byte);
 
             let x_contents = nes.cpu.get_registers().x_index;
-            let addr = operand + x_contents as u16;
-            let value = nes.buses.peek(addr);
+            let addr = op.wrapping_add(x_contents as u16);
+            let val = nes.buses.peek(addr);
 
-            create_absolute_indexed_x_debug_text(label, operand, x_contents, value)
+            create_absolute_indexed_x_debug_text(label, op, x_contents, val)
         }
         AddressingMode::AbsoluteIndexedY => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let op1 = nes.buses.peek(pc + 1);
-            let op2 = nes.buses.peek(pc + 2);
-            let operand = concat_u8!(op2, op1);
+            let op_low_byte = nes.buses.peek(pc.wrapping_add(1));
+            let op_high_byte = nes.buses.peek(pc.wrapping_add(2));
+            let op = concat_u8!(op_high_byte, op_low_byte);
 
             let y_contents = nes.cpu.get_registers().y_index;
-            let addr = operand + y_contents as u16;
-            let value = nes.buses.peek(addr);
+            let addr = op.wrapping_add(y_contents as u16);
+            let val = nes.buses.peek(addr);
 
-            create_absolute_indexed_y_debug_text(label, operand, y_contents, value)
+            create_absolute_indexed_y_debug_text(label, op, y_contents, val)
         }
         AddressingMode::ZeroPageIndexedX => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let op = nes.buses.peek(pc + 1);
+            let op = nes.buses.peek(pc.wrapping_add(1));
 
             let x_contents = nes.cpu.get_registers().x_index;
-            let zero_page_addr = concat_u8!(0x00, op);
-            let addr = zero_page_addr + x_contents as u16;
-            let value = nes.buses.peek(addr);
+            let zero_page_low_byte = op.wrapping_add(x_contents);
+            let zero_page_addr = concat_u8!(0x00, zero_page_low_byte);
+            let val = nes.buses.peek(zero_page_addr);
 
-            create_zero_page_indexed_x_debug_text(label, op, x_contents, value)
+            create_zero_page_indexed_x_debug_text(label, op, x_contents, val)
         }
         AddressingMode::ZeroPageIndexedY => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
-            let op = nes.buses.peek(pc + 1);
+            let op = nes.buses.peek(pc.wrapping_add(1));
 
             let y_contents = nes.cpu.get_registers().y_index;
-            let zero_page_addr = concat_u8!(0x00, op);
-            let addr = zero_page_addr + y_contents as u16;
-            let value = nes.buses.peek(addr);
+            let zero_page_low_byte = op.wrapping_add(y_contents);
+            let zero_page_addr = concat_u8!(0x00, zero_page_low_byte);
+            let val = nes.buses.peek(zero_page_addr);
 
-            create_zero_page_indexed_y_debug_text(label, op, y_contents, value)
+            create_zero_page_indexed_y_debug_text(label, op, y_contents, val)
         }
         AddressingMode::IndirectIndexedX => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
+            let op = nes.buses.peek(pc.wrapping_add(1));
 
-            let op = nes.buses.peek(pc + 1);
-
-            let zero_page_address = concat_u8!(0x00, op);
-            let pointer_high_byte = nes.buses.peek(zero_page_address);
-            let pointer_low_byte = nes.buses.peek(zero_page_address + 1);
-            let pointer = concat_u8!(pointer_high_byte, pointer_low_byte);
+            let ptr_low_byte_location = concat_u8!(0x00, op);
+            let ptr_high_byte_location = concat_u8!(0x00, op.wrapping_add(1));
+            let ptr_low_byte = nes.buses.peek(ptr_low_byte_location);
+            let ptr_high_byte = nes.buses.peek(ptr_high_byte_location);
+            let ptr = concat_u8!(ptr_high_byte, ptr_low_byte);
 
             let x_contents = nes.cpu.get_registers().x_index;
-            let addr = pointer + x_contents as u16;
+            let addr = ptr.wrapping_add(x_contents as u16);
             let value = nes.buses.peek(addr);
 
-            create_indirect_indexed_x_debug_text(label, op, pointer, x_contents, value)
+            create_indirect_indexed_x_debug_text(label, op, ptr, x_contents, value)
         }
         AddressingMode::IndirectIndexedY => {
-            let (pch, pcl) = nes.cpu.get_registers().pc;
-            let pc = concat_u8!(pch, pcl);
-
             let op = nes.buses.peek(pc + 1);
 
-            let zero_page_address = concat_u8!(0x00, op);
-            let pointer_high_byte = nes.buses.peek(zero_page_address);
-            let pointer_low_byte = nes.buses.peek(zero_page_address + 1);
-            let pointer = concat_u8!(pointer_high_byte, pointer_low_byte);
+            let ptr_low_byte_location = concat_u8!(0x00, op);
+            let ptr_high_byte_location = concat_u8!(0x00, op.wrapping_add(1));
+            let ptr_low_byte = nes.buses.peek(ptr_low_byte_location);
+            let ptr_high_byte = nes.buses.peek(ptr_high_byte_location);
+            let ptr = concat_u8!(ptr_high_byte, ptr_low_byte);
 
             let y_contents = nes.cpu.get_registers().y_index;
-            let addr = pointer + y_contents as u16;
+            let addr = ptr.wrapping_add(y_contents as u16);
             let value = nes.buses.peek(addr);
 
-            create_indirect_indexed_y_debug_text(label, op, pointer, y_contents, value)
+            create_indirect_indexed_y_debug_text(label, op, ptr, y_contents, value)
         }
     }
 }
@@ -374,7 +344,7 @@ fn create_zero_page_indexed_y_debug_text(
 ///
 /// * `label`: The label for the instruction being debugged.
 /// * `operand`: The value used in the instruction.
-/// * `pointer`: The value stored at the zero page pointer address.
+/// * `pointer`: The value stored at the zero page ptr address.
 /// * `x_contents`: The contents of the X index register.
 /// * `value`: The value stored at the above address.
 /// *
@@ -394,7 +364,7 @@ fn create_indirect_indexed_x_debug_text(
     value: u8,
 ) -> String {
     let zero_page_addr = concat_u8!(0x00, operand);
-    let addr = pointer + x_contents as u16;
+    let addr = pointer.wrapping_add(x_contents as u16);
     format!(
         "{label}, (#{operand:02X} = &{zero_page_addr:04X} -> {pointer:04X}, X) = &{addr:04X} -> #{value:02X}"
     )
@@ -426,7 +396,7 @@ fn create_indirect_indexed_y_debug_text(
     value: u8,
 ) -> String {
     let zero_page_addr = concat_u8!(0x00, operand);
-    let addr = pointer + y_contents as u16;
+    let addr = pointer.wrapping_add(y_contents as u16);
     format!(
         "{label}, (#{operand:02X} = &{zero_page_addr:04X} -> {pointer:04X}, Y) = &{addr:04X} -> #{value:02X}"
     )
