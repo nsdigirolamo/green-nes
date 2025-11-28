@@ -17,7 +17,7 @@ pub enum AddressingMode {
     IndirectIndexedY,
 }
 
-pub fn get_debug_text(nes: NES) -> String {
+pub fn get_debug_text(nes: &NES) -> String {
     let (pch, pcl) = nes.cpu.get_registers().pc;
     let pc = concat_u8!(pch, pcl);
     let opcode = nes.buses.peek(pc);
@@ -28,7 +28,7 @@ pub fn get_debug_text(nes: NES) -> String {
     get_instruction_text(label, addressing_mode, nes)
 }
 
-pub fn get_instruction_text(label: &str, addressing_mode: AddressingMode, nes: NES) -> String {
+pub fn get_instruction_text(label: &str, addressing_mode: AddressingMode, nes: &NES) -> String {
     match addressing_mode {
         AddressingMode::Accumulator => format!("{label} A"),
         AddressingMode::Relative => {
@@ -188,7 +188,9 @@ pub fn get_instruction_text(label: &str, addressing_mode: AddressingMode, nes: N
 /// ```
 ///
 fn create_relative_debug_text(label: &str, operand: u8, program_counter: u16) -> String {
-    let relative_addr = program_counter.wrapping_add_signed(operand as i16);
+    let relative_addr = program_counter
+        .wrapping_add_signed(1)
+        .wrapping_add_signed(operand as i16);
     format!("{label} #{operand:02X} = &{relative_addr:04X}")
 }
 
@@ -426,7 +428,7 @@ fn create_indirect_indexed_y_debug_text(
     let zero_page_addr = concat_u8!(0x00, operand);
     let addr = pointer + y_contents as u16;
     format!(
-        "{label}, (#{operand:02X} = &{zero_page_addr:04X} -> {pointer:04X}, X) = &{addr:04X} -> #{value:02X}"
+        "{label}, (#{operand:02X} = &{zero_page_addr:04X} -> {pointer:04X}, Y) = &{addr:04X} -> #{value:02X}"
     )
 }
 

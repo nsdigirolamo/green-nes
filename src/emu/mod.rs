@@ -42,7 +42,10 @@ pub fn run_emulator(cart: Cartridge, debug_level: DebugLevel) -> NES {
     let mut nes = NES::new(cart);
 
     while !nes.cpu.is_halted() {
-        do_debug(&nes, debug_level);
+        if nes.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::Low {
+            println!("{nes:?}")
+        }
+
         nes.buses.tick();
         nes.cpu.tick(&mut nes.buses);
     }
@@ -95,18 +98,6 @@ pub fn display_pattern_tables(cart: Cartridge) {
         }
 
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
-    }
-}
-
-fn do_debug(nes: &NES, debug_level: DebugLevel) {
-    match debug_level {
-        DebugLevel::High => {
-            println!("{nes}")
-        }
-        DebugLevel::Low => {
-            println!("{nes:?}")
-        }
-        _ => {}
     }
 }
 
