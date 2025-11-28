@@ -1,8 +1,12 @@
 use std::fmt;
 
+pub mod debug;
+
 use crate::{
     concat_u8,
-    emu::{buses::Buses, cartridge::Cartridge, cpu::CPU, screen::Screen},
+    emu::{
+        buses::Buses, cartridge::Cartridge, cpu::CPU, nes::debug::get_debug_text, screen::Screen,
+    },
 };
 
 pub struct NES {
@@ -76,15 +80,11 @@ impl fmt::Debug for NES {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let registers = self.cpu.get_registers();
 
-        let (pch, pcl) = registers.pc;
-
-        let pc0 = concat_u8!(registers.pc.0, registers.pc.1);
-        let pc1 = pc0.wrapping_add(1);
-        let pc2 = pc0.wrapping_add(2);
-        let pc_mem0 = self.buses.peek(pc0);
-        let pc_mem1 = self.buses.peek(pc1);
-        let pc_mem2 = self.buses.peek(pc2);
-
+        let pc = concat_u8!(registers.pc.0, registers.pc.1);
+        let pc0 = self.buses.peek(pc);
+        let pc1 = self.buses.peek(pc.wrapping_add(1));
+        let pc2 = self.buses.peek(pc.wrapping_add(2));
+        let debug_text = get_debug_text(self);
         let accumulator = registers.a;
         let x_index = registers.x_index;
         let y_index = registers.y_index;
@@ -94,9 +94,9 @@ impl fmt::Debug for NES {
 
         write!(
             f,
-            "{pch:02X}{pcl:02X}  {pc_mem0:02X} {pc_mem1:02X} {pc_mem2:02X}  \
-            \t\t\t\t\tA:{accumulator:02X} X:{x_index:02X} \
-            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:}"
+            "{pc:04X}  {pc0:02X} {pc1:02X} {pc2:02X}  {debug_text:45} \
+            A:{accumulator:02X} X:{x_index:02X} \
+            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:}",
         )
     }
 }
