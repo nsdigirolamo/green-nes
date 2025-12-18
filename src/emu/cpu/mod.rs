@@ -84,6 +84,7 @@ impl Default for CPU {
 impl CPU {
     pub fn tick(&mut self, buses: &mut ExternalBuses) {
         let cycle = self.cycle_queue.pop_front();
+
         match cycle {
             Some(cycle) => run_cycle(self, buses, cycle),
             None => {
@@ -100,6 +101,9 @@ impl CPU {
                 self.cycle_queue.extend(new_cycles.iter());
             }
         }
+
+        self.irq = buses.get_irq();
+        self.nmi = buses.get_nmi();
     }
 
     pub fn get_cycle_queue(&self) -> VecDeque<Cycle> {

@@ -36,23 +36,11 @@ impl PPU {
         }
     }
 
-    pub fn get_registers(&self) -> Registers {
-        self.registers
-    }
-
-    pub fn get_buses(&self) -> Buses {
-        self.buses.clone()
-    }
-
-    pub fn get_data_read_buffer(&self) -> u8 {
-        self.ppu_data_read_buffer
-    }
-
     pub fn get_nmi(&self) -> bool {
         self.nmi
     }
 
-    pub fn read_ppu_ctrl(&self) -> u8 {
+    pub fn read_ppu_ctrl(&mut self) -> u8 {
         panic!("invalid read: PPUCTRL is write-only")
     }
 
@@ -60,12 +48,20 @@ impl PPU {
         self.registers.ppu_ctrl.data = data;
     }
 
-    pub fn read_ppu_mask(&self) -> u8 {
+    pub fn peek_ppu_ctrl(&self) -> u8 {
+        self.registers.ppu_ctrl.data
+    }
+
+    pub fn read_ppu_mask(&mut self) -> u8 {
         panic!("invalid read: PPUMASK is write-only")
     }
 
     pub fn write_ppu_mask(&mut self, data: u8) {
         self.registers.ppu_mask.data = data;
+    }
+
+    pub fn peek_ppu_mask(&self) -> u8 {
+        self.registers.ppu_mask.data
     }
 
     pub fn read_ppu_status(&mut self) -> u8 {
@@ -81,12 +77,20 @@ impl PPU {
         panic!("invalid write: PPUSTATUS is read-only")
     }
 
+    pub fn peek_ppu_status(&self) -> u8 {
+        self.registers.ppu_status.data
+    }
+
     pub fn read_oam_addr(&self) -> u8 {
         panic!("invalid read: OAMADDR is write-only")
     }
 
     pub fn write_oam_addr(&mut self, data: u8) {
         self.registers.oam_addr.data = data;
+    }
+
+    pub fn peek_oam_addr(&self) -> u8 {
+        self.registers.oam_addr.data
     }
 
     pub fn read_oam_data(&self) -> u8 {
@@ -98,6 +102,10 @@ impl PPU {
     pub fn write_oam_data(&mut self, data: u8) {
         self.registers.oam_data.data = data;
         self.registers.oam_addr.data += 1;
+    }
+
+    pub fn peek_oam_data(&self) -> u8 {
+        self.registers.oam_addr.data
     }
 
     pub fn read_ppu_scroll(&self) -> u8 {
@@ -117,6 +125,10 @@ impl PPU {
         self.registers.internal.w = !self.registers.internal.w;
     }
 
+    pub fn peek_ppu_scroll(&self) -> u8 {
+        panic!("invalid peek: PPUSCROLL is write-only and uses multiple bytes.")
+    }
+
     pub fn read_ppu_addr(&self) -> u8 {
         panic!("invalid read: PPUADDR is write-only")
     }
@@ -132,6 +144,10 @@ impl PPU {
         }
 
         self.registers.internal.w = !self.registers.internal.w;
+    }
+
+    pub fn peek_ppu_addr(&self) -> u8 {
+        panic!("invalid peek: PPUADDR is write-only and uses multiple bytes.")
     }
 
     pub fn read_ppu_data(&mut self) -> u8 {
@@ -156,11 +172,19 @@ impl PPU {
         todo!("write to PPUDATA is not implemented")
     }
 
+    pub fn peek_ppu_data(&self) -> u8 {
+        self.ppu_data_read_buffer
+    }
+
     pub fn read_oam_dma(&self) -> u8 {
-        panic!("invalid red: OAMDMA is write-only")
+        panic!("invalid read: OAMDMA is write-only")
     }
 
     pub fn write_oam_dma(&mut self, _data: u8) {
         todo!("write to OAMDMA is not implemented")
+    }
+
+    pub fn peek_oam_dma(&self) -> u8 {
+        panic!("peek to OAMDMA is not implemented")
     }
 }

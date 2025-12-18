@@ -28,9 +28,6 @@ pub fn run_cycle(cpu: &mut CPU, buses: &mut ExternalBuses, cycle: Cycle) {
     phase1(cpu, buses);
     phase2(cpu, buses);
 
-    cpu.irq = buses.get_irq();
-    cpu.nmi = buses.get_nmi();
-
     cpu.half_cycle_count += 2;
 }
 

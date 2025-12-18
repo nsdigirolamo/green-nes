@@ -107,7 +107,20 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
-                panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
+                let mapped_addr = addr % 8;
+                match mapped_addr {
+                    0 => self.ppu.peek_ppu_ctrl(),
+                    1 => self.ppu.peek_ppu_mask(),
+                    2 => self.ppu.peek_ppu_status(),
+                    3 => self.ppu.peek_oam_addr(),
+                    4 => self.ppu.peek_oam_data(),
+                    5 => self.ppu.peek_ppu_scroll(),
+                    6 => self.ppu.peek_ppu_addr(),
+                    7 => self.ppu.peek_ppu_data(),
+                    _ => unreachable!(
+                        "bus read failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
+                    ),
+                }
             }
             IO_START_ADDR..IO_END_ADDR => {
                 todo!("bus peek failed: apu address 0x{addr:04X} is unmapped")
