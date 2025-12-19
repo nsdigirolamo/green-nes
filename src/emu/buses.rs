@@ -109,17 +109,17 @@ impl Buses {
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
                 let mapped_addr = addr % 8;
                 match mapped_addr {
-                    0 => self.ppu.peek_ppu_ctrl(),
-                    1 => self.ppu.peek_ppu_mask(),
+                    0 => self.ppu.read_ppu_ctrl(),
+                    1 => self.ppu.read_ppu_mask(),
                     2 => self.ppu.peek_ppu_status(),
-                    3 => self.ppu.peek_oam_addr(),
-                    4 => self.ppu.peek_oam_data(),
-                    5 => self.ppu.peek_ppu_scroll(),
-                    6 => self.ppu.peek_ppu_addr(),
+                    3 => self.ppu.read_oam_addr(),
+                    4 => self.ppu.read_oam_data(),
+                    5 => self.ppu.read_ppu_scroll(),
+                    6 => self.ppu.read_ppu_addr(),
                     7 => self.ppu.peek_ppu_data(),
-                    _ => unreachable!(
-                        "bus read failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
-                    ),
+                    _ => {
+                        unreachable!("bus peek failed: {mapped_addr} should not be greater than 7")
+                    }
                 }
             }
             IO_START_ADDR..IO_END_ADDR => {

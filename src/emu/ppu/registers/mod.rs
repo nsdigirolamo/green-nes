@@ -29,9 +29,13 @@ Other:
 */
 #[derive(Default, Copy, Clone)]
 pub struct InternalRegisters {
-    pub v: (u8, u8),
-    pub t: (u8, u8),
+    /// 15 bits
+    pub v: u16,
+    /// 15 bits
+    pub t: u16,
+    /// 3 bits
     pub x: u8,
+    /// 1 bit
     pub w: bool,
 }
 

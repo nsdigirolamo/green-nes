@@ -100,12 +100,12 @@ impl Buses {
                 do_nametable_write(self, mapped_addr, data);
             }
             UNUSED_START_ADDR..UNUSED_END_ADDR => {
-                todo!("ppu read failed: address 0x{addr:04X} is in unused memory")
+                todo!("ppu write failed: address 0x{addr:04X} is in unused memory")
             }
             PALETTE_RAM_START_ADDR..PALETTE_RAM_END_ADDR => do_palette_write(self, addr, data),
             MIRRORS_START_ADDR..MIRRORS_END_ADDR => do_palette_write(self, addr, data),
             _ => unreachable!(
-                "ppu read failed: address 0x{addr:04X} is outside of the 14-bit address space"
+                "ppu write failed: address 0x{addr:04X} is outside of the 14-bit address space"
             ),
         }
     }
