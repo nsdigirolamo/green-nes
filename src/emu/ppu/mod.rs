@@ -19,6 +19,8 @@ pub struct PPU {
     oam: [u8; OAM_SIZE],
     ppu_data_read_buffer: u8,
     nmi: bool,
+    cycle_count: u32,
+    scanline_count: u32,
 }
 
 impl PPU {
@@ -29,6 +31,25 @@ impl PPU {
             oam: [0; OAM_SIZE],
             ppu_data_read_buffer: 0,
             nmi: false,
+            cycle_count: 0,
+            scanline_count: 0,
+        }
+    }
+
+    pub fn tick(&mut self, cycles: u32) {
+        self.cycle_count += cycles;
+
+        if self.cycle_count > 340 {
+            self.cycle_count = 0;
+            self.scanline_count += 1;
+
+            if self.scanline_count == 241 {
+                self.registers.ppu_status.set_vblank_flag(true);
+                todo!("trigger nmi")
+            } else if self.scanline_count > 261 {
+                self.scanline_count = 0;
+                self.registers.ppu_status.set_vblank_flag(false);
+            }
         }
     }
 

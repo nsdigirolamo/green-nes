@@ -3,10 +3,9 @@ use crate::emu::cpu::{
     half_cycles::{
         HalfCycle, get_high_irq_vector, get_indirect_high_address_byte,
         get_indirect_low_address_byte, get_low_irq_vector, get_pc, get_pc_without_increment,
-        get_sp, pop_stack, push_stack, read_data, read_high_effective_address_byte,
-        read_high_indirect_address_byte, read_high_pc_address_byte,
-        read_low_effective_address_byte, read_low_indirect_address_byte, read_low_pc_address_byte,
-        write_pc_high, write_pc_low, write_status,
+        get_sp, pop_stack, push_stack, read_data, read_high_indirect_address_byte,
+        read_high_pc_address_byte, read_low_indirect_address_byte, read_low_pc_address_byte,
+        write_break_status, write_pc_high, write_pc_low,
     },
     instructions::Instruction,
 };
@@ -43,12 +42,12 @@ impl Instruction for Miscellaneous {
                 [get_pc, operation],
             ],
             Miscellaneous::Break => vec![
-                [get_pc, read_data],
+                [get_pc_without_increment, read_data],
                 [push_stack, write_pc_high],
                 [push_stack, write_pc_low],
-                [push_stack, write_status],
-                [get_low_irq_vector, read_high_effective_address_byte],
-                [get_high_irq_vector, read_low_effective_address_byte],
+                [push_stack, write_break_status],
+                [get_low_irq_vector, read_low_pc_address_byte],
+                [get_high_irq_vector, read_high_pc_address_byte],
             ],
             Miscellaneous::ReturnFromInterrupt => vec![
                 [get_pc, read_data],

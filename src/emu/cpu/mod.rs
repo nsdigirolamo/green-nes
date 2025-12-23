@@ -8,7 +8,10 @@ use crate::{
     concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
-        cpu::cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles, run_cycle},
+        cpu::cycles::{
+            Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles, poll_interrupts,
+            run_cycle,
+        },
     },
     split_u16,
 };
@@ -102,8 +105,7 @@ impl CPU {
             }
         }
 
-        self.irq = buses.get_irq();
-        self.nmi = buses.get_nmi();
+        poll_interrupts(self, buses);
     }
 
     pub fn get_cycle_queue(&self) -> VecDeque<Cycle> {
