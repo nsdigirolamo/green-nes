@@ -62,7 +62,8 @@ impl Buses {
     }
 
     pub fn tick(&mut self) {
-        self.nmi = self.ppu.get_nmi()
+        self.ppu.tick();
+        self.nmi = self.ppu.get_nmi();
     }
 
     /// Returns a byte from the given memory address.
@@ -84,15 +85,19 @@ impl Buses {
                     6 => self.ppu.read_ppu_addr(),
                     7 => self.ppu.read_ppu_data(),
                     _ => unreachable!(
-                        "bus read failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
+                        "bus fetch failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
                     ),
                 }
             }
             IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus fetch failed: apu address 0x{addr:04X} is unmapped")
+                println!("bus fetch ignored: apu address 0x{addr:04X} is unmapped (returned 0)");
+                0
             }
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus fetch failed: test mode address 0x{addr:04X} is unmapped")
+                println!(
+                    "bus fetch ignored: test mode address 0x{addr:04X} is unmapped (returned 0)"
+                );
+                0
             }
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
@@ -123,10 +128,14 @@ impl Buses {
                 }
             }
             IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus peek failed: apu address 0x{addr:04X} is unmapped")
+                println!("bus peek ignored: apu address 0x{addr:04X} is unmapped (returned 0)");
+                0
             }
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus peek failed: test mode address 0x{addr:04X} is unmapped")
+                println!(
+                    "bus peek ignored: test mode address 0x{addr:04X} is unmapped (returned 0)"
+                );
+                0
             }
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
@@ -170,10 +179,12 @@ impl Buses {
                 }
             }
             IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus write failed: apu address 0x{addr:04X} is unmapped")
+                println!("bus peek ignored: apu address 0x{addr:04X} is unmapped")
             }
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus write failed: test mode address 0x{addr:04X} is unmapped")
+                println!(
+                    "bus peek ignored: test mode address 0x{addr:04X} is unmapped (returned 0)"
+                );
             }
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => {
                 self.cart.mapper.borrow_mut().prg_write(addr, data)

@@ -89,7 +89,10 @@ impl Mapper for NROM {
                 let mapped_addr = addr - PRG_BANKS_MIN_ADDR;
                 self.prg_rom[mapped_addr as usize]
             }
-            _ => panic!("NROM mapper does not support reading PRG address 0x{addr:04X}"),
+            _ => {
+                println!("nrom read ignored: address 0x{addr:04X} is unmapped (returned 0)");
+                0
+            }
         }
     }
 

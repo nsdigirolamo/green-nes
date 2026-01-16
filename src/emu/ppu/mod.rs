@@ -12,15 +12,19 @@ const OAM_SPRITE_SIZE: usize = 4;
 const OAM_SPRITE_COUNT: u32 = 64;
 const OAM_SIZE: usize = OAM_SPRITE_SIZE * OAM_SPRITE_COUNT as usize;
 
+const PPU_CYCLES_PER_SCANLINE: u32 = 341;
+const VBLANK_LINE_INDEX: u32 = 241;
+const PRERENDER_LINE_INDEX: u32 = 261;
+
 #[derive(Clone)]
 pub struct PPU {
     registers: Registers,
     buses: Buses,
     oam: [u8; OAM_SIZE],
     ppu_data_read_buffer: u8,
-    nmi: bool,
+    nmi: bool, // True = NMI is pulled low (and thus a NMI occurs).
     cycle_count: u32,
-    scanline_count: u32,
+    scanline_index: u32,
 }
 
 impl PPU {
@@ -32,25 +36,36 @@ impl PPU {
             ppu_data_read_buffer: 0,
             nmi: false,
             cycle_count: 0,
-            scanline_count: 0,
+            scanline_index: 0,
         }
     }
 
-    pub fn tick(&mut self, cycles: u32) {
-        self.cycle_count += cycles;
+    pub fn tick(&mut self) {
+        if PPU_CYCLES_PER_SCANLINE <= self.cycle_count {
+            self.cycle_count -= PPU_CYCLES_PER_SCANLINE;
 
-        if self.cycle_count > 340 {
-            self.cycle_count = 0;
-            self.scanline_count += 1;
-
-            if self.scanline_count == 241 {
+            if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
-                todo!("trigger nmi")
-            } else if self.scanline_count > 261 {
-                self.scanline_count = 0;
+
+                if self.registers.ppu_ctrl.is_vblank_nmi_enabled() {
+                    self.nmi = true;
+                }
+            }
+
+            if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
             }
+
+            self.scanline_index += 1;
+
+            if PRERENDER_LINE_INDEX < self.scanline_index {
+                self.scanline_index = 0;
+                self.nmi = false;
+            }
         }
+
+        // PPU clock runs three times faster than the CPU clock.
+        self.cycle_count += 3;
     }
 
     pub fn get_nmi(&self) -> bool {
