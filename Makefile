@@ -13,7 +13,7 @@ release:
 	target/release/green-nes -d low run tests/nestest.nes > tests/nestest.out
 
 pacman:
-	target/release/green-nes -d low run tests/pacman.nes > tests/pacman.out
+	target/release/green-nes -d high run tests/pacman.nes > tests/pacman.out
 
 test:
 	bash download-tests.sh

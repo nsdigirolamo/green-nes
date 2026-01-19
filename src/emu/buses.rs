@@ -34,7 +34,6 @@ const TEST_MODE_END_ADDR: u16 = TEST_MODE_START_ADDR + TEST_MODE_SIZE as u16;
 
 const CARTRIDGE_ROM_MAPPER_START_ADDR: u16 = TEST_MODE_END_ADDR;
 
-#[derive(Clone)]
 pub struct Buses {
     // Data
     ram: [u8; RAM_SIZE],
@@ -49,7 +48,7 @@ pub struct Buses {
 }
 
 impl Buses {
-    pub fn new(cart: Cartridge) -> Self {
+    pub fn new(cart: Cartridge) -> Buses {
         Buses {
             ram: [0; RAM_SIZE],
             addr: (0, 0),

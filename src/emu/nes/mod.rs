@@ -1,18 +1,28 @@
+use core::time;
 use std::fmt;
 
 pub mod debug;
 
+use sdl2::{
+    event::Event,
+    keyboard::Keycode,
+    pixels::{Color, PixelFormatEnum},
+};
+
 use crate::{
-    concat_u8,
+    DebugLevel, concat_u8,
     emu::{
-        buses::Buses, cartridge::Cartridge, cpu::CPU, nes::debug::get_debug_text, screen::Screen,
+        buses::Buses,
+        cartridge::Cartridge,
+        cpu::CPU,
+        nes::debug::get_debug_text,
+        ppu::frame::{Frame, render_frame},
     },
 };
 
 pub struct NES {
     pub buses: Buses,
     pub cpu: CPU,
-    pub screen: Screen,
 }
 
 impl NES {
@@ -20,7 +30,70 @@ impl NES {
         Self {
             buses: Buses::new(cart),
             cpu: CPU::default(),
-            screen: Screen::default(),
+        }
+    }
+
+    pub fn run(&mut self, debug_level: DebugLevel) {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+
+        let width = Frame::WIDTH as u32;
+        let height = Frame::HEIGHT as u32;
+
+        let window = video_subsystem
+            .window("Green NES", width * 2, height * 2)
+            .position_centered()
+            .build()
+            .unwrap();
+
+        let mut canvas = window.into_canvas().build().unwrap();
+        canvas.set_logical_size(width, height).unwrap();
+        canvas.set_draw_color(Color::BLACK);
+        canvas.clear();
+
+        let creator = canvas.texture_creator();
+        let mut texture = creator
+            .create_texture_target(PixelFormatEnum::RGB24, width, height)
+            .unwrap();
+
+        let mut event_pump = sdl_context.event_pump().unwrap();
+
+        'running: while !self.cpu.is_halted() {
+            if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::High {
+                println!("{self:?}")
+            }
+
+            self.buses.tick();
+
+            if self.buses.get_nmi() {
+                let frame = render_frame(&self.buses.get_ppu());
+
+                texture
+                    .update(
+                        None,
+                        &frame.get_pixel_data(),
+                        Frame::WIDTH * Frame::BYTES_PER_PIXEL,
+                    )
+                    .unwrap();
+
+                std::thread::sleep(time::Duration::from_millis(10))
+            }
+
+            self.cpu.tick(&mut self.buses);
+
+            canvas.copy(&texture, None, None).unwrap();
+            canvas.present();
+
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => break 'running,
+                    _ => {}
+                }
+            }
         }
     }
 }

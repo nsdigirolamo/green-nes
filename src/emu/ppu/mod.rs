@@ -4,6 +4,7 @@ use crate::emu::{
 };
 
 pub mod buses;
+pub mod frame;
 pub mod nametable;
 pub mod palettes;
 pub mod registers;
@@ -41,8 +42,12 @@ impl PPU {
     }
 
     pub fn tick(&mut self) {
+        println!("ppu tick! ({})", self.cycle_count);
+
         if PPU_CYCLES_PER_SCANLINE <= self.cycle_count {
             self.cycle_count -= PPU_CYCLES_PER_SCANLINE;
+
+            println!("ppu scanline! ({})", self.scanline_index);
 
             if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
