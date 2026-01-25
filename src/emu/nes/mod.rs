@@ -1,4 +1,3 @@
-use core::time;
 use std::fmt;
 
 pub mod debug;
@@ -12,11 +11,7 @@ use sdl2::{
 use crate::{
     DebugLevel, concat_u8,
     emu::{
-        buses::Buses,
-        cartridge::Cartridge,
-        cpu::CPU,
-        nes::debug::get_debug_text,
-        ppu::frame::{Frame, render_frame},
+        buses::Buses, cartridge::Cartridge, cpu::CPU, nes::debug::get_debug_text, ppu::frame::Frame,
     },
 };
 
@@ -65,9 +60,8 @@ impl NES {
 
             self.buses.tick();
 
-            if self.buses.get_nmi() {
-                let frame = render_frame(&self.buses.get_ppu());
-
+            let frame = self.buses.take_frame();
+            if let Some(frame) = frame {
                 texture
                     .update(
                         None,
@@ -76,13 +70,11 @@ impl NES {
                     )
                     .unwrap();
 
-                std::thread::sleep(time::Duration::from_millis(10))
+                canvas.copy(&texture, None, None).unwrap();
+                canvas.present();
             }
 
             self.cpu.tick(&mut self.buses);
-
-            canvas.copy(&texture, None, None).unwrap();
-            canvas.present();
 
             for event in event_pump.poll_iter() {
                 match event {

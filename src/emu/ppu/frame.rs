@@ -2,15 +2,23 @@ use std::fmt;
 
 use sdl2::{pixels::Color, rect::Point};
 
-use crate::emu::ppu::PPU;
+use crate::emu::{
+    cartridge::mappers::TILE_WIDTH,
+    ppu::{
+        PPU,
+        buses::{NAMETABLE_SIZE, NAMETABLE_START_ADDR},
+        palettes::get_pattern_index_debug_color,
+    },
+};
 use std::fmt::Write;
 
 pub const FRAME_WIDTH: usize = 256;
 pub const FRAME_HEIGHT: usize = 240;
 
 // const TILE_ROWS_PER_FRAME: u32 = (FRAME_HEIGHT / TILE_WIDTH) as u32;
-// const TILE_COLS_PER_FRAME: u32 = (FRAME_WIDTH / TILE_WIDTH) as u32;
+const TILE_COLS_PER_FRAME: u32 = (FRAME_WIDTH / TILE_WIDTH) as u32;
 
+#[derive(Clone)]
 pub struct Frame {
     pixels: [[(u8, u8, u8); FRAME_WIDTH]; FRAME_HEIGHT],
 }
@@ -63,6 +71,7 @@ impl Frame {
         self.pixels[location.y as usize][location.x as usize] = pixel;
     }
 
+    /// Returns the pixel data for a frame as a flattened list of bytes.
     pub fn get_pixel_data(&self) -> Vec<u8> {
         let mut vec = Vec::new();
 
@@ -98,14 +107,36 @@ impl fmt::Debug for Frame {
 }
 
 pub fn render_frame(ppu: &PPU) -> Frame {
-    let color = match ppu.scanline_index % 3 {
-        0 => (255, 0, 0),
-        1 => (0, 255, 0),
-        2 => (0, 0, 255),
-        _ => (255, 255, 255),
-    };
+    let mut frame = Frame::default();
 
-    Frame::new([[color; Frame::WIDTH]; Frame::HEIGHT])
+    for tile_index in 0..NAMETABLE_SIZE {
+        let pattern_index = ppu.buses.read(NAMETABLE_START_ADDR + tile_index);
+
+        let tile_x = (tile_index % TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16;
+        let tile_y = (tile_index / TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16;
+
+        let color = get_pattern_index_debug_color(pattern_index);
+
+        for pixel_x in 0..TILE_WIDTH as u16 {
+            for pixel_y in 0..TILE_WIDTH as u16 {
+                let x = tile_x + pixel_x;
+                let y = tile_y + pixel_y;
+
+                let location = Point::new(x as i32, y as i32);
+                frame.set_pixel(location, color);
+            }
+        }
+    }
+
+    frame
+
+    // let color = if ppu.scanline_index == 242 {
+    //     (255, 0, 0)
+    // } else {
+    //     (0, 255, 0)
+    // };
+
+    // Frame::new([[color; Frame::WIDTH]; Frame::HEIGHT])
 
     // let mut frame = Frame::default();
 

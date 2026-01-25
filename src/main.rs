@@ -46,6 +46,7 @@ fn main() {
             };
 
             let mut nes = NES::new(cart);
+            nes.cpu.reset(&mut nes.buses);
             nes.run(debug_level);
         }
     }

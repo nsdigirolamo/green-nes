@@ -1,6 +1,10 @@
 use crate::emu::{
     cartridge::Cartridge,
-    ppu::{buses::Buses, registers::Registers},
+    ppu::{
+        buses::Buses,
+        frame::{Frame, render_frame},
+        registers::Registers,
+    },
 };
 
 pub mod buses;
@@ -23,9 +27,10 @@ pub struct PPU {
     buses: Buses,
     oam: [u8; OAM_SIZE],
     ppu_data_read_buffer: u8,
-    nmi: bool, // True = NMI is pulled low (and thus a NMI occurs).
+    nmi_pin: bool, // True = NMI pin is pulled low (and thus a NMI occurs).
     cycle_count: u32,
     scanline_index: u32,
+    frame: Option<Frame>,
 }
 
 impl PPU {
@@ -35,61 +40,60 @@ impl PPU {
             buses: Buses::new(cart),
             oam: [0; OAM_SIZE],
             ppu_data_read_buffer: 0,
-            nmi: false,
+            nmi_pin: false,
             cycle_count: 0,
             scanline_index: 0,
+            frame: None,
         }
     }
 
     pub fn tick(&mut self) {
-        println!("ppu tick! ({})", self.cycle_count);
+        // PPU clock runs three times faster than the CPU clock.
+        self.cycle_count += 3;
 
         if PPU_CYCLES_PER_SCANLINE <= self.cycle_count {
+            self.scanline_index += 1;
             self.cycle_count -= PPU_CYCLES_PER_SCANLINE;
-
-            println!("ppu scanline! ({})", self.scanline_index);
 
             if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
-
-                if self.registers.ppu_ctrl.is_vblank_nmi_enabled() {
-                    self.nmi = true;
-                }
-            }
-
-            if self.scanline_index == PRERENDER_LINE_INDEX {
+                self.update_nmi();
+                self.frame = Some(render_frame(self));
+                println!("VBLANK STARTED");
+            } else if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
-            }
-
-            self.scanline_index += 1;
-
-            if PRERENDER_LINE_INDEX < self.scanline_index {
+                self.update_nmi();
+            } else if PRERENDER_LINE_INDEX < self.scanline_index {
                 self.scanline_index = 0;
-                self.nmi = false;
             }
         }
-
-        // PPU clock runs three times faster than the CPU clock.
-        self.cycle_count += 3;
     }
 
+    pub fn take_frame(&mut self) -> Option<Frame> {
+        self.frame.take()
+    }
+
+    /// Sets the appropriate state of the NMI pin depending on the state of
+    /// the appropriate bits in the PPUSTATUS and PPUCTRL registers.
+    fn update_nmi(&mut self) {
+        self.nmi_pin = self.registers.ppu_status.get_vblank_flag()
+            && self.registers.ppu_ctrl.is_vblank_nmi_enabled();
+
+        if self.nmi_pin {
+            println!("PPU triggered NMI")
+        }
+    }
+
+    /// Returns the value of the NMI pin, where True means the pin is pulled low
+    /// (and thus a NMI occurs).
     pub fn get_nmi(&self) -> bool {
-        self.nmi
-    }
-
-    /// Returns a dummy value (PPUCTRL is write-only).
-    pub fn read_ppu_ctrl(&self) -> u8 {
-        0x00
+        self.nmi_pin
     }
 
     /// Writes a byte to PPUCTRL.
     pub fn write_ppu_ctrl(&mut self, data: u8) {
         self.registers.ppu_ctrl.data = data;
-    }
-
-    /// Returns a dummy value (PPUMASK is write-only).
-    pub fn read_ppu_mask(&self) -> u8 {
-        0x00
+        self.update_nmi();
     }
 
     /// Writes a byte to PPUMASK.
@@ -105,21 +109,14 @@ impl PPU {
 
         self.registers.internal.w = false;
         self.registers.ppu_status.set_vblank_flag(false);
+        self.update_nmi();
 
         data
     }
 
-    /// Writes nothing to PPUSTATUS (read-only register).
-    pub fn write_ppu_status(&mut self, _: u8) {}
-
     /// Returns the byte stored in the PPUSTATUS register without side effects.
     pub fn peek_ppu_status(&self) -> u8 {
         self.registers.ppu_status.data
-    }
-
-    /// Reads a dummy value (OAMADDR is write-only).
-    pub fn read_oam_addr(&self) -> u8 {
-        0x00
     }
 
     /// Writes a byte to OAMADDR.
@@ -144,11 +141,6 @@ impl PPU {
         self.registers.oam_addr.data += 1;
     }
 
-    /// Returns a dummy value (PPUSCROLL is write-only).
-    pub fn read_ppu_scroll(&self) -> u8 {
-        0x00
-    }
-
     /// Writes a byte to the scroll position. This has the side effect of
     /// updating the internal `t`, `x`, and `w` registers.
     pub fn write_ppu_scroll(&mut self, data: u8) {
@@ -169,11 +161,6 @@ impl PPU {
             self.registers.internal.t |= fine_y_scroll;
             self.registers.internal.w = false;
         }
-    }
-
-    /// Returns a dummy value (PPUADDR is write-only)
-    pub fn read_ppu_addr(&self) -> u8 {
-        0x00
     }
 
     /// Writes a byte to the PPU address. This has the side effect of updating
@@ -229,11 +216,6 @@ impl PPU {
     /// Returns a byte from the PPUDATA read buffer without side effects.
     pub fn peek_ppu_data(&self) -> u8 {
         self.ppu_data_read_buffer
-    }
-
-    /// Returns a dummy value (OAMDMA is write-only)
-    pub fn read_oam_dma(&self) -> u8 {
-        panic!("invalid read: OAMDMA is write-only")
     }
 
     /// Writes a page of memory to the Object Attribute Memory (OAM).

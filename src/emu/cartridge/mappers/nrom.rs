@@ -1,11 +1,5 @@
 use crate::emu::{
-    cartridge::{
-        NametableMirroring,
-        ines::INes,
-        mappers::{
-            Mapper, PATTERN_TABLE_0_START_ADDR, PATTERN_TABLE_1_START_ADDR, PATTERN_TABLE_SIZE,
-        },
-    },
+    cartridge::{NametableMirroring, ines::INes, mappers::Mapper},
     error::{CartridgeError, Error},
 };
 
@@ -21,6 +15,7 @@ const CHR_ROM_SIZE: usize = (CHR_MAX_ADDR - CHR_MIN_ADDR + 1) as usize;
 pub struct NROM {
     prg_rom: [u8; PRG_ROM_SIZE],
     chr_rom: [u8; CHR_ROM_SIZE],
+
     nametable_arrangement: NametableMirroring,
 }
 
@@ -44,7 +39,7 @@ impl NROM {
 fn create_prg_rom(prg_data: Vec<u8>) -> Result<[u8; PRG_ROM_SIZE], Error> {
     if prg_data.len() > PRG_ROM_SIZE {
         return Err(CartridgeError::NotSupported {
-            message: "could not load PRG ROM".to_string(),
+            message: "NROM mapper failed: PRG ROM too large".to_string(),
         }
         .into());
     }
@@ -69,7 +64,7 @@ fn create_prg_rom(prg_data: Vec<u8>) -> Result<[u8; PRG_ROM_SIZE], Error> {
 fn create_chr_rom(chr_data: Vec<u8>) -> Result<[u8; CHR_ROM_SIZE], Error> {
     if chr_data.len() > CHR_ROM_SIZE {
         return Err(CartridgeError::NotSupported {
-            message: "could not load CHR ROM".to_string(),
+            message: "NROM mapper failed: CHR ROM too large".to_string(),
         }
         .into());
     }
@@ -89,15 +84,12 @@ impl Mapper for NROM {
                 let mapped_addr = addr - PRG_BANKS_MIN_ADDR;
                 self.prg_rom[mapped_addr as usize]
             }
-            _ => {
-                println!("nrom read ignored: address 0x{addr:04X} is unmapped (returned 0)");
-                0
-            }
+            _ => 0, // ignore; unmapped
         }
     }
 
-    fn prg_write(&mut self, addr: u16, data: u8) {
-        panic!("NROM mapper does not support writing {data:04X} to PRG ROM address 0x{addr:04X}")
+    fn prg_write(&mut self, _: u16, _: u8) {
+        // ignore; PRG ROM is fixed
     }
 
     fn chr_read(&self, addr: u16) -> u8 {
@@ -106,30 +98,12 @@ impl Mapper for NROM {
                 let mapped_addr = addr;
                 self.chr_rom[mapped_addr as usize]
             }
-            _ => panic!("NROM mapper does not support reading CHR address 0x{addr:04X}"),
+            _ => 0, // ignore; unmapped
         }
     }
 
-    fn chr_write(&mut self, addr: u16, data: u8) {
-        panic!("NROM mapper does not support writing {data:04X} to CHR ROM address 0x{addr:04X}")
-    }
-
-    fn dump_pattern_tables(&self) -> Vec<[u8; PATTERN_TABLE_SIZE]> {
-        let mut pattern_tables = vec![[0u8; PATTERN_TABLE_SIZE], [0u8; PATTERN_TABLE_SIZE]];
-
-        for (i, table) in pattern_tables.iter_mut().enumerate() {
-            let start_addr = if i == 0 {
-                PATTERN_TABLE_0_START_ADDR
-            } else {
-                PATTERN_TABLE_1_START_ADDR
-            };
-
-            for (offset, byte) in table.iter_mut().enumerate() {
-                *byte = self.chr_read(start_addr + offset as u16)
-            }
-        }
-
-        pattern_tables
+    fn chr_write(&mut self, _: u16, _: u8) {
+        // ignore; CHR ROM is fixed
     }
 
     fn get_nametable_arrangement(&self) -> NametableMirroring {

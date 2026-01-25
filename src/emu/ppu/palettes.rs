@@ -1,5 +1,37 @@
 use sdl2::pixels::Color;
 
+pub const RED: Color = Color::RGB(255, 0, 0);
+pub const GREEN: Color = Color::RGB(0, 128, 0);
+pub const BLUE: Color = Color::RGB(0, 0, 255);
+pub const YELLOW: Color = Color::RGB(255, 255, 0);
+pub const CYAN: Color = Color::RGB(0, 255, 255);
+pub const MAGENTA: Color = Color::RGB(255, 0, 255);
+pub const BLACK: Color = Color::RGB(0, 0, 0);
+pub const WHITE: Color = Color::RGB(255, 255, 255);
+pub const GRAY: Color = Color::RGB(128, 128, 128);
+pub const ORANGE: Color = Color::RGB(255, 165, 0);
+pub const PURPLE: Color = Color::RGB(128, 0, 128);
+pub const PINK: Color = Color::RGB(255, 192, 203);
+pub const BROWN: Color = Color::RGB(165, 42, 42);
+pub const LIME: Color = Color::RGB(0, 255, 0);
+pub const NAVY: Color = Color::RGB(0, 0, 128);
+pub const TEAL: Color = Color::RGB(0, 128, 128);
+pub const OLIVE: Color = Color::RGB(128, 128, 0);
+pub const MAROON: Color = Color::RGB(128, 0, 0);
+pub const SILVER: Color = Color::RGB(192, 192, 192);
+pub const GOLD: Color = Color::RGB(255, 215, 0);
+
+pub fn get_pattern_index_debug_color(pattern_index: u8) -> Color {
+    // let colors: [Color; 20] = [
+    //     RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, BLACK, WHITE, GRAY, ORANGE, PURPLE, PINK, BROWN,
+    //     LIME, NAVY, TEAL, OLIVE, MAROON, SILVER, GOLD,
+    // ];
+
+    // colors[(pattern_index % 20) as usize]
+
+    if pattern_index == 0 { BLACK } else { RED }
+}
+
 pub const PALETTE_TABLE: [[Color; 16]; 4] = [
     [
         Color::RGB(98, 98, 98),

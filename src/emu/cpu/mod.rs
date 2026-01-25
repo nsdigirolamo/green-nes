@@ -8,17 +8,14 @@ use crate::{
     concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
-        cpu::cycles::{
-            Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles, poll_interrupts,
-            run_cycle,
-        },
+        cpu::cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
     },
     split_u16,
 };
 
-const PC_DEFAULT: (u8, u8) = (0xC0, 0x00);
+const PC_DEFAULT: (u8, u8) = (0x80, 0x00); // (0xC0, 0x00);
 const SP_DEFAULT: u8 = 0xFD;
-const PSR_DEFAULT: u8 = 0x24;
+const PSR_DEFAULT: u8 = 0b100100;
 
 #[derive(Clone, Copy)]
 // Internal CPU Registers
@@ -47,26 +44,31 @@ impl Default for Registers {
 }
 
 #[derive(Default, Clone, Copy)]
-/// Internal CPU Buses
+/// Internal CPU buses.
 pub struct Buses {
-    pub base_addr: (u8, u8),      // Base Address Buses (BAH, BAL)
-    pub effective_addr: (u8, u8), // Effective Address Buses (ADH, ADL)
-    pub indirect_addr: (u8, u8),  // Indirect Address Buses (IAH, IAL)
+    /// Base (BAH, BAL) address bus.
+    pub base_addr: (u8, u8),
+    /// Effective (ADH, ADL) address bus.
+    pub effective_addr: (u8, u8), //
+    /// Indirect (IAH, IAL) address bus.
+    pub indirect_addr: (u8, u8),
 }
 
 #[derive(Clone)]
 pub struct CPU {
-    // Cycle Controls
     cycle_queue: VecDeque<Cycle>,
     pub half_cycle_count: u64,
     is_halted: bool,
-    // Data
     registers: Registers,
     buses: Buses,
-    // Misc
     crossed_page: bool,
-    pub irq: bool,
-    pub nmi: bool,
+    /// The state of the NMI pin on the external buses during the previous
+    /// cycle.
+    prev_nmi: bool,
+    /// Indicates that the NMI handler needs to be invoked.
+    nmi_detected: bool,
+    /// Indicates that the IRQ handler needs to be invoked.
+    irq_detected: bool,
 }
 
 impl Default for CPU {
@@ -78,8 +80,9 @@ impl Default for CPU {
             registers: Registers::default(),
             buses: Buses::default(),
             crossed_page: false,
-            irq: false,
-            nmi: false,
+            prev_nmi: false,
+            nmi_detected: false,
+            irq_detected: false,
         }
     }
 }
@@ -89,23 +92,58 @@ impl CPU {
         let cycle = self.cycle_queue.pop_front();
 
         match cycle {
-            Some(cycle) => run_cycle(self, buses, cycle),
+            Some(cycle) => self.run_cycle(buses, cycle),
             None => {
-                run_cycle(self, buses, FETCH_INSTRUCTION);
+                self.run_cycle(buses, FETCH_INSTRUCTION);
 
-                let new_cycles = if self.nmi {
-                    HANDLE_NMI.to_vec()
-                } else if self.irq {
-                    HANDLE_IRQ.to_vec()
-                } else {
-                    get_cycles(self.registers.ir)
-                };
+                if self.nmi_detected {
+                    println!("CPU handling NMI");
+                    self.cycle_queue.extend(HANDLE_NMI.to_vec());
+                    self.nmi_detected = false;
+                    return;
+                }
 
-                self.cycle_queue.extend(new_cycles.iter());
+                if self.irq_detected {
+                    self.cycle_queue.extend(HANDLE_IRQ.to_vec());
+                    return;
+                }
+
+                self.cycle_queue.extend(get_cycles(self.registers.ir));
             }
         }
+    }
 
-        poll_interrupts(self, buses);
+    fn run_cycle(&mut self, buses: &mut ExternalBuses, cycle: Cycle) {
+        let [phase1, phase2] = cycle;
+
+        phase1(self, buses);
+        phase2(self, buses);
+
+        self.irq_detected = buses.get_irq();
+
+        let old_nmi = self.prev_nmi;
+        let new_nmi = buses.get_nmi();
+
+        if !old_nmi && new_nmi {
+            self.nmi_detected = true;
+            println!("CPU detected NMI");
+        }
+
+        self.prev_nmi = new_nmi;
+
+        self.half_cycle_count += 2;
+    }
+
+    pub fn reset(&mut self, buses: &mut ExternalBuses) {
+        self.registers.a = 0x00;
+        self.registers.x_index = 0x00;
+        self.registers.sp = SP_DEFAULT;
+        self.registers.psr = PSR_DEFAULT;
+
+        let pcl = buses.peek(0xFFFC);
+        let pch = buses.peek(0xFFFD);
+
+        self.registers.pc = (pch, pcl);
     }
 
     pub fn get_cycle_queue(&self) -> VecDeque<Cycle> {
