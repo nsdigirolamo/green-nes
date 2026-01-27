@@ -32,8 +32,8 @@ impl NES {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
 
-        let width = Frame::WIDTH as u32;
-        let height = Frame::HEIGHT as u32;
+        let width = Frame::WIDTH_PIXELS as u32;
+        let height = Frame::HEIGHT_PIXELS as u32;
 
         let window = video_subsystem
             .window("Green NES", width * 2, height * 2)
@@ -66,7 +66,7 @@ impl NES {
                     .update(
                         None,
                         &frame.get_pixel_data(),
-                        Frame::WIDTH * Frame::BYTES_PER_PIXEL,
+                        Frame::WIDTH_PIXELS * Frame::BYTES_PER_PIXEL,
                     )
                     .unwrap();
 

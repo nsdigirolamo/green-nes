@@ -2,33 +2,33 @@ use std::fmt;
 
 use sdl2::{pixels::Color, rect::Point};
 
-use crate::emu::{
-    cartridge::mappers::TILE_WIDTH,
-    ppu::{
-        PPU,
-        buses::{NAMETABLE_SIZE, NAMETABLE_START_ADDR},
-        palettes::get_pattern_index_debug_color,
-    },
+use crate::emu::ppu::{
+    PPU,
+    buses::{NAMETABLE_SIZE, NAMETABLES_START_ADDR},
+    palettes::get_pattern_index_debug_color,
+    patterns::{PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS},
 };
 use std::fmt::Write;
 
-pub const FRAME_WIDTH: usize = 256;
-pub const FRAME_HEIGHT: usize = 240;
+pub const FRAME_WIDTH_PIXELS: u16 = 256;
+pub const FRAME_HEIGHT_PIXELS: u16 = 240;
 
-// const TILE_ROWS_PER_FRAME: u32 = (FRAME_HEIGHT / TILE_WIDTH) as u32;
-const TILE_COLS_PER_FRAME: u32 = (FRAME_WIDTH / TILE_WIDTH) as u32;
+pub const PATTERN_ROWS_PER_FRAME: u16 = FRAME_HEIGHT_PIXELS / PATTERN_HEIGHT_PIXELS;
+pub const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH_PIXELS / PATTERN_WIDTH_PIXELS;
 
 #[derive(Clone)]
 pub struct Frame {
-    pixels: [[(u8, u8, u8); FRAME_WIDTH]; FRAME_HEIGHT],
+    pixels: [[(u8, u8, u8); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize],
 }
 
 impl Frame {
-    pub const WIDTH: usize = FRAME_WIDTH;
-    pub const HEIGHT: usize = FRAME_HEIGHT;
+    pub const WIDTH_PIXELS: usize = FRAME_WIDTH_PIXELS as usize;
+    pub const HEIGHT_PIXELS: usize = FRAME_HEIGHT_PIXELS as usize;
     pub const BYTES_PER_PIXEL: usize = 3;
 
-    pub fn new(pixels: [[(u8, u8, u8); FRAME_WIDTH]; FRAME_HEIGHT]) -> Self {
+    pub fn new(
+        pixels: [[(u8, u8, u8); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize],
+    ) -> Self {
         Frame { pixels }
     }
 
@@ -87,7 +87,7 @@ impl Frame {
 
 impl Default for Frame {
     fn default() -> Self {
-        Frame::new([[(255, 0, 0); FRAME_WIDTH]; FRAME_HEIGHT])
+        Frame::new([[(255, 255, 255); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
     }
 }
 
@@ -110,15 +110,15 @@ pub fn render_frame(ppu: &PPU) -> Frame {
     let mut frame = Frame::default();
 
     for tile_index in 0..NAMETABLE_SIZE {
-        let pattern_index = ppu.buses.read(NAMETABLE_START_ADDR + tile_index);
+        let pattern_index = ppu.buses.read(NAMETABLES_START_ADDR + tile_index);
 
-        let tile_x = (tile_index % TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16;
-        let tile_y = (tile_index / TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16;
+        let tile_x = (tile_index % PATTERN_COLS_PER_FRAME) * PATTERN_WIDTH_PIXELS;
+        let tile_y = (tile_index / PATTERN_COLS_PER_FRAME) * PATTERN_HEIGHT_PIXELS;
 
         let color = get_pattern_index_debug_color(pattern_index);
 
-        for pixel_x in 0..TILE_WIDTH as u16 {
-            for pixel_y in 0..TILE_WIDTH as u16 {
+        for pixel_x in 0..PATTERN_WIDTH_PIXELS {
+            for pixel_y in 0..PATTERN_HEIGHT_PIXELS {
                 let x = tile_x + pixel_x;
                 let y = tile_y + pixel_y;
 

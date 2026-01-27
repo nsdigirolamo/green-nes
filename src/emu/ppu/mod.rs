@@ -11,6 +11,7 @@ pub mod buses;
 pub mod frame;
 pub mod nametable;
 pub mod palettes;
+pub mod patterns;
 pub mod registers;
 
 const OAM_SPRITE_SIZE: usize = 4;
@@ -21,7 +22,6 @@ const PPU_CYCLES_PER_SCANLINE: u32 = 341;
 const VBLANK_LINE_INDEX: u32 = 241;
 const PRERENDER_LINE_INDEX: u32 = 261;
 
-#[derive(Clone)]
 pub struct PPU {
     registers: Registers,
     buses: Buses,
@@ -59,7 +59,6 @@ impl PPU {
                 self.registers.ppu_status.set_vblank_flag(true);
                 self.update_nmi();
                 self.frame = Some(render_frame(self));
-                println!("VBLANK STARTED");
             } else if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
                 self.update_nmi();
@@ -78,10 +77,6 @@ impl PPU {
     fn update_nmi(&mut self) {
         self.nmi_pin = self.registers.ppu_status.get_vblank_flag()
             && self.registers.ppu_ctrl.is_vblank_nmi_enabled();
-
-        if self.nmi_pin {
-            println!("PPU triggered NMI")
-        }
     }
 
     /// Returns the value of the NMI pin, where True means the pin is pulled low

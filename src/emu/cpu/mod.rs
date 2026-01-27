@@ -97,7 +97,6 @@ impl CPU {
                 self.run_cycle(buses, FETCH_INSTRUCTION);
 
                 if self.nmi_detected {
-                    println!("CPU handling NMI");
                     self.cycle_queue.extend(HANDLE_NMI.to_vec());
                     self.nmi_detected = false;
                     return;
@@ -126,7 +125,6 @@ impl CPU {
 
         if !old_nmi && new_nmi {
             self.nmi_detected = true;
-            println!("CPU detected NMI");
         }
 
         self.prev_nmi = new_nmi;

@@ -1,6 +1,5 @@
 use crate::emu::ppu::buses::{ATTRIBUTE_TABLE_SIZE, NAMETABLE_SIZE};
 
-#[derive(Copy, Clone)]
 pub struct Nametable {
     memory: [u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize],
 }
