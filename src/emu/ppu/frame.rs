@@ -6,7 +6,7 @@ use crate::emu::ppu::{
     PPU,
     buses::{NAMETABLE_SIZE, NAMETABLES_START_ADDR},
     palettes::get_pattern_index_debug_color,
-    patterns::{PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS},
+    patterns::{PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS, PatternTable},
 };
 use std::fmt::Write;
 
@@ -184,4 +184,40 @@ pub fn render_frame(ppu: &PPU) -> Frame {
     // }
 
     // frame
+}
+
+pub fn render_pattern_table(pattern_table: &PatternTable) -> Frame {
+    let mut frame =
+        Frame::new([[(0, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize]);
+
+    const MARGIN_WIDTH_PIXELS: u16 = 3;
+    const PATTERNS_PER_ROW: u16 = 16;
+
+    for (pattern_index, pattern) in pattern_table.data.iter().enumerate() {
+        let pattern_y_offset = MARGIN_WIDTH_PIXELS
+            + ((PATTERN_WIDTH_PIXELS + MARGIN_WIDTH_PIXELS)
+                * (pattern_index as u16 / PATTERNS_PER_ROW));
+        let pattern_x_offset = MARGIN_WIDTH_PIXELS
+            + ((PATTERN_WIDTH_PIXELS + MARGIN_WIDTH_PIXELS)
+                * (pattern_index as u16 % PATTERNS_PER_ROW));
+
+        for (row, row_of_pixels) in pattern.data.iter().enumerate() {
+            let y = pattern_y_offset + row as u16;
+
+            for (col, pixel) in row_of_pixels.iter().enumerate() {
+                let x = pattern_x_offset + col as u16;
+
+                let color = match pixel {
+                    (false, false) => Color::RGB(32, 32, 32),
+                    (false, true) => Color::RGB(159, 159, 159),
+                    (true, false) => Color::RGB(96, 96, 96),
+                    (true, true) => Color::RGB(223, 223, 223),
+                };
+
+                frame.set_pixel(Point::new(x as i32, y as i32), color);
+            }
+        }
+    }
+
+    frame
 }

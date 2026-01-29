@@ -2,7 +2,7 @@ use std::process;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::emu::{cartridge::ines::read_cartridge, nes::NES, ppu::patterns::dump_pattern_tables};
+use crate::emu::{cartridge::ines::read_cartridge, nes::NES};
 
 pub mod emu;
 
@@ -63,9 +63,8 @@ fn main() {
                 }
             };
 
-            let pattern_tables = dump_pattern_tables(cart);
-            println!("{:?}", pattern_tables[0]);
-            println!("{:?}", pattern_tables[1]);
+            let nes = NES::new(cart.clone());
+            nes.show_pattern_tables(cart);
         }
     }
 

@@ -11,7 +11,14 @@ use sdl2::{
 use crate::{
     DebugLevel, concat_u8,
     emu::{
-        buses::Buses, cartridge::Cartridge, cpu::CPU, nes::debug::get_debug_text, ppu::frame::Frame,
+        buses::Buses,
+        cartridge::Cartridge,
+        cpu::CPU,
+        nes::debug::get_debug_text,
+        ppu::{
+            frame::{Frame, render_pattern_table},
+            patterns::dump_pattern_tables,
+        },
     },
 };
 
@@ -78,6 +85,66 @@ impl NES {
 
             for event in event_pump.poll_iter() {
                 match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => break 'running,
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    pub fn show_pattern_tables(&self, cart: Cartridge) {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+
+        let width = Frame::WIDTH_PIXELS as u32;
+        let height = Frame::HEIGHT_PIXELS as u32;
+
+        let window = video_subsystem
+            .window("Green NES", width * 5, height * 5)
+            .position_centered()
+            .build()
+            .unwrap();
+
+        let mut canvas = window.into_canvas().build().unwrap();
+        canvas.set_logical_size(width, height).unwrap();
+        canvas.set_draw_color(Color::BLACK);
+        canvas.clear();
+
+        let creator = canvas.texture_creator();
+        let mut texture = creator
+            .create_texture_target(PixelFormatEnum::RGB24, width, height)
+            .unwrap();
+
+        let mut event_pump = sdl_context.event_pump().unwrap();
+
+        let pattern_tables = dump_pattern_tables(cart);
+        let mut pattern_table_toggle = 0;
+
+        'running: loop {
+            let pattern_table = &pattern_tables[pattern_table_toggle];
+            let frame = render_pattern_table(pattern_table);
+
+            texture
+                .update(
+                    None,
+                    &frame.get_pixel_data(),
+                    Frame::WIDTH_PIXELS * Frame::BYTES_PER_PIXEL,
+                )
+                .unwrap();
+
+            canvas.copy(&texture, None, None).unwrap();
+            canvas.present();
+
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::KeyDown {
+                        keycode: Some(Keycode::Space),
+                        ..
+                    } => pattern_table_toggle = if pattern_table_toggle == 1 { 0 } else { 1 },
                     Event::Quit { .. }
                     | Event::KeyDown {
                         keycode: Some(Keycode::Escape),
