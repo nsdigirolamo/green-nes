@@ -6,7 +6,9 @@ use crate::emu::ppu::{
     PPU,
     nametable::{NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable},
     palettes::get_pattern_index_debug_color,
-    patterns::{PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS, PatternTable, get_pattern_from_index},
+    patterns::{
+        PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS, PatternTable, get_pattern_from_nametable_entry,
+    },
 };
 use std::fmt::Write;
 
@@ -189,13 +191,15 @@ pub fn render_frame(ppu: &PPU) -> Frame {
 pub fn render_nametable(nametable: &Nametable) -> Frame {
     let mut frame = Frame::default();
 
-    for pattern_index in nametable.iter() {
-        let pattern = get_pattern_from_index(*pattern_index);
+    for (i, entry) in nametable.iter().enumerate() {
+        if NAMETABLE_SIZE < i as u16 {
+            break;
+        }
 
-        let pattern_y_offset =
-            PATTERN_HEIGHT_PIXELS * (*pattern_index as u16 / PATTERN_COLS_PER_FRAME);
-        let pattern_x_offset =
-            PATTERN_WIDTH_PIXELS * (*pattern_index as u16 % PATTERN_COLS_PER_FRAME);
+        let pattern = get_pattern_from_nametable_entry(*entry);
+
+        let pattern_y_offset = PATTERN_HEIGHT_PIXELS * (*entry as u16 / PATTERN_COLS_PER_FRAME);
+        let pattern_x_offset = PATTERN_WIDTH_PIXELS * (*entry as u16 % PATTERN_COLS_PER_FRAME);
 
         for (row, row_of_pixels) in pattern.data.iter().enumerate() {
             let y = pattern_y_offset + row as u16;

@@ -37,7 +37,7 @@ impl Pattern {
     fn from_string(string: String) -> Self {
         let mut pattern = Self::default();
 
-        for (i, line) in string.lines().enumerate() {
+        for (i, line) in string.trim().lines().enumerate() {
             for (j, char) in line.chars().enumerate() {
                 pattern.data[i][j] = match char {
                     '.' => (false, false),
@@ -126,32 +126,75 @@ pub fn dump_pattern_tables(cart: Cartridge) -> [PatternTable; PATTERN_TABLES_COU
     pattern_tables
 }
 
-pub fn get_pattern_from_index(index: u8) -> Pattern {
+pub fn get_pattern_from_nametable_entry(entry: u8) -> Pattern {
     Pattern::from_string(
-        match index {
+        match entry {
             0 => ZERO_PATTERN,
+            1 => ONE_PATTERN,
+            2 => TWO_PATTERN,
+            3 => THREE_PATTERN,
             _ => MISSING_PATTERN,
         }
         .to_string(),
     )
 }
 
+pub const BLANK_PATTERN: &str = "
+........
+........
+........
+........
+........
+........
+........
+........";
+
 pub const MISSING_PATTERN: &str = "
-3......3
-33....33
-.33..33.
-..3333..
-..3333..
-.33..33.
-33....33
-3......3";
+........
+.3.....3
+..3...3.
+...3.3..
+....3...
+...3.3..
+..3...3.
+.3.....3";
 
 pub const ZERO_PATTERN: &str = "
+........
 ..3333..
 .33..33.
 .3....3.
 .3....3.
 .3....3.
-.3....3.
 .33..33.
+..3333..";
+
+pub const ONE_PATTERN: &str = "
+........
+...33...
+..333...
+....3...
+....3...
+....3...
+....3...
+..33333.";
+
+pub const TWO_PATTERN: &str = "
+........
+..3333..
+.3....3.
+.....3..
+....3...
+...3....
+..3.....
+.333333.";
+
+pub const THREE_PATTERN: &str = "
+........
+..3333..
+.3....3.
+......3.
+...333..
+......3.
+.3....3.
 ..3333..";

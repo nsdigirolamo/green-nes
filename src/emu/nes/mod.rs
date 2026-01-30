@@ -17,7 +17,8 @@ use crate::{
         nes::debug::get_debug_text,
         ppu::{
             PPU,
-            frame::{Frame, render_pattern_table},
+            frame::{Frame, render_nametable, render_pattern_table},
+            nametable::NAMETABLES_COUNT,
             patterns::dump_pattern_tables,
         },
     },
@@ -158,66 +159,64 @@ impl NES {
     }
 
     pub fn show_nametables(&self, ppu: &PPU) {
-        // let sdl_context = sdl2::init().unwrap();
-        // let video_subsystem = sdl_context.video().unwrap();
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
 
-        // let width = Frame::WIDTH_PIXELS as u32;
-        // let height = Frame::HEIGHT_PIXELS as u32;
+        let width = Frame::WIDTH_PIXELS as u32;
+        let height = Frame::HEIGHT_PIXELS as u32;
 
-        // let window = video_subsystem
-        //     .window("Green NES", width * 5, height * 5)
-        //     .position_centered()
-        //     .build()
-        //     .unwrap();
+        let window = video_subsystem
+            .window("Green NES", width * 5, height * 5)
+            .position_centered()
+            .build()
+            .unwrap();
 
-        // let mut canvas = window.into_canvas().build().unwrap();
-        // canvas.set_logical_size(width, height).unwrap();
-        // canvas.set_draw_color(Color::BLACK);
-        // canvas.clear();
+        let mut canvas = window.into_canvas().build().unwrap();
+        canvas.set_logical_size(width, height).unwrap();
+        canvas.set_draw_color(Color::BLACK);
+        canvas.clear();
 
-        // let creator = canvas.texture_creator();
-        // let mut texture = creator
-        //     .create_texture_target(PixelFormatEnum::RGB24, width, height)
-        //     .unwrap();
+        let creator = canvas.texture_creator();
+        let mut texture = creator
+            .create_texture_target(PixelFormatEnum::RGB24, width, height)
+            .unwrap();
 
-        // let mut event_pump = sdl_context.event_pump().unwrap();
+        let mut event_pump = sdl_context.event_pump().unwrap();
 
         let nametables = ppu.dump_nametables();
+        let mut nametable_index = 0;
 
-        for nametable in nametables.iter() {
-            println!("{:?}", nametable);
+        'running: loop {
+            let index = nametable_index % NAMETABLES_COUNT as usize;
+            let nametable = &nametables[index];
+            let frame = render_nametable(nametable);
+
+            texture
+                .update(
+                    None,
+                    &frame.get_pixel_data(),
+                    Frame::WIDTH_PIXELS * Frame::BYTES_PER_PIXEL,
+                )
+                .unwrap();
+
+            canvas.copy(&texture, None, None).unwrap();
+            canvas.present();
+
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::KeyDown {
+                        keycode: Some(Keycode::Space),
+                        ..
+                    } => nametable_index += 1,
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => break 'running,
+                    _ => {}
+                }
+            }
         }
-
-        // 'running: loop {
-        //     let pattern_table = &pattern_tables[pattern_table_toggle];
-        //     let frame = render_pattern_table(pattern_table);
-
-        //     texture
-        //         .update(
-        //             None,
-        //             &frame.get_pixel_data(),
-        //             Frame::WIDTH_PIXELS * Frame::BYTES_PER_PIXEL,
-        //         )
-        //         .unwrap();
-
-        //     canvas.copy(&texture, None, None).unwrap();
-        //     canvas.present();
-
-        //     for event in event_pump.poll_iter() {
-        //         match event {
-        //             Event::KeyDown {
-        //                 keycode: Some(Keycode::Space),
-        //                 ..
-        //             } => pattern_table_toggle = if pattern_table_toggle == 1 { 0 } else { 1 },
-        //             Event::Quit { .. }
-        //             | Event::KeyDown {
-        //                 keycode: Some(Keycode::Escape),
-        //                 ..
-        //             } => break 'running,
-        //             _ => {}
-        //         }
-        //     }
-        // }
     }
 }
 
