@@ -1,8 +1,14 @@
+use std::array;
+
 use crate::emu::{
     cartridge::Cartridge,
     ppu::{
         buses::Buses,
         frame::{Frame, render_frame},
+        nametable::{
+            ATTRIBUTE_TABLE_SIZE, NAMETABLE_SIZE, NAMETABLES_COUNT, NAMETABLES_START_ADDR,
+            Nametable,
+        },
         registers::Registers,
     },
 };
@@ -218,5 +224,19 @@ impl PPU {
         // TODO: This is kind of complicated and uses a buffer of bytes.
         // https://www.nesdev.org/wiki/PPU_programmer_reference#OAMDMA
         todo!("write to OAMDMA is not implemented")
+    }
+
+    pub fn dump_nametables(&self) -> [Nametable; NAMETABLES_COUNT as usize] {
+        let mut data =
+            [[0u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize]; NAMETABLES_COUNT as usize];
+
+        for nametable_index in 0..NAMETABLES_COUNT {
+            for entry_index in 0..(NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) {
+                let addr = NAMETABLES_START_ADDR + (nametable_index * NAMETABLE_SIZE) + entry_index;
+                data[nametable_index as usize][entry_index as usize] = self.buses.read(addr)
+            }
+        }
+
+        array::from_fn(|i| Nametable::new(data[i]))
     }
 }

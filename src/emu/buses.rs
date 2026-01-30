@@ -184,4 +184,8 @@ impl Buses {
     pub fn get_nmi(&self) -> bool {
         self.nmi
     }
+
+    pub fn get_ppu(&self) -> &PPU {
+        &self.ppu
+    }
 }

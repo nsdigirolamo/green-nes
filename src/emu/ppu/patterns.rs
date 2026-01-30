@@ -1,9 +1,8 @@
 use std::fmt;
 
-use crate::emu::{
-    cartridge::Cartridge,
-    ppu::buses::{PATTERN_TABLE_SIZE, PATTERN_TABLES_START_ADDR},
-};
+use crate::emu::cartridge::Cartridge;
+
+// Pattern Information
 
 pub const PATTERN_PLANE_SIZE: u16 = 8;
 pub const PATTERN_PLANE_COUNT: u16 = 2;
@@ -15,9 +14,43 @@ pub const PATTERN_WIDTH_PIXELS: u16 = PATTERN_HEIGHT_PIXELS;
 pub const PATTERNS_PER_TABLE: u16 = PATTERN_TABLE_SIZE / PATTERN_SIZE;
 pub const PATTERN_TABLES_COUNT: u16 = 2;
 
+// Pattern Table Information
+
+pub const PATTERN_TABLE_SIZE: u16 = 4096;
+
+pub const PATTERN_TABLES_START_ADDR: u16 = 0x0000;
+
+pub const PATTERN_TABLE_0_START_ADDR: u16 = PATTERN_TABLES_START_ADDR;
+pub const PATTERN_TABLE_0_END_ADDR: u16 = PATTERN_TABLE_0_START_ADDR + PATTERN_TABLE_SIZE;
+
+pub const PATTERN_TABLE_1_START_ADDR: u16 = PATTERN_TABLE_0_END_ADDR;
+pub const PATTERN_TABLE_1_END_ADDR: u16 = PATTERN_TABLE_1_START_ADDR + PATTERN_TABLE_SIZE;
+
+pub const PATTERN_TABLES_END_ADDR: u16 = PATTERN_TABLE_1_END_ADDR;
+
 #[derive(Clone, Copy, Default)]
 pub struct Pattern {
     pub data: [[(bool, bool); PATTERN_WIDTH_PIXELS as usize]; PATTERN_HEIGHT_PIXELS as usize],
+}
+
+impl Pattern {
+    fn from_string(string: String) -> Self {
+        let mut pattern = Self::default();
+
+        for (i, line) in string.lines().enumerate() {
+            for (j, char) in line.chars().enumerate() {
+                pattern.data[i][j] = match char {
+                    '.' => (false, false),
+                    '1' => (false, true),
+                    '2' => (true, false),
+                    '3' => (true, true),
+                    _ => (false, false),
+                }
+            }
+        }
+
+        pattern
+    }
 }
 
 impl fmt::Debug for Pattern {
@@ -92,3 +125,33 @@ pub fn dump_pattern_tables(cart: Cartridge) -> [PatternTable; PATTERN_TABLES_COU
 
     pattern_tables
 }
+
+pub fn get_pattern_from_index(index: u8) -> Pattern {
+    Pattern::from_string(
+        match index {
+            0 => ZERO_PATTERN,
+            _ => MISSING_PATTERN,
+        }
+        .to_string(),
+    )
+}
+
+pub const MISSING_PATTERN: &str = "
+3......3
+33....33
+.33..33.
+..3333..
+..3333..
+.33..33.
+33....33
+3......3";
+
+pub const ZERO_PATTERN: &str = "
+..3333..
+.33..33.
+.3....3.
+.3....3.
+.3....3.
+.3....3.
+.33..33.
+..3333..";

@@ -2,7 +2,10 @@ use std::process;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::emu::{cartridge::ines::read_cartridge, nes::NES};
+use crate::emu::{
+    cartridge::{Cartridge, ines::read_cartridge},
+    nes::NES,
+};
 
 pub mod emu;
 
@@ -22,8 +25,13 @@ enum Commands {
         /// Path to the NES program.
         path: String,
     },
-    /// Dumps the contents of the pattern table of the NES program.
-    Dump {
+    /// Displays the contents of the pattern tables to the screen.
+    Patterntables {
+        /// Path to the NES program.
+        path: String,
+    },
+    /// Displays the contents of the nametables to the screen.
+    Nametables {
         /// Path to the NES program.
         path: String,
     },
@@ -42,31 +50,35 @@ fn main() {
 
     match cli.command {
         Commands::Run { path } => {
-            let cart = match read_cartridge(&path) {
-                Ok(cart) => cart,
-                Err(err) => {
-                    eprintln!("Loading cartridge failed: {err}");
-                    process::exit(1);
-                }
-            };
+            let cart = load_cart(&path);
 
             let mut nes = NES::new(cart);
             nes.cpu.reset(&mut nes.buses);
             nes.run(debug_level);
         }
-        Commands::Dump { path } => {
-            let cart = match read_cartridge(&path) {
-                Ok(cart) => cart,
-                Err(err) => {
-                    eprintln!("Loading cartridge failed: {err}");
-                    process::exit(1);
-                }
-            };
+        Commands::Patterntables { path } => {
+            let cart = load_cart(&path);
 
             let nes = NES::new(cart.clone());
             nes.show_pattern_tables(cart);
         }
+        Commands::Nametables { path } => {
+            let cart = load_cart(&path);
+
+            let nes = NES::new(cart.clone());
+            nes.show_nametables(nes.buses.get_ppu());
+        }
     }
 
     process::exit(0);
+}
+
+fn load_cart(path: &str) -> Cartridge {
+    match read_cartridge(path) {
+        Ok(cart) => cart,
+        Err(err) => {
+            eprintln!("Loading cartridge failed: {err}");
+            process::exit(1);
+        }
+    }
 }
