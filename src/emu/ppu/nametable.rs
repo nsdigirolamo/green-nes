@@ -1,5 +1,3 @@
-use std::array;
-
 use crate::emu::ppu::{frame::PATTERN_COLS_PER_FRAME, patterns::PATTERN_TABLES_END_ADDR};
 
 pub const NAMETABLE_SIZE: u16 = 960;
@@ -70,7 +68,7 @@ impl std::fmt::Debug for Nametable {
 impl Default for Nametable {
     fn default() -> Self {
         Self {
-            data: array::from_fn(|i| i as u8),
+            data: [0u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize],
         }
     }
 }

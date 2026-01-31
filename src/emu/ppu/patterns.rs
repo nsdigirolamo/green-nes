@@ -133,6 +133,13 @@ pub fn get_pattern_from_nametable_entry(entry: u8) -> Pattern {
             1 => ONE_PATTERN,
             2 => TWO_PATTERN,
             3 => THREE_PATTERN,
+            4 => FOUR_PATTERN,
+            5 => FIVE_PATTERN,
+            6 => SIX_PATTERN,
+            7 => SEVEN_PATTERN,
+            8 => EIGHT_PATTERN,
+            9 => NINE_PATTERN,
+            10 => TEN_PATTERN,
             _ => MISSING_PATTERN,
         }
         .to_string(),
@@ -198,3 +205,73 @@ pub const THREE_PATTERN: &str = "
 ......3.
 .3....3.
 ..3333..";
+
+pub const FOUR_PATTERN: &str = "
+........
+.3...3..
+.3...3..
+.3...3..
+.333333.
+.....3..
+.....3..
+.....3..";
+
+pub const FIVE_PATTERN: &str = "
+........
+.333333.
+.3......
+.3......
+.33333..
+......3.
+......3.
+.33333..";
+
+pub const SIX_PATTERN: &str = "
+........
+..3333..
+.3......
+.3......
+.33333..
+.3....3.
+.3....3.
+..3333..";
+
+pub const SEVEN_PATTERN: &str = "
+........
+.333333.
+......3.
+......3.
+......3.
+......3.
+......3.
+......3.";
+
+pub const EIGHT_PATTERN: &str = "
+........
+..3333..
+.3....3.
+.3....3.
+..3333..
+.3....3.
+.3....3.
+..3333..";
+
+pub const NINE_PATTERN: &str = "
+........
+..3333..
+.3....3.
+.3....3.
+..33333.
+......3.
+......3.
+..3333..";
+
+pub const TEN_PATTERN: &str = "
+........
+..3.333.
+..3.3.3.
+..3.3.3.
+..3.3.3.
+..3.3.3.
+..3.3.3.
+..3.333.";

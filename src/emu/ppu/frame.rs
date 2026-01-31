@@ -89,7 +89,7 @@ impl Frame {
 
 impl Default for Frame {
     fn default() -> Self {
-        Frame::new([[(255, 255, 255); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
+        Frame::new([[(255, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
     }
 }
 
@@ -192,14 +192,14 @@ pub fn render_nametable(nametable: &Nametable) -> Frame {
     let mut frame = Frame::default();
 
     for (i, entry) in nametable.iter().enumerate() {
-        if NAMETABLE_SIZE < i as u16 {
+        if NAMETABLE_SIZE <= i as u16 {
             break;
         }
 
         let pattern = get_pattern_from_nametable_entry(*entry);
 
-        let pattern_y_offset = PATTERN_HEIGHT_PIXELS * (*entry as u16 / PATTERN_COLS_PER_FRAME);
-        let pattern_x_offset = PATTERN_WIDTH_PIXELS * (*entry as u16 % PATTERN_COLS_PER_FRAME);
+        let pattern_y_offset = PATTERN_HEIGHT_PIXELS * (i as u16 / PATTERN_COLS_PER_FRAME);
+        let pattern_x_offset = PATTERN_WIDTH_PIXELS * (i as u16 % PATTERN_COLS_PER_FRAME);
 
         for (row, row_of_pixels) in pattern.data.iter().enumerate() {
             let y = pattern_y_offset + row as u16;
