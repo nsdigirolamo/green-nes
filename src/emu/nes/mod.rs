@@ -37,7 +37,12 @@ impl NES {
         }
     }
 
-    pub fn run(&mut self, debug_level: DebugLevel) {
+    pub fn run(&mut self, debug_level: DebugLevel, headless: bool) {
+        if headless {
+            self.run_headless(debug_level);
+            return;
+        }
+
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
 
@@ -63,7 +68,7 @@ impl NES {
         let mut event_pump = sdl_context.event_pump().unwrap();
 
         'running: while !self.cpu.is_halted() {
-            if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::High {
+            if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::Low {
                 println!("{self:?}")
             }
 
@@ -95,6 +100,18 @@ impl NES {
                     _ => {}
                 }
             }
+        }
+    }
+
+    fn run_headless(&mut self, debug_level: DebugLevel) {
+        while !self.cpu.is_halted() {
+            if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::Low {
+                println!("{self:?}")
+            }
+
+            self.buses.tick();
+            let _ = self.buses.take_frame();
+            self.cpu.tick(&mut self.buses);
         }
     }
 
@@ -249,7 +266,7 @@ impl fmt::Display for NES {
         let y_index = registers.y_index;
         let psr = registers.psr;
         let sp = registers.sp;
-        let cycle_count = self.cpu.half_cycle_count / 2;
+        let cycle_count = self.cpu.get_cycle_count();
 
         let sp0 = concat_u8!(0x10, registers.sp);
         let sp1 = sp0.wrapping_add(1);
@@ -285,7 +302,7 @@ impl fmt::Debug for NES {
         let y_index = registers.y_index;
         let psr = registers.psr;
         let sp = registers.sp;
-        let cycle_count = self.cpu.half_cycle_count / 2;
+        let cycle_count = self.cpu.get_cycle_count();
 
         write!(
             f,
@@ -293,5 +310,45 @@ impl fmt::Debug for NES {
             A:{accumulator:02X} X:{x_index:02X} \
             Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:}",
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        DebugLevel,
+        emu::{
+            buses::Buses,
+            cpu::{CPU, registers::Registers},
+            nes::NES,
+        },
+        load_cart,
+    };
+
+    #[test]
+    fn nestest() {
+        let cart = load_cart("tests/nestest.nes");
+
+        let mut nes = NES {
+            buses: Buses::new(cart),
+            // Hardcoded starting CPU state that the test expects.
+            cpu: CPU::new(
+                14,
+                Registers {
+                    a: 0x00,
+                    x_index: 0x00,
+                    y_index: 0x00,
+                    pc: (0xC0, 0x00),
+                    sp: 0xFD,
+                    psr: 0b100100,
+                    ir: 0x00,
+                },
+            ),
+        };
+
+        nes.run(DebugLevel::Low, true);
+
+        assert_eq!(nes.buses.peek(0x0002), 0x00);
+        assert_eq!(nes.buses.peek(0x0003), 0x00);
     }
 }

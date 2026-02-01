@@ -24,6 +24,10 @@ enum Commands {
     Run {
         /// Path to the NES program.
         path: String,
+        // An optional starting address, for programs that do not respect the
+        // reset vector at $FFFC–$FFFD.
+        #[arg(value_parser = clap::value_parser!(u16), default_value_t = 0xFFFF)]
+        start_addr: u16,
     },
     /// Displays the contents of the pattern tables to the screen.
     Patterntables {
@@ -49,12 +53,17 @@ fn main() {
     let debug_level = cli.debug;
 
     match cli.command {
-        Commands::Run { path } => {
+        Commands::Run { path, start_addr } => {
             let cart = load_cart(&path);
 
+            let start_addr = match start_addr {
+                0xFFFF => None,
+                _ => Some(start_addr),
+            };
+
             let mut nes = NES::new(cart);
-            nes.cpu.reset(&mut nes.buses);
-            nes.run(debug_level);
+            nes.cpu.reset(&mut nes.buses, start_addr);
+            nes.run(debug_level, false);
         }
         Commands::Patterntables { path } => {
             let cart = load_cart(&path);

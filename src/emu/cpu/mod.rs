@@ -1,63 +1,28 @@
-pub mod cycles;
-pub mod half_cycles;
-pub mod instructions;
-
 use std::collections::VecDeque;
 
 use crate::{
     concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
-        cpu::cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+        cpu::{
+            buses::Buses,
+            cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+            registers::{REGISTERS_AT_POWERON, Registers},
+        },
     },
     split_u16,
 };
 
-const PC_DEFAULT: (u8, u8) = (0x80, 0x00); // (0xC0, 0x00);
-const SP_DEFAULT: u8 = 0xFD;
-const PSR_DEFAULT: u8 = 0b100100;
+pub mod buses;
+pub mod cycles;
+pub mod half_cycles;
+pub mod instructions;
+pub mod registers;
 
-#[derive(Clone, Copy)]
-// Internal CPU Registers
-pub struct Registers {
-    pub a: u8,        // Accumulator
-    pub x_index: u8,  // X Index Register
-    pub y_index: u8,  // Y Index Register
-    pub pc: (u8, u8), // Program Counter (PCH, PCL)
-    pub sp: u8,       // Stack Pointer
-    pub psr: u8,      // Processor Status Register
-    pub ir: u8,       // Instruction Register
-}
-
-impl Default for Registers {
-    fn default() -> Self {
-        Self {
-            a: 0,
-            x_index: 0,
-            y_index: 0,
-            pc: PC_DEFAULT,
-            sp: SP_DEFAULT,
-            psr: PSR_DEFAULT,
-            ir: 0,
-        }
-    }
-}
-
-#[derive(Default, Clone, Copy)]
-/// Internal CPU buses.
-pub struct Buses {
-    /// Base (BAH, BAL) address bus.
-    pub base_addr: (u8, u8),
-    /// Effective (ADH, ADL) address bus.
-    pub effective_addr: (u8, u8), //
-    /// Indirect (IAH, IAL) address bus.
-    pub indirect_addr: (u8, u8),
-}
-
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct CPU {
     cycle_queue: VecDeque<Cycle>,
-    pub half_cycle_count: u64,
+    half_cycle_count: u64,
     is_halted: bool,
     registers: Registers,
     buses: Buses,
@@ -71,13 +36,13 @@ pub struct CPU {
     irq_detected: bool,
 }
 
-impl Default for CPU {
-    fn default() -> Self {
+impl CPU {
+    pub fn new(half_cycle_count: u64, registers: Registers) -> Self {
         Self {
             cycle_queue: VecDeque::default(),
-            half_cycle_count: 14,
+            half_cycle_count,
             is_halted: false,
-            registers: Registers::default(),
+            registers,
             buses: Buses::default(),
             crossed_page: false,
             prev_nmi: false,
@@ -85,9 +50,7 @@ impl Default for CPU {
             irq_detected: false,
         }
     }
-}
 
-impl CPU {
     pub fn tick(&mut self, buses: &mut ExternalBuses) {
         let cycle = self.cycle_queue.pop_front();
 
@@ -132,22 +95,40 @@ impl CPU {
         self.half_cycle_count += 2;
     }
 
-    pub fn reset(&mut self, buses: &mut ExternalBuses) {
-        self.registers.a = 0x00;
-        self.registers.x_index = 0x00;
-        self.registers.sp = SP_DEFAULT;
-        self.registers.psr = PSR_DEFAULT;
+    pub fn poweron(&mut self, buses: &mut ExternalBuses, initial_pc: Option<u16>) {
+        self.registers = REGISTERS_AT_POWERON;
+        self.registers.pc = match initial_pc {
+            Some(addr) => split_u16!(addr),
+            None => {
+                let pcl = buses.peek(0xFFFC);
+                let pch = buses.peek(0xFFFD);
+                (pch, pcl)
+            }
+        };
+    }
 
-        let pcl = buses.peek(0xFFFC);
-        let pch = buses.peek(0xFFFD);
-
-        println!("Starting At: &{pch:02X}{pcl:02X}");
-
-        self.registers.pc = (pch, pcl);
+    pub fn reset(&mut self, buses: &mut ExternalBuses, initial_pc: Option<u16>) {
+        self.set_interrupt_disable_flag(true);
+        self.registers.pc = match initial_pc {
+            Some(addr) => split_u16!(addr),
+            None => {
+                let pcl = buses.peek(0xFFFC);
+                let pch = buses.peek(0xFFFD);
+                (pch, pcl)
+            }
+        };
     }
 
     pub fn get_cycle_queue(&self) -> VecDeque<Cycle> {
         self.cycle_queue.clone()
+    }
+
+    pub fn get_half_cycle_count(&self) -> u64 {
+        self.half_cycle_count
+    }
+
+    pub fn get_cycle_count(&self) -> u64 {
+        self.half_cycle_count / 2
     }
 
     pub fn is_halted(&self) -> bool {
