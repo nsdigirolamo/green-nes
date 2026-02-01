@@ -3,9 +3,7 @@ use std::fmt;
 use sdl2::{pixels::Color, rect::Point};
 
 use crate::emu::ppu::{
-    PPU,
-    nametable::{NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable},
-    palettes::get_pattern_index_debug_color,
+    nametable::{NAMETABLE_SIZE, Nametable},
     patterns::{
         PATTERN_HEIGHT_PIXELS, PATTERN_WIDTH_PIXELS, PatternTable, get_pattern_from_nametable_entry,
     },
@@ -108,84 +106,9 @@ impl fmt::Debug for Frame {
     }
 }
 
-pub fn render_frame(ppu: &PPU) -> Frame {
-    let mut frame = Frame::default();
-
-    for tile_index in 0..NAMETABLE_SIZE {
-        let pattern_index = ppu.buses.read(NAMETABLES_START_ADDR + tile_index);
-
-        let tile_x = (tile_index % PATTERN_COLS_PER_FRAME) * PATTERN_WIDTH_PIXELS;
-        let tile_y = (tile_index / PATTERN_COLS_PER_FRAME) * PATTERN_HEIGHT_PIXELS;
-
-        let color = get_pattern_index_debug_color(pattern_index);
-
-        for pixel_x in 0..PATTERN_WIDTH_PIXELS {
-            for pixel_y in 0..PATTERN_HEIGHT_PIXELS {
-                let x = tile_x + pixel_x;
-                let y = tile_y + pixel_y;
-
-                let location = Point::new(x as i32, y as i32);
-                frame.set_pixel(location, color);
-            }
-        }
-    }
-
-    frame
-
-    // let color = if ppu.scanline_index == 242 {
-    //     (255, 0, 0)
-    // } else {
-    //     (0, 255, 0)
-    // };
-
-    // Frame::new([[color; Frame::WIDTH]; Frame::HEIGHT])
-
-    // let mut frame = Frame::default();
-
-    // // Get the address for the background pattern table.
-    // let background_pattern_table_addr = ppu.registers.ppu_ctrl.get_background_pattern_table_addr();
-    // // 16 bytes per tile.
-    // let bytes_per_tile = TILE_WIDTH * PLANE_COUNT;
-
-    // for tile_index in 0..NAMETABLE_SIZE {
-    //     // Get the pattern index from the nametable.
-    //     // For now, we're only concerned with the contents of the first nametable.
-    //     let pattern_index = ppu.buses.read(NAMETABLE_START_ADDR + tile_index);
-    //     // Get start address of pattern data.
-    //     let start_addr =
-    //         background_pattern_table_addr + (pattern_index as u16 * bytes_per_tile as u16);
-
-    //     for tile_row in 0..TILE_WIDTH {
-    //         let low_bits = ppu.buses.read(start_addr + tile_row as u16);
-    //         let high_bits = ppu
-    //             .buses
-    //             .read(start_addr + TILE_WIDTH as u16 + tile_row as u16);
-
-    //         for tile_col in 0..TILE_WIDTH {
-    //             let x = ((tile_index % TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16)
-    //                 + tile_col as u16;
-    //             let y = ((tile_index / TILE_COLS_PER_FRAME as u16) * TILE_WIDTH as u16)
-    //                 + tile_row as u16;
-
-    //             let location = Point::new(x as i32, y as i32);
-
-    //             let bit_mask = 0b_1000_0000 >> tile_col;
-    //             let pixel_pattern: (bool, bool) =
-    //                 ((high_bits & bit_mask) == 1, (low_bits & bit_mask) == 1);
-
-    //             let color = match pixel_pattern {
-    //                 (false, false) => Color::BLACK,
-    //                 (false, true) => Color::RGB(160, 160, 160),
-    //                 (true, false) => Color::RGB(50, 50, 50),
-    //                 (true, true) => Color::WHITE,
-    //             };
-
-    //             frame.set_pixel(location, color);
-    //         }
-    //     }
-    // }
-
-    // frame
+pub fn render_frame(nametable: &Nametable) -> Frame {
+    // For now, just render the nametable
+    render_nametable(nametable)
 }
 
 pub fn render_nametable(nametable: &Nametable) -> Frame {

@@ -95,8 +95,8 @@ impl Buses {
         }
     }
 
-    /// Fetches a byte from the memory address specified on the address bus
-    /// without modifying the data bus. Returns the fetched byte.
+    /// Returns a byte from the given memory address without modifying the data
+    /// bus.
     pub fn peek(&self, addr: u16) -> u8 {
         match addr {
             RAM_START_ADDR..RAM_END_ADDR => {

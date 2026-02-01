@@ -64,7 +64,8 @@ impl PPU {
             if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
                 self.update_nmi();
-                self.frame = Some(render_frame(self));
+                let nametable = self.dump_nametables()[0];
+                self.frame = Some(render_frame(&nametable));
             } else if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
                 self.update_nmi();

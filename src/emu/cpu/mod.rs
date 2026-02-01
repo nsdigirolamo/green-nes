@@ -141,6 +141,8 @@ impl CPU {
         let pcl = buses.peek(0xFFFC);
         let pch = buses.peek(0xFFFD);
 
+        println!("Starting At: &{pch:02X}{pcl:02X}");
+
         self.registers.pc = (pch, pcl);
     }
 
