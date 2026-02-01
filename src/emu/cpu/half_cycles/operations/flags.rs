@@ -17,11 +17,11 @@ pub fn cld(cpu: &mut CPU, _: &mut Buses) {
 }
 
 pub fn sei(cpu: &mut CPU, _: &mut Buses) {
-    cpu.set_interrupt_disable_flag(true);
+    cpu.set_interrupt_disable_flag_with_delay(true);
 }
 
 pub fn cli(cpu: &mut CPU, _: &mut Buses) {
-    cpu.set_interrupt_disable_flag(false);
+    cpu.set_interrupt_disable_flag_with_delay(false);
 }
 
 pub fn clv(cpu: &mut CPU, _: &mut Buses) {

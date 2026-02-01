@@ -34,6 +34,9 @@ pub struct CPU {
     nmi_detected: bool,
     /// Indicates that the IRQ handler needs to be invoked.
     irq_detected: bool,
+    /// Indicates that the interrupt disable flag needs to be set, such as
+    /// following the PLP instruction.
+    interrupt_disabled: Option<bool>,
 }
 
 impl CPU {
@@ -48,6 +51,7 @@ impl CPU {
             prev_nmi: false,
             nmi_detected: false,
             irq_detected: false,
+            interrupt_disabled: None,
         }
     }
 
@@ -65,9 +69,13 @@ impl CPU {
                     return;
                 }
 
-                if self.irq_detected {
+                if self.irq_detected && !self.get_interrupt_disable_flag() {
                     self.cycle_queue.extend(HANDLE_IRQ.to_vec());
                     return;
+                }
+
+                if let Some(interrupt_disable) = self.interrupt_disabled.take() {
+                    self.set_interrupt_disable_flag(interrupt_disable);
                 }
 
                 self.cycle_queue.extend(get_cycles(self.registers.ir));
@@ -220,6 +228,10 @@ impl CPU {
         };
 
         self.registers.psr = new_status;
+    }
+
+    pub fn set_interrupt_disable_flag_with_delay(&mut self, flag: bool) {
+        self.interrupt_disabled = Some(flag);
     }
 
     pub fn get_zero_flag(&self) -> bool {

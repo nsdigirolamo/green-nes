@@ -346,7 +346,7 @@ mod tests {
             ),
         };
 
-        nes.run(DebugLevel::Low, true);
+        nes.run(DebugLevel::None, true);
 
         assert_eq!(nes.buses.peek(0x0002), 0x00);
         assert_eq!(nes.buses.peek(0x0003), 0x00);

@@ -1,4 +1,4 @@
-.PHONY: build-dev build-release dev release test
+.PHONY: build-dev build-release dev release
 
 build-dev:
 	cargo build
@@ -6,15 +6,11 @@ build-dev:
 build-release:
 	cargo build -r
 
-dev:
-	target/debug/green-nes -d low run tests/nestest.nes > tests/nestest.out
+nestest:
+	target/release/green-nes -d low run tests/nestest.nes 49152 > tests/nestest.out
 
-release:
-	target/release/green-nes -d high run tests/nestest.nes > tests/nestest.out
+colortest:
+	target/release/green-nes -d low run tests/color_test.nes > tests/color_test.out
 
 pacman:
-	target/release/green-nes -d high run tests/pacman.nes > tests/pacman.out
-
-test:
-	bash download-tests.sh
-	cargo test
+	target/release/green-nes -d low run tests/pacman.nes > tests/pacman.out
