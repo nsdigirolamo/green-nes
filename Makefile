@@ -1,10 +1,11 @@
 .PHONY: build-dev build-release dev release
 
-build-dev:
-	cargo build
-
-build-release:
+build:
 	cargo build -r
+
+test:
+	bash download-tests.sh
+	cargo test
 
 nestest:
 	target/release/green-nes -d low run tests/nestest.nes 49152 > tests/nestest.out

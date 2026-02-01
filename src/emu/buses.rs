@@ -61,8 +61,11 @@ impl Buses {
         }
     }
 
-    pub fn tick(&mut self) {
-        self.ppu.tick();
+    pub fn tick(&mut self, enable_ppu: bool) {
+        if enable_ppu {
+            self.ppu.tick();
+        }
+
         self.nmi = self.ppu.get_nmi();
     }
 

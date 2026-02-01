@@ -37,12 +37,7 @@ impl NES {
         }
     }
 
-    pub fn run(&mut self, debug_level: DebugLevel, headless: bool) {
-        if headless {
-            self.run_headless(debug_level);
-            return;
-        }
-
+    pub fn run(&mut self, debug_level: DebugLevel) {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
 
@@ -72,7 +67,7 @@ impl NES {
                 println!("{self:?}")
             }
 
-            self.buses.tick();
+            self.buses.tick(true);
 
             let frame = self.buses.take_frame();
             if let Some(frame) = frame {
@@ -103,13 +98,13 @@ impl NES {
         }
     }
 
-    fn run_headless(&mut self, debug_level: DebugLevel) {
+    pub fn run_headless(&mut self, debug_level: DebugLevel) {
         while !self.cpu.is_halted() {
             if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::Low {
                 println!("{self:?}")
             }
 
-            self.buses.tick();
+            self.buses.tick(false);
             let _ = self.buses.take_frame();
             self.cpu.tick(&mut self.buses);
         }
@@ -327,7 +322,7 @@ mod tests {
 
     #[test]
     fn nestest() {
-        let cart = load_cart("tests/nestest.nes");
+        let cart = load_cart("tests/nestest/nestest.nes");
 
         let mut nes = NES {
             buses: Buses::new(cart),
@@ -346,7 +341,7 @@ mod tests {
             ),
         };
 
-        nes.run(DebugLevel::None, true);
+        nes.run_headless(DebugLevel::None);
 
         assert_eq!(nes.buses.peek(0x0002), 0x00);
         assert_eq!(nes.buses.peek(0x0003), 0x00);
