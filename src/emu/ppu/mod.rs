@@ -9,7 +9,7 @@ use crate::emu::{
             ATTRIBUTE_TABLE_SIZE, NAMETABLE_SIZE, NAMETABLES_COUNT, NAMETABLES_START_ADDR,
             Nametable,
         },
-        registers::Registers,
+        registers::{REGISTERS_AT_POWERON, Registers},
     },
 };
 
@@ -37,12 +37,13 @@ pub struct PPU {
     cycle_count: u32,
     scanline_index: u32,
     frame: Option<Frame>,
+    frame_count: u64,
 }
 
 impl PPU {
     pub fn new(cart: Cartridge) -> Self {
         PPU {
-            registers: Registers::default(),
+            registers: REGISTERS_AT_POWERON,
             buses: Buses::new(cart),
             oam: [0; OAM_SIZE],
             ppu_data_read_buffer: 0,
@@ -50,6 +51,7 @@ impl PPU {
             cycle_count: 0,
             scanline_index: 0,
             frame: None,
+            frame_count: 1,
         }
     }
 
@@ -70,6 +72,7 @@ impl PPU {
                 self.registers.ppu_status.set_vblank_flag(false);
                 self.update_nmi();
             } else if PRERENDER_LINE_INDEX < self.scanline_index {
+                self.frame_count += 1;
                 self.scanline_index = 0;
             }
         }
@@ -239,5 +242,13 @@ impl PPU {
         }
 
         array::from_fn(|i| Nametable::new(data[i]))
+    }
+
+    pub fn get_scanline_index(&self) -> u32 {
+        self.scanline_index
+    }
+
+    pub fn get_frame_count(&self) -> u64 {
+        self.frame_count
     }
 }

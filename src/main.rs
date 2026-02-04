@@ -62,7 +62,7 @@ fn main() {
             };
 
             let mut nes = NES::new(cart);
-            nes.cpu.reset(&mut nes.buses, start_addr);
+            nes.cpu.poweron(&mut nes.buses, start_addr);
             nes.run(debug_level);
         }
         Commands::Patterntables { path } => {

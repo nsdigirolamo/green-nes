@@ -32,7 +32,7 @@ pub fn get_debug_text(nes: &NES) -> String {
             let addr = pc.wrapping_add(1);
             let op = nes.buses.peek(addr);
 
-            create_relative_debug_text(label, op, addr)
+            create_relative_debug_text(label, op, pc)
         }
         AddressingMode::Immediate => {
             let op = nes.buses.peek(pc.wrapping_add(1));
@@ -157,14 +157,21 @@ pub fn get_debug_text(nes: &NES) -> String {
 /// create_relative_debug_text("BEQ", 0x09, 0xC997) // => "BEQ #09 = &C9A1"
 /// ```
 ///
+/// ```Rust
+/// // Star indicates crossed page.
+/// create_relative_debug_text("BPL", 0xFB, 0x82FF) // => "BPL #FB = &83FC *"
+/// ```
+///
 fn create_relative_debug_text(label: &str, operand: u8, program_counter: u16) -> String {
     let (pch, pcl) = split_u16!(program_counter);
-    let relative_addr_low = pcl
-        .wrapping_add_signed(1)
-        .wrapping_add_signed(operand as i8);
-    let relative_addr = concat_u8!(pch, relative_addr_low);
 
-    format!("{label} #{operand:02X} = &{relative_addr:04X}")
+    let (pc_low_offset, overflow) = pcl.wrapping_add(2).overflowing_add_signed(operand as i8);
+    let relative_addr = concat_u8!(pch, pc_low_offset);
+
+    format!(
+        "{label} #{operand:02X} = &{relative_addr:04X} {}",
+        if overflow { "*" } else { "" }
+    )
 }
 
 /// Creates the debug text for the Immediate addressing mode.

@@ -188,11 +188,11 @@ impl CPU {
         self.registers.psr = new_status;
     }
 
-    pub fn get_break_flag(&self) -> bool {
+    pub fn get_b_flag(&self) -> bool {
         (self.registers.psr & 0b00010000) != 0
     }
 
-    pub fn set_break_flag(&mut self, flag: bool) {
+    pub fn set_b_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.registers.psr | 0b00010000
         } else {
@@ -200,6 +200,10 @@ impl CPU {
         };
 
         self.registers.psr = new_status;
+    }
+
+    pub fn get_1_flag(&self) -> bool {
+        (self.registers.psr & 0b_0010_0000) != 0
     }
 
     pub fn get_decimal_mode_flag(&self) -> bool {

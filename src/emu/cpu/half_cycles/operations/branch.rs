@@ -1,30 +1,37 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{
-        CPU,
-        half_cycles::{branch_across_page, get_effective_address, read_opcode},
-    },
+    cpu::{CPU, half_cycles::operations::other::nop},
 };
 
 pub fn do_branch(cpu: &mut CPU, buses: &mut Buses, condition: bool) {
-    let offset = buses.read();
+    let offset = buses.read() as i8;
 
-    if condition {
-        let (pc_high, pc_low) = cpu.registers.pc;
-        let (pc_low_offset, overflow) = pc_low.overflowing_add_signed(offset as i8);
-
-        cpu.buses.effective_addr = (pc_high, pc_low_offset);
-        cpu.crossed_page = overflow;
-
-        cpu.cycle_queue
-            .push_back([get_effective_address, read_opcode]);
-
-        if cpu.crossed_page {
-            cpu.cycle_queue.push_back([branch_across_page, read_opcode]);
-        } else {
-            cpu.registers.pc = (pc_high, pc_low_offset);
-        }
+    if !condition {
+        return;
     }
+
+    let (pch, pcl) = cpu.registers.pc;
+    let (pcl_offset, overflow) = pcl.overflowing_add_signed(offset);
+
+    let pch_offset = if overflow && offset < 0 {
+        pch.wrapping_sub(1)
+    } else if overflow && offset > 0 {
+        pch.wrapping_add(1)
+    } else {
+        pch
+    };
+
+    cpu.crossed_page = overflow;
+
+    // TODO: Don't use NOPs below, actually do something.
+
+    cpu.cycle_queue.push_back([nop, nop]);
+
+    if cpu.crossed_page {
+        cpu.cycle_queue.push_back([nop, nop]);
+    }
+
+    cpu.registers.pc = (pch_offset, pcl_offset)
 }
 
 pub fn bcs(cpu: &mut CPU, buses: &mut Buses) {

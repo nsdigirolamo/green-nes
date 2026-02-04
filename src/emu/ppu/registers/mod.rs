@@ -27,7 +27,7 @@ Other:
 - `w`: Write latch. Toggles on each write to PPUSCROLL or PPUADDR. Clears on
        reads to PPUSTATUS.
 */
-#[derive(Default, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct InternalRegisters {
     /// 15 bits
     pub v: u16,
@@ -39,7 +39,7 @@ pub struct InternalRegisters {
     pub w: bool,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Registers {
     pub ppu_ctrl: PpuControl,        // Miscellaneous Settings (0x2000 W)
     pub ppu_mask: PpuMask,           // Rendering Settings (0x2001 W)
@@ -52,3 +52,21 @@ pub struct Registers {
     pub oam_dma: OamDma,             // Spite DMA (0x4014 W)
     pub internal: InternalRegisters, // Internal Registers
 }
+
+pub const REGISTERS_AT_POWERON: Registers = Registers {
+    ppu_ctrl: PpuControl { data: 0u8 },
+    ppu_mask: PpuMask { data: 0u8 },
+    ppu_status: PpuStatus { data: 0b_0000_0000 }, // TODO: Is this zero or some other value?
+    oam_addr: OamAddr { data: 0u8 },
+    oam_data: OamData { data: 0u8 },
+    ppu_scroll: PpuScroll { data: 0u8 },
+    ppu_addr: PpuAddr { data: 0u8 },
+    ppu_data: PpuData { data: 0u8 },
+    oam_dma: OamDma { data: 0u8 },
+    internal: InternalRegisters {
+        v: 0u16,
+        t: 0u16,
+        x: 0u8,
+        w: false,
+    },
+};

@@ -16,6 +16,6 @@ pub const REGISTERS_AT_POWERON: Registers = Registers {
     y_index: 0x00,
     pc: (0xFF, 0xFC),
     sp: 0xFD,
-    psr: 0b_0000_0100,
+    psr: 0b_0010_0100,
     ir: 0x00,
 };

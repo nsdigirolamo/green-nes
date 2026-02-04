@@ -42,7 +42,7 @@ impl Instruction for Miscellaneous {
                 [get_pc, operation],
             ],
             Miscellaneous::Break => vec![
-                [get_pc_without_increment, read_data],
+                [get_pc, read_data],
                 [push_stack, write_pc_high],
                 [push_stack, write_pc_low],
                 [push_stack, write_break_status],

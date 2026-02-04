@@ -13,7 +13,7 @@ use crate::{
     emu::{
         buses::Buses,
         cartridge::Cartridge,
-        cpu::CPU,
+        cpu::{CPU, registers::Registers},
         nes::debug::get_debug_text,
         ppu::{
             PPU,
@@ -33,7 +33,7 @@ impl NES {
     pub fn new(cart: Cartridge) -> Self {
         Self {
             buses: Buses::new(cart),
-            cpu: CPU::default(),
+            cpu: CPU::new(16, Registers::default()),
         }
     }
 
@@ -295,15 +295,46 @@ impl fmt::Debug for NES {
         let accumulator = registers.a;
         let x_index = registers.x_index;
         let y_index = registers.y_index;
+
         let psr = registers.psr;
+        let c = if self.cpu.get_carry_flag() { "C" } else { "." };
+        let z = if self.cpu.get_zero_flag() { "Z" } else { "." };
+        let i = if self.cpu.get_interrupt_disable_flag() {
+            "I"
+        } else {
+            "."
+        };
+        let d = if self.cpu.get_decimal_mode_flag() {
+            "D"
+        } else {
+            "."
+        };
+        let b = if self.cpu.get_b_flag() { "B" } else { "." };
+        let one = if self.cpu.get_1_flag() { "1" } else { "." };
+        let v = if self.cpu.get_overflow_flag() {
+            "V"
+        } else {
+            "."
+        };
+        let n = if self.cpu.get_negative_flag() {
+            "N"
+        } else {
+            "."
+        };
+        let flags = format!("{n}{v}{one}{b}{d}{i}{z}{c}");
+
         let sp = registers.sp;
         let cycle_count = self.cpu.get_cycle_count();
+
+        let ppu = self.buses.get_ppu();
+        let frame = ppu.get_frame_count();
+        let scanline = ppu.get_scanline_index();
 
         write!(
             f,
             "{pc:04X}  {pc0:02X} {pc1:02X} {pc2:02X}  {debug_text:45} \
             A:{accumulator:02X} X:{x_index:02X} \
-            Y:{y_index:02X} P:{psr:02X} SP:{sp:02X} CYC:{cycle_count:}",
+            Y:{y_index:02X} P:{psr:02X} ({flags}) SP:{sp:02X} F:{frame:04} L:{scanline:03} CYC:{cycle_count:}",
         )
     }
 }
