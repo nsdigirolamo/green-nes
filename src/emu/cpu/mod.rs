@@ -7,6 +7,7 @@ use crate::{
         cpu::{
             buses::Buses,
             cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+            half_cycles::{get_pc_without_increment, read_opcode},
             registers::{REGISTERS_AT_POWERON, Registers},
         },
     },
@@ -61,24 +62,29 @@ impl CPU {
         match cycle {
             Some(cycle) => self.run_cycle(buses, cycle),
             None => {
-                self.run_cycle(buses, FETCH_INSTRUCTION);
+                let nmi_needs_handling = self.nmi_detected;
+                let irq_needs_handling = self.irq_detected && !self.get_interrupt_disable_flag();
 
-                if self.nmi_detected {
-                    self.cycle_queue.extend(HANDLE_NMI.to_vec());
-                    self.nmi_detected = false;
-                    return;
+                if nmi_needs_handling || irq_needs_handling {
+                    self.run_cycle(buses, [get_pc_without_increment, read_opcode]);
+
+                    if nmi_needs_handling {
+                        self.cycle_queue.extend(HANDLE_NMI.to_vec());
+                        self.nmi_detected = false;
+                        return;
+                    }
+
+                    if irq_needs_handling {
+                        self.cycle_queue.extend(HANDLE_IRQ.to_vec());
+                    }
+                } else {
+                    self.run_cycle(buses, FETCH_INSTRUCTION);
+                    self.cycle_queue.extend(get_cycles(self.registers.ir));
+
+                    if let Some(interrupt_disable) = self.interrupt_disabled.take() {
+                        self.set_interrupt_disable_flag(interrupt_disable);
+                    }
                 }
-
-                if self.irq_detected && !self.get_interrupt_disable_flag() {
-                    self.cycle_queue.extend(HANDLE_IRQ.to_vec());
-                    return;
-                }
-
-                if let Some(interrupt_disable) = self.interrupt_disabled.take() {
-                    self.set_interrupt_disable_flag(interrupt_disable);
-                }
-
-                self.cycle_queue.extend(get_cycles(self.registers.ir));
             }
         }
     }
