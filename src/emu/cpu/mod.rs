@@ -1,109 +1,148 @@
-pub mod cycles;
-pub mod half_cycles;
-pub mod instructions;
-
 use std::collections::VecDeque;
 
 use crate::{
     concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
-        cpu::cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles, run_cycle},
+        cpu::{
+            buses::Buses,
+            cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+            half_cycles::{get_pc_without_increment, read_opcode},
+            registers::{REGISTERS_AT_POWERON, Registers},
+        },
     },
     split_u16,
 };
 
-const PC_DEFAULT: (u8, u8) = (0xC0, 0x00);
-const SP_DEFAULT: u8 = 0xFD;
-const PSR_DEFAULT: u8 = 0x24;
+pub mod buses;
+pub mod cycles;
+pub mod half_cycles;
+pub mod instructions;
+pub mod registers;
 
-#[derive(Clone, Copy)]
-// Internal CPU Registers
-pub struct Registers {
-    pub a: u8,        // Accumulator
-    pub x_index: u8,  // X Index Register
-    pub y_index: u8,  // Y Index Register
-    pub pc: (u8, u8), // Program Counter (PCH, PCL)
-    pub sp: u8,       // Stack Pointer
-    pub psr: u8,      // Processor Status Register
-    pub ir: u8,       // Instruction Register
-}
-
-impl Default for Registers {
-    fn default() -> Self {
-        Self {
-            a: 0,
-            x_index: 0,
-            y_index: 0,
-            pc: PC_DEFAULT,
-            sp: SP_DEFAULT,
-            psr: PSR_DEFAULT,
-            ir: 0,
-        }
-    }
-}
-
-#[derive(Default, Clone, Copy)]
-/// Internal CPU Buses
-pub struct Buses {
-    pub base_addr: (u8, u8),      // Base Address Buses (BAH, BAL)
-    pub effective_addr: (u8, u8), // Effective Address Buses (ADH, ADL)
-    pub indirect_addr: (u8, u8),  // Indirect Address Buses (IAH, IAL)
-}
-
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct CPU {
-    // Cycle Controls
     cycle_queue: VecDeque<Cycle>,
-    pub half_cycle_count: u64,
+    half_cycle_count: u64,
     is_halted: bool,
-    // Data
     registers: Registers,
     buses: Buses,
-    // Misc
     crossed_page: bool,
-    pub irq: bool,
-    pub nmi: bool,
-}
-
-impl Default for CPU {
-    fn default() -> Self {
-        Self {
-            cycle_queue: VecDeque::default(),
-            half_cycle_count: 14,
-            is_halted: false,
-            registers: Registers::default(),
-            buses: Buses::default(),
-            crossed_page: false,
-            irq: false,
-            nmi: false,
-        }
-    }
+    /// The state of the NMI pin on the external buses during the previous
+    /// cycle.
+    prev_nmi: bool,
+    /// Indicates that the NMI handler needs to be invoked.
+    nmi_detected: bool,
+    /// Indicates that the IRQ handler needs to be invoked.
+    irq_detected: bool,
+    /// Indicates that the interrupt disable flag needs to be set, such as
+    /// following the PLP instruction.
+    interrupt_disabled: Option<bool>,
 }
 
 impl CPU {
+    pub fn new(half_cycle_count: u64, registers: Registers) -> Self {
+        Self {
+            cycle_queue: VecDeque::default(),
+            half_cycle_count,
+            is_halted: false,
+            registers,
+            buses: Buses::default(),
+            crossed_page: false,
+            prev_nmi: false,
+            nmi_detected: false,
+            irq_detected: false,
+            interrupt_disabled: None,
+        }
+    }
+
     pub fn tick(&mut self, buses: &mut ExternalBuses) {
         let cycle = self.cycle_queue.pop_front();
+
         match cycle {
-            Some(cycle) => run_cycle(self, buses, cycle),
+            Some(cycle) => self.run_cycle(buses, cycle),
             None => {
-                run_cycle(self, buses, FETCH_INSTRUCTION);
+                let nmi_needs_handling = self.nmi_detected;
+                let irq_needs_handling = self.irq_detected && !self.get_interrupt_disable_flag();
 
-                let new_cycles = if self.nmi {
-                    HANDLE_NMI.to_vec()
-                } else if self.irq {
-                    HANDLE_IRQ.to_vec()
+                if nmi_needs_handling || irq_needs_handling {
+                    self.run_cycle(buses, [get_pc_without_increment, read_opcode]);
+
+                    if nmi_needs_handling {
+                        self.cycle_queue.extend(HANDLE_NMI.to_vec());
+                        self.nmi_detected = false;
+                        return;
+                    }
+
+                    if irq_needs_handling {
+                        self.cycle_queue.extend(HANDLE_IRQ.to_vec());
+                    }
                 } else {
-                    get_cycles(self.registers.ir)
-                };
+                    self.run_cycle(buses, FETCH_INSTRUCTION);
+                    self.cycle_queue.extend(get_cycles(self.registers.ir));
 
-                self.cycle_queue.extend(new_cycles.iter());
+                    if let Some(interrupt_disable) = self.interrupt_disabled.take() {
+                        self.set_interrupt_disable_flag(interrupt_disable);
+                    }
+                }
             }
         }
     }
 
+    fn run_cycle(&mut self, buses: &mut ExternalBuses, cycle: Cycle) {
+        let [phase1, phase2] = cycle;
+
+        phase1(self, buses);
+        phase2(self, buses);
+
+        self.irq_detected = buses.get_irq();
+
+        let old_nmi = self.prev_nmi;
+        let new_nmi = buses.get_nmi();
+
+        if !old_nmi && new_nmi {
+            self.nmi_detected = true;
+        }
+
+        self.prev_nmi = new_nmi;
+
+        self.half_cycle_count += 2;
+    }
+
+    pub fn poweron(&mut self, buses: &mut ExternalBuses, initial_pc: Option<u16>) {
+        self.registers = REGISTERS_AT_POWERON;
+        self.registers.pc = match initial_pc {
+            Some(addr) => split_u16!(addr),
+            None => {
+                let pcl = buses.peek(0xFFFC);
+                let pch = buses.peek(0xFFFD);
+                (pch, pcl)
+            }
+        };
+    }
+
+    pub fn reset(&mut self, buses: &mut ExternalBuses, initial_pc: Option<u16>) {
+        self.set_interrupt_disable_flag(true);
+        self.registers.pc = match initial_pc {
+            Some(addr) => split_u16!(addr),
+            None => {
+                let pcl = buses.peek(0xFFFC);
+                let pch = buses.peek(0xFFFD);
+                (pch, pcl)
+            }
+        };
+    }
+
     pub fn get_cycle_queue(&self) -> VecDeque<Cycle> {
         self.cycle_queue.clone()
+    }
+
+    pub fn get_half_cycle_count(&self) -> u64 {
+        self.half_cycle_count
+    }
+
+    pub fn get_cycle_count(&self) -> u64 {
+        self.half_cycle_count / 2
     }
 
     pub fn is_halted(&self) -> bool {
@@ -155,11 +194,11 @@ impl CPU {
         self.registers.psr = new_status;
     }
 
-    pub fn get_break_flag(&self) -> bool {
+    pub fn get_b_flag(&self) -> bool {
         (self.registers.psr & 0b00010000) != 0
     }
 
-    pub fn set_break_flag(&mut self, flag: bool) {
+    pub fn set_b_flag(&mut self, flag: bool) {
         let new_status = if flag {
             self.registers.psr | 0b00010000
         } else {
@@ -167,6 +206,10 @@ impl CPU {
         };
 
         self.registers.psr = new_status;
+    }
+
+    pub fn get_1_flag(&self) -> bool {
+        (self.registers.psr & 0b_0010_0000) != 0
     }
 
     pub fn get_decimal_mode_flag(&self) -> bool {
@@ -195,6 +238,10 @@ impl CPU {
         };
 
         self.registers.psr = new_status;
+    }
+
+    pub fn set_interrupt_disable_flag_with_delay(&mut self, flag: bool) {
+        self.interrupt_disabled = Some(flag);
     }
 
     pub fn get_zero_flag(&self) -> bool {

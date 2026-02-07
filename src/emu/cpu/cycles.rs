@@ -1,38 +1,22 @@
-use crate::emu::{
-    buses::Buses as ExternalBuses,
-    cpu::{
-        CPU,
-        half_cycles::{
-            HalfCycle, get_high_irq_vector, get_low_irq_vector, get_pc,
-            operations::{
-                access, arithmetic, bitwise, branch, compare, flags, jump, other, shift, stack,
-                transfer, unofficial,
-            },
-            push_stack, read_data, read_high_base_address_byte, read_high_effective_address_byte,
-            read_low_base_address_byte, read_low_effective_address_byte, read_opcode,
-            write_pc_high, write_pc_low, write_status,
+use crate::emu::cpu::{
+    half_cycles::{
+        HalfCycle, get_high_irq_vector, get_high_nmi_vector, get_low_irq_vector,
+        get_low_nmi_vector, get_pc, get_pc_without_increment,
+        operations::{
+            access, arithmetic, bitwise, branch, compare, flags, jump, other, shift, stack,
+            transfer, unofficial,
         },
-        instructions::{
-            Instruction, miscellaneous::Miscellaneous, read::Read,
-            read_modify_write::ReadModifyWrite, single_byte::SingleByte, store::Store,
-            unofficial::Unofficial,
-        },
+        push_stack, read_data, read_high_base_address_byte, read_high_effective_address_byte,
+        read_high_pc_address_byte, read_low_base_address_byte, read_low_effective_address_byte,
+        read_low_pc_address_byte, read_opcode, write_break_status, write_pc_high, write_pc_low,
+    },
+    instructions::{
+        Instruction, miscellaneous::Miscellaneous, read::Read, read_modify_write::ReadModifyWrite,
+        single_byte::SingleByte, store::Store, unofficial::Unofficial,
     },
 };
 
 pub type Cycle = [HalfCycle; 2];
-
-pub fn run_cycle(cpu: &mut CPU, buses: &mut ExternalBuses, cycle: Cycle) {
-    let [phase1, phase2] = cycle;
-
-    phase1(cpu, buses);
-    phase2(cpu, buses);
-
-    cpu.irq = buses.get_irq();
-    cpu.nmi = buses.get_nmi();
-
-    cpu.half_cycle_count += 2;
-}
 
 pub const FETCH_INSTRUCTION: Cycle = [get_pc, read_opcode];
 pub const FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc, read_high_effective_address_byte];
@@ -40,21 +24,24 @@ pub const FETCH_LOW_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc, read_low_effective_
 pub const FETCH_HIGH_BASE_ADDRESS_BYTE: Cycle = [get_pc, read_high_base_address_byte];
 pub const FETCH_LOW_BASE_ADDRESS_BYTE: Cycle = [get_pc, read_low_base_address_byte];
 
+/// Same functionality as BRK but with different vector.
 pub const HANDLE_NMI: [Cycle; 6] = [
-    [get_pc, read_data],
+    [get_pc_without_increment, read_data],
     [push_stack, write_pc_high],
     [push_stack, write_pc_low],
-    [push_stack, write_status],
-    [get_low_irq_vector, read_high_effective_address_byte],
-    [get_high_irq_vector, read_low_effective_address_byte],
+    [push_stack, write_break_status],
+    [get_low_nmi_vector, read_low_pc_address_byte],
+    [get_high_nmi_vector, read_high_pc_address_byte],
 ];
+
+/// Same functionality as BRK.
 pub const HANDLE_IRQ: [Cycle; 6] = [
-    [get_pc, read_data],
+    [get_pc_without_increment, read_data],
     [push_stack, write_pc_high],
     [push_stack, write_pc_low],
-    [push_stack, write_status],
-    [get_low_irq_vector, read_high_effective_address_byte],
-    [get_high_irq_vector, read_low_effective_address_byte],
+    [push_stack, write_break_status],
+    [get_low_irq_vector, read_low_pc_address_byte],
+    [get_high_irq_vector, read_high_pc_address_byte],
 ];
 
 pub fn get_cycles(opcode: u8) -> Vec<Cycle> {

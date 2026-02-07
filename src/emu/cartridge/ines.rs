@@ -41,13 +41,14 @@ pub struct INes {
 pub fn read_cartridge(path_to_ines_file: &str) -> Result<Cartridge, Error> {
     let data = read_data(path_to_ines_file)?;
 
-    let prg_rom_size = (data[PRG_ROM_SIZE_INDEX] as usize) * INES_PRG_ROM_SIZE_UNITS;
+    let prg_rom_size = data[PRG_ROM_SIZE_INDEX] as usize * INES_PRG_ROM_SIZE_UNITS;
+    let chr_rom_size = data[CHR_ROM_SIZE_INDEX] as usize * INES_CHR_ROM_SIZE_UNITS;
+
     let trainer_exists = (data[FLAGS_6_INDEX] & FLAGS_6_TRAINER_MASK) != 0;
     let prg_rom_start = INES_HEADER_SIZE + if trainer_exists { TRAINER_SIZE } else { 0 };
     let prg_rom_end = prg_rom_start + prg_rom_size;
     let prg_data = data[prg_rom_start..prg_rom_end].to_vec();
 
-    let chr_rom_size = (data[CHR_ROM_SIZE_INDEX] as usize) * INES_CHR_ROM_SIZE_UNITS;
     let chr_rom_start = prg_rom_end;
     let chr_rom_end = chr_rom_start + chr_rom_size;
     let chr_data = data[chr_rom_start..chr_rom_end].to_vec();
@@ -69,21 +70,6 @@ pub fn read_cartridge(path_to_ines_file: &str) -> Result<Cartridge, Error> {
     Ok(Cartridge {
         mapper: Rc::new(RefCell::new(mapper)),
     })
-}
-
-fn get_mapper_index(data: &[u8]) -> u8 {
-    let upper_nibble = data[FLAGS_7_INDEX] & FLAGS_7_MAPPER_UPPER_NIBBLE_MASK;
-    let lower_nibble = data[FLAGS_6_INDEX] & FLAGS_6_MAPPER_LOWER_NIBBLE_MASK;
-
-    upper_nibble | lower_nibble
-}
-
-fn get_nametable_arrangement(data: &[u8]) -> bool {
-    data[FLAGS_6_INDEX] & FLAGS_6_NAMETABLE_ARRANGEMENT_MASK != 0
-}
-
-fn get_alternative_nametable_arrangement(data: &[u8]) -> bool {
-    data[FLAGS_6_INDEX] & FLAGS_6_ALTERNATIVE_NAMETABLE_ARRANGEMENT_MASK != 0
 }
 
 fn read_data(path_to_ines_file: &str) -> Result<Vec<u8>, Error> {
@@ -113,6 +99,21 @@ fn read_data(path_to_ines_file: &str) -> Result<Vec<u8>, Error> {
     }
 
     Ok(data)
+}
+
+fn get_mapper_index(data: &[u8]) -> u8 {
+    let upper_nibble = data[FLAGS_7_INDEX] & FLAGS_7_MAPPER_UPPER_NIBBLE_MASK;
+    let lower_nibble = data[FLAGS_6_INDEX] & FLAGS_6_MAPPER_LOWER_NIBBLE_MASK;
+
+    upper_nibble | lower_nibble
+}
+
+fn get_nametable_arrangement(data: &[u8]) -> bool {
+    data[FLAGS_6_INDEX] & FLAGS_6_NAMETABLE_ARRANGEMENT_MASK != 0
+}
+
+fn get_alternative_nametable_arrangement(data: &[u8]) -> bool {
+    data[FLAGS_6_INDEX] & FLAGS_6_ALTERNATIVE_NAMETABLE_ARRANGEMENT_MASK != 0
 }
 
 pub fn create_mapper(ines: INes) -> Result<impl Mapper, Error> {

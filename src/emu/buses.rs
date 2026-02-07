@@ -1,6 +1,7 @@
 use crate::concat_u8;
 use crate::emu::cartridge::Cartridge;
 use crate::emu::ppu::PPU;
+use crate::emu::ppu::frame::Frame;
 
 // Internal RAM
 
@@ -34,7 +35,6 @@ const TEST_MODE_END_ADDR: u16 = TEST_MODE_START_ADDR + TEST_MODE_SIZE as u16;
 
 const CARTRIDGE_ROM_MAPPER_START_ADDR: u16 = TEST_MODE_END_ADDR;
 
-#[derive(Clone)]
 pub struct Buses {
     // Data
     ram: [u8; RAM_SIZE],
@@ -49,7 +49,7 @@ pub struct Buses {
 }
 
 impl Buses {
-    pub fn new(cart: Cartridge) -> Self {
+    pub fn new(cart: Cartridge) -> Buses {
         Buses {
             ram: [0; RAM_SIZE],
             addr: (0, 0),
@@ -57,12 +57,16 @@ impl Buses {
             cart: cart.clone(),
             nmi: false,
             irq: false,
-            ppu: PPU::new(cart.clone()),
+            ppu: PPU::new(cart),
         }
     }
 
-    pub fn tick(&mut self) {
-        self.nmi = self.ppu.get_nmi()
+    pub fn tick(&mut self, enable_ppu: bool) {
+        if enable_ppu {
+            self.ppu.tick();
+        }
+
+        self.nmi = self.ppu.get_nmi();
     }
 
     /// Returns a byte from the given memory address.
@@ -75,31 +79,27 @@ impl Buses {
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
                 let mapped_addr = addr % 8;
                 match mapped_addr {
-                    0 => self.ppu.read_ppu_ctrl(),
-                    1 => self.ppu.read_ppu_mask(),
+                    0 => 0, // ignore; write-only
+                    1 => 0, // ignore; write-only
                     2 => self.ppu.read_ppu_status(),
-                    3 => self.ppu.read_oam_addr(),
+                    3 => 0, // ignore; write-only
                     4 => self.ppu.read_oam_data(),
-                    5 => self.ppu.read_ppu_scroll(),
-                    6 => self.ppu.read_ppu_addr(),
+                    5 => 0, // ignore; write-only
+                    6 => 0, // ignore; write-only
                     7 => self.ppu.read_ppu_data(),
-                    _ => unreachable!(
-                        "bus read failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
-                    ),
+                    _ => {
+                        unreachable!("bus fetch failed: {mapped_addr} should not be greater than 7")
+                    }
                 }
             }
-            IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus fetch failed: apu address 0x{addr:04X} is unmapped")
-            }
-            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus fetch failed: test mode address 0x{addr:04X} is unmapped")
-            }
+            IO_START_ADDR..IO_END_ADDR => 0,               // TODO
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => 0, // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
     }
 
-    /// Fetches a byte from the memory address specified on the address bus
-    /// without modifying the data bus. Returns the fetched byte.
+    /// Returns a byte from the given memory address without modifying the data
+    /// bus.
     pub fn peek(&self, addr: u16) -> u8 {
         match addr {
             RAM_START_ADDR..RAM_END_ADDR => {
@@ -107,14 +107,23 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
-                panic!("bus peek failed: address 0x{addr:04X} is a ppu register")
+                let mapped_addr = addr % 8;
+                match mapped_addr {
+                    0 => 0, // ignore; write-only
+                    1 => 0, // ignore; write-only
+                    2 => self.ppu.peek_ppu_status(),
+                    3 => 0, // ignore; write-only
+                    4 => self.ppu.read_oam_data(),
+                    5 => 0, // ignore; write-only
+                    6 => 0, // ignore; write-only
+                    7 => self.ppu.peek_ppu_data(),
+                    _ => {
+                        unreachable!("bus peek failed: {mapped_addr} should not be greater than 7")
+                    }
+                }
             }
-            IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus peek failed: apu address 0x{addr:04X} is unmapped")
-            }
-            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus peek failed: test mode address 0x{addr:04X} is unmapped")
-            }
+            IO_START_ADDR..IO_END_ADDR => 0,               // TODO
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => 0, // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
     }
@@ -145,42 +154,41 @@ impl Buses {
                 match mapped_addr {
                     0 => self.ppu.write_ppu_ctrl(data),
                     1 => self.ppu.write_ppu_mask(data),
-                    2 => self.ppu.write_ppu_status(data),
+                    2 => (), // ignore; read-only
                     3 => self.ppu.write_oam_addr(data),
                     4 => self.ppu.write_oam_data(data),
                     5 => self.ppu.write_ppu_scroll(data),
                     6 => self.ppu.write_ppu_addr(data),
                     7 => self.ppu.write_ppu_data(data),
-                    _ => unreachable!(
-                        "bus write failed: address 0x{addr:04X} is mapped to ppu register and should not be greater than 7"
-                    ),
+                    _ => {
+                        unreachable!("bus write failed: {mapped_addr} should not be greater than 7")
+                    }
                 }
             }
-            IO_START_ADDR..IO_END_ADDR => {
-                todo!("bus write failed: apu address 0x{addr:04X} is unmapped")
-            }
-            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => {
-                todo!("bus write failed: test mode address 0x{addr:04X} is unmapped")
-            }
+            IO_START_ADDR..IO_END_ADDR => (),               // TODO
+            TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => (), // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => {
                 self.cart.mapper.borrow_mut().prg_write(addr, data)
             }
         }
     }
 
-    pub fn get_ppu(&self) -> PPU {
-        self.ppu.clone()
+    /// Take a frame from the PPU.
+    pub fn take_frame(&mut self) -> Option<Frame> {
+        self.ppu.take_frame()
     }
 
-    pub fn get_cart(&self) -> Cartridge {
-        self.cart.clone()
-    }
-
+    /// Returns `true` if the IRQ pin is pulled low.
     pub fn get_irq(&self) -> bool {
         self.irq
     }
 
+    /// Returns `true` if the NMI pin is pulled low.
     pub fn get_nmi(&self) -> bool {
         self.nmi
+    }
+
+    pub fn get_ppu(&self) -> &PPU {
+        &self.ppu
     }
 }

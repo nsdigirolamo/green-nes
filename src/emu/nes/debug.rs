@@ -1,4 +1,4 @@
-use crate::{concat_u8, emu::nes::NES};
+use crate::{concat_u8, emu::nes::NES, split_u16};
 
 #[derive(Debug)]
 pub enum AddressingMode {
@@ -32,7 +32,7 @@ pub fn get_debug_text(nes: &NES) -> String {
             let addr = pc.wrapping_add(1);
             let op = nes.buses.peek(addr);
 
-            create_relative_debug_text(label, op, addr)
+            create_relative_debug_text(label, op, pc)
         }
         AddressingMode::Immediate => {
             let op = nes.buses.peek(pc.wrapping_add(1));
@@ -157,11 +157,21 @@ pub fn get_debug_text(nes: &NES) -> String {
 /// create_relative_debug_text("BEQ", 0x09, 0xC997) // => "BEQ #09 = &C9A1"
 /// ```
 ///
+/// ```Rust
+/// // Star indicates crossed page.
+/// create_relative_debug_text("BPL", 0xFB, 0x82FF) // => "BPL #FB = &83FC *"
+/// ```
+///
 fn create_relative_debug_text(label: &str, operand: u8, program_counter: u16) -> String {
-    let relative_addr = program_counter
-        .wrapping_add_signed(1)
-        .wrapping_add_signed(operand as i16);
-    format!("{label} #{operand:02X} = &{relative_addr:04X}")
+    let (pch, pcl) = split_u16!(program_counter);
+
+    let (pc_low_offset, overflow) = pcl.wrapping_add(2).overflowing_add_signed(operand as i8);
+    let relative_addr = concat_u8!(pch, pc_low_offset);
+
+    format!(
+        "{label} #{operand:02X} = &{relative_addr:04X} {}",
+        if overflow { "*" } else { "" }
+    )
 }
 
 /// Creates the debug text for the Immediate addressing mode.
@@ -258,7 +268,7 @@ fn create_absolute_indexed_x_debug_text(
     value: u8,
 ) -> String {
     let addr = operand + x_contents as u16;
-    format!("{label} (#{operand:04X}, X) = &{addr} -> #{value:02X}")
+    format!("{label} (#{operand:04X}, X) = &{addr:04X} -> #{value:02X}")
 }
 
 /// Creates the debug text for the Absolute Indexed Y addressing mode.
@@ -283,7 +293,7 @@ fn create_absolute_indexed_y_debug_text(
     value: u8,
 ) -> String {
     let addr = operand + y_contents as u16;
-    format!("{label} (#{operand:04X}, Y) = &{addr} -> #{value:02X}")
+    format!("{label} (#{operand:04X}, Y) = &{addr:04X} -> #{value:02X}")
 }
 
 /// Creates the debug text for the Zero Page Indexed X addressing mode.
@@ -309,7 +319,7 @@ fn create_zero_page_indexed_x_debug_text(
 ) -> String {
     let zero_page_addr = concat_u8!(0x00, operand);
     let addr = zero_page_addr + x_contents as u16;
-    format!("{label} (#{operand:02X} = &{zero_page_addr:04X}, X) = &{addr} -> #{value:02X}")
+    format!("{label} (#{operand:02X} = &{zero_page_addr:04X}, X) = &{addr:04X} -> #{value:02X}")
 }
 
 /// Creates the debug text for the Zero Page Indexed X addressing mode.
@@ -335,7 +345,7 @@ fn create_zero_page_indexed_y_debug_text(
 ) -> String {
     let zero_page_addr = concat_u8!(0x00, operand);
     let addr = zero_page_addr + y_contents as u16;
-    format!("{label} (#{operand:02X} = &{zero_page_addr:04X}, X) = &{addr} -> #{value:02X}")
+    format!("{label} (#{operand:02X} = &{zero_page_addr:04X}, X) = &{addr:04X} -> #{value:02X}")
 }
 
 /// Creates the debug text for the Indirect Indexed X addressing mode.
