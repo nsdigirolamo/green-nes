@@ -90,7 +90,7 @@ pub fn rol_a(cpu: &mut CPU, _: &mut Buses) {
 
 /// # Rotate Right (Memory Value)
 ///
-/// Shifts a memory value to the left, moving the value of each bit into the
+/// Shifts a memory value to the right, moving the value of each bit into the
 /// neighboring bit and treating the carry flag as though it is both to the
 /// right of bit zero and to the left of bit seven.
 pub fn ror_m(cpu: &mut CPU, buses: &mut Buses) {
@@ -106,7 +106,7 @@ pub fn ror_m(cpu: &mut CPU, buses: &mut Buses) {
 
 /// # Rotate Right (Accumulator)
 ///
-/// Shifts the accumulator to the left, moving the value of each bit into the
+/// Shifts the accumulator to the right, moving the value of each bit into the
 /// neighboring bit and treating the carry flag as though it is both to the
 /// right of bit zero and to the left of bit seven.
 pub fn ror_a(cpu: &mut CPU, _: &mut Buses) {

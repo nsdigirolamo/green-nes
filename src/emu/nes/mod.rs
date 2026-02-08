@@ -33,7 +33,7 @@ impl NES {
     pub fn new(cart: Cartridge) -> Self {
         Self {
             buses: Buses::new(cart),
-            cpu: CPU::new(16, Registers::default()),
+            cpu: CPU::new(14, Registers::default()),
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::emu::cpu::{
     cycles::*,
     half_cycles::{
-        operations::{other::nop, unofficial::jam},
+        operations::other::{jam, nop},
         *,
     },
     instructions::Instruction,

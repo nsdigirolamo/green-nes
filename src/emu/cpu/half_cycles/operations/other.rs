@@ -16,3 +16,10 @@ pub fn nop_abs_index(cpu: &mut CPU, _: &mut Buses) {
         cpu.cycle_queue.push_back([get_effective_address, nop]);
     }
 }
+
+/// # Jam
+///
+/// Stops the CPU.
+pub fn jam(cpu: &mut CPU, _: &mut Buses) {
+    cpu.is_halted = true;
+}
