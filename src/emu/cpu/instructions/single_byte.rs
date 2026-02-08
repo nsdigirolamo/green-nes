@@ -1,18 +1,14 @@
-use crate::emu::cpu::{
-    cycles::Cycle,
-    half_cycles::{HalfCycle, read_opcode},
-    instructions::Instruction,
-};
+use crate::emu::cpu::{cycles::*, half_cycles::*, instructions::Instruction};
 
-pub enum SingleByte {
-    Default,
+pub struct SingleByte {
+    pub op: HalfCycle,
 }
 
-impl Instruction for SingleByte {
-    fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle> {
+impl Instruction<1> for SingleByte {
+    fn get_cycles(&self) -> [Cycle; 1] {
         // @TODO: Some of the `operations` here are supposed to set the address
         // bus to PC + 1 but they just don't. Need to determine if this is
         // necessary or not.
-        vec![[operation, read_opcode]]
+        [[self.op, read_opcode]]
     }
 }

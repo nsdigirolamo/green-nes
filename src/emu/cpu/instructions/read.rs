@@ -1,91 +1,137 @@
-use crate::emu::cpu::{
-    cycles::{
-        Cycle, FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE, FETCH_LOW_BASE_ADDRESS_BYTE,
-        FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-    },
-    half_cycles::{
-        HalfCycle, get_base_zero_page_address, get_effective_address,
-        get_effective_zero_page_address, get_effective_zero_page_x_indexed_address,
-        get_effective_zero_page_y_indexed_address, get_indirect_x_indexed_high_address_byte,
-        get_indirect_x_indexed_low_address_byte, get_indirect_zero_page_high_address_byte,
-        get_indirect_zero_page_low_address_byte, get_pc, get_x_indexed_base_address_with_carry,
-        get_y_indexed_base_address_with_carry, read_data, read_high_base_address_byte,
-        read_high_effective_address_byte, read_low_base_address_byte,
-        read_low_effective_address_byte, read_low_indirect_address_byte,
-    },
-    instructions::Instruction,
-};
+use crate::emu::cpu::{cycles::*, half_cycles::*, instructions::Instruction};
 
-pub enum Read {
-    Immediate,
-    ZeroPage,
-    Absolute,
-    IndirectX,
-    IndirectY,
-    AbsoluteX,
-    AbsoluteY,
-    ZeroPageX,
-    ZeroPageY,
+pub struct Immediate {
+    pub op: HalfCycle,
 }
 
-impl Instruction for Read {
-    fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle> {
-        match self {
-            Read::Immediate => vec![[get_pc, operation]],
-            Read::ZeroPage => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                [get_effective_zero_page_address, operation],
+impl Instruction<1> for Immediate {
+    fn get_cycles(&self) -> [Cycle; 1] {
+        [[get_pc, self.op]]
+    }
+}
+
+pub struct ZeroPage {
+    pub op: HalfCycle,
+}
+
+impl Instruction<2> for ZeroPage {
+    fn get_cycles(&self) -> [Cycle; 2] {
+        [
+            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            [get_effective_zero_page_address, self.op],
+        ]
+    }
+}
+
+pub struct Absolute {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for Absolute {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct IndirectX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<5> for IndirectX {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            [get_base_zero_page_address, read_data],
+            [
+                get_indirect_x_indexed_low_address_byte,
+                read_low_effective_address_byte,
             ],
-            Read::Absolute => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
-                [get_effective_address, operation],
+            [
+                get_indirect_x_indexed_high_address_byte,
+                read_high_effective_address_byte,
             ],
-            Read::IndirectX => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                [get_base_zero_page_address, read_data],
-                [
-                    get_indirect_x_indexed_low_address_byte,
-                    read_low_effective_address_byte,
-                ],
-                [
-                    get_indirect_x_indexed_high_address_byte,
-                    read_high_effective_address_byte,
-                ],
-                [get_effective_address, operation],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct IndirectY {
+    pub op: HalfCycle,
+}
+
+impl Instruction<4> for IndirectY {
+    fn get_cycles(&self) -> [Cycle; 4] {
+        [
+            [get_pc, read_low_indirect_address_byte],
+            [
+                get_indirect_zero_page_low_address_byte,
+                read_low_base_address_byte,
             ],
-            Read::IndirectY => vec![
-                [get_pc, read_low_indirect_address_byte],
-                [
-                    get_indirect_zero_page_low_address_byte,
-                    read_low_base_address_byte,
-                ],
-                [
-                    get_indirect_zero_page_high_address_byte,
-                    read_high_base_address_byte,
-                ],
-                [get_y_indexed_base_address_with_carry, operation],
+            [
+                get_indirect_zero_page_high_address_byte,
+                read_high_base_address_byte,
             ],
-            Read::AbsoluteX => vec![
-                [get_pc, read_low_base_address_byte],
-                [get_pc, read_high_base_address_byte],
-                [get_x_indexed_base_address_with_carry, operation],
-            ],
-            Read::AbsoluteY => vec![
-                [get_pc, read_low_base_address_byte],
-                [get_pc, read_high_base_address_byte],
-                [get_y_indexed_base_address_with_carry, operation],
-            ],
-            Read::ZeroPageX => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                [get_base_zero_page_address, read_data],
-                [get_effective_zero_page_x_indexed_address, operation],
-            ],
-            Read::ZeroPageY => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                [get_base_zero_page_address, read_data],
-                [get_effective_zero_page_y_indexed_address, operation],
-            ],
-        }
+            [get_y_indexed_base_address_with_carry, self.op],
+        ]
+    }
+}
+
+pub struct AbsoluteX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for AbsoluteX {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            [get_pc, read_low_base_address_byte],
+            [get_pc, read_high_base_address_byte],
+            [get_x_indexed_base_address_with_carry, self.op],
+        ]
+    }
+}
+
+pub struct AbsoluteY {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for AbsoluteY {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            [get_pc, read_low_base_address_byte],
+            [get_pc, read_high_base_address_byte],
+            [get_y_indexed_base_address_with_carry, self.op],
+        ]
+    }
+}
+
+pub struct ZeroPageX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for ZeroPageX {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            [get_base_zero_page_address, read_data],
+            [get_effective_zero_page_x_indexed_address, self.op],
+        ]
+    }
+}
+
+pub struct ZeroPageY {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for ZeroPageY {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            [get_base_zero_page_address, read_data],
+            [get_effective_zero_page_y_indexed_address, self.op],
+        ]
     }
 }

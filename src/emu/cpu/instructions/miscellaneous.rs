@@ -1,78 +1,119 @@
-use crate::emu::cpu::{
-    cycles::{Cycle, FETCH_LOW_EFFECTIVE_ADDRESS_BYTE},
-    half_cycles::{
-        HalfCycle, get_high_irq_vector, get_indirect_high_address_byte,
-        get_indirect_low_address_byte, get_low_irq_vector, get_pc, get_pc_without_increment,
-        get_sp, pop_stack, push_stack, read_data, read_high_indirect_address_byte,
-        read_high_pc_address_byte, read_low_indirect_address_byte, read_low_pc_address_byte,
-        write_break_status, write_pc_high, write_pc_low,
-    },
-    instructions::Instruction,
-};
+use crate::emu::cpu::{cycles::*, half_cycles::*, instructions::Instruction};
 
-pub enum Miscellaneous {
-    Push,
-    Pull,
-    JumpToSubroutine,
-    Break,
-    ReturnFromInterrupt,
-    JumpAbsolute,
-    JumpIndirect,
-    ReturnFromSubroutine,
-    Branch,
+pub struct Push {
+    pub op: HalfCycle,
 }
 
-impl Instruction for Miscellaneous {
-    fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle> {
-        match self {
-            Miscellaneous::Push => vec![
-                [get_pc_without_increment, read_data],
-                [push_stack, operation],
-            ],
-            Miscellaneous::Pull => vec![
-                [get_pc_without_increment, read_data],
-                [pop_stack, read_data],
-                [get_sp, operation],
-            ],
-            Miscellaneous::JumpToSubroutine => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                [get_sp, read_data],
-                [push_stack, write_pc_high],
-                [push_stack, write_pc_low],
-                [get_pc, operation],
-            ],
-            Miscellaneous::Break => vec![
-                [get_pc, read_data],
-                [push_stack, write_pc_high],
-                [push_stack, write_pc_low],
-                [push_stack, write_break_status],
-                [get_low_irq_vector, read_low_pc_address_byte],
-                [get_high_irq_vector, read_high_pc_address_byte],
-            ],
-            Miscellaneous::ReturnFromInterrupt => vec![
-                [get_pc, read_data],
-                [pop_stack, read_data],
-                [pop_stack, operation],
-                [pop_stack, read_low_pc_address_byte],
-                [get_sp, read_high_pc_address_byte],
-            ],
-            Miscellaneous::JumpAbsolute => {
-                vec![FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, operation]]
-            }
-            Miscellaneous::JumpIndirect => vec![
-                [get_pc, read_low_indirect_address_byte],
-                [get_pc, read_high_indirect_address_byte],
-                [get_indirect_low_address_byte, read_low_pc_address_byte],
-                [get_indirect_high_address_byte, read_high_pc_address_byte],
-            ],
-            Miscellaneous::ReturnFromSubroutine => vec![
-                [get_pc, read_data],
-                [pop_stack, read_data],
-                [pop_stack, read_low_pc_address_byte],
-                [get_sp, read_high_pc_address_byte],
-                [get_pc, read_data],
-            ],
-            Miscellaneous::Branch => vec![[get_pc, operation]],
-        }
+impl Instruction<2> for Push {
+    fn get_cycles(&self) -> [Cycle; 2] {
+        [[get_pc_without_increment, read_data], [push_stack, self.op]]
+    }
+}
+
+pub struct Pull {
+    pub op: HalfCycle,
+}
+
+impl Instruction<3> for Pull {
+    fn get_cycles(&self) -> [Cycle; 3] {
+        [
+            [get_pc_without_increment, read_data],
+            [pop_stack, read_data],
+            [get_sp, self.op],
+        ]
+    }
+}
+
+pub struct JumpToSubroutine {
+    pub op: HalfCycle,
+}
+
+impl Instruction<5> for JumpToSubroutine {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            [get_sp, read_data],
+            [push_stack, write_pc_high],
+            [push_stack, write_pc_low],
+            [get_pc, self.op],
+        ]
+    }
+}
+
+pub struct Break {}
+
+impl Instruction<6> for Break {
+    fn get_cycles(&self) -> [Cycle; 6] {
+        [
+            [get_pc, read_data],
+            [push_stack, write_pc_high],
+            [push_stack, write_pc_low],
+            [push_stack, write_break_status],
+            [get_low_irq_vector, read_low_pc_address_byte],
+            [get_high_irq_vector, read_high_pc_address_byte],
+        ]
+    }
+}
+
+pub struct ReturnFromInterrupt {
+    pub op: HalfCycle,
+}
+
+impl Instruction<5> for ReturnFromInterrupt {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            [get_pc, read_data],
+            [pop_stack, read_data],
+            [pop_stack, self.op],
+            [pop_stack, read_low_pc_address_byte],
+            [get_sp, read_high_pc_address_byte],
+        ]
+    }
+}
+
+pub struct JumpAbsolute {
+    pub op: HalfCycle,
+}
+
+impl Instruction<2> for JumpAbsolute {
+    fn get_cycles(&self) -> [Cycle; 2] {
+        [FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, self.op]]
+    }
+}
+
+pub struct JumpIndirect {}
+
+impl Instruction<4> for JumpIndirect {
+    fn get_cycles(&self) -> [Cycle; 4] {
+        [
+            [get_pc, read_low_indirect_address_byte],
+            [get_pc, read_high_indirect_address_byte],
+            [get_indirect_low_address_byte, read_low_pc_address_byte],
+            [get_indirect_high_address_byte, read_high_pc_address_byte],
+        ]
+    }
+}
+
+pub struct ReturnFromSubroutine {}
+
+impl Instruction<5> for ReturnFromSubroutine {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            [get_pc, read_data],
+            [pop_stack, read_data],
+            [pop_stack, read_low_pc_address_byte],
+            [get_sp, read_high_pc_address_byte],
+            [get_pc, read_data],
+        ]
+    }
+}
+
+pub struct Branch {
+    pub op: HalfCycle,
+}
+
+impl Instruction<1> for Branch {
+    fn get_cycles(&self) -> [Cycle; 1] {
+        [[get_pc, self.op]]
     }
 }

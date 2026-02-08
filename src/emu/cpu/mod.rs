@@ -79,7 +79,7 @@ impl CPU {
                     }
                 } else {
                     self.run_cycle(buses, FETCH_INSTRUCTION);
-                    self.cycle_queue.extend(get_cycles(self.registers.ir));
+                    get_cycles(self, self.registers.ir);
 
                     if let Some(interrupt_disable) = self.interrupt_disabled.take() {
                         self.set_interrupt_disable_flag(interrupt_disable);

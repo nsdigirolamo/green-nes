@@ -1,4 +1,4 @@
-use crate::emu::cpu::{cycles::Cycle, half_cycles::HalfCycle};
+use crate::emu::cpu::cycles::*;
 
 pub mod miscellaneous;
 pub mod read;
@@ -7,6 +7,6 @@ pub mod single_byte;
 pub mod store;
 pub mod unofficial;
 
-pub trait Instruction {
-    fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle>;
+pub trait Instruction<const CYCLE_COUNT: usize> {
+    fn get_cycles(&self) -> [Cycle; CYCLE_COUNT];
 }

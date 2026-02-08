@@ -10,7 +10,7 @@ pub fn asl(cpu: &mut CPU, buses: &mut Buses) {
     buses.write(result);
 }
 
-pub fn asl_accumulator(cpu: &mut CPU, _: &mut Buses) {
+pub fn asl_a(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.a;
     let result = data << 1;
 
@@ -30,7 +30,7 @@ pub fn lsr(cpu: &mut CPU, buses: &mut Buses) {
     buses.write(result);
 }
 
-pub fn lsr_accumulator(cpu: &mut CPU, _: &mut Buses) {
+pub fn lsr_a(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.a;
     let result = data >> 1;
 
@@ -50,7 +50,7 @@ pub fn rol(cpu: &mut CPU, buses: &mut Buses) {
     buses.write(result);
 }
 
-pub fn rol_accumulator(cpu: &mut CPU, _: &mut Buses) {
+pub fn rol_a(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.a;
     let result = (data << 1) | (cpu.get_carry_flag() as u8);
 
@@ -71,7 +71,7 @@ pub fn ror(cpu: &mut CPU, buses: &mut Buses) {
     buses.write(result);
 }
 
-pub fn ror_accumulator(cpu: &mut CPU, _: &mut Buses) {
+pub fn ror_a(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.a;
     let masked_data = data & 0b_1111_1110;
     let result = (masked_data | cpu.get_carry_flag() as u8).rotate_right(1);

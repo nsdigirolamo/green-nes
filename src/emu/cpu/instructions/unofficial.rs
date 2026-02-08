@@ -1,108 +1,145 @@
 use crate::emu::cpu::{
-    cycles::{
-        Cycle, FETCH_HIGH_BASE_ADDRESS_BYTE, FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
-        FETCH_LOW_BASE_ADDRESS_BYTE, FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-    },
+    cycles::*,
     half_cycles::{
-        HalfCycle, get_base_zero_page_address, get_effective_address,
-        get_effective_zero_page_address, get_effective_zero_page_x_indexed_address,
-        get_indirect_x_indexed_high_address_byte, get_indirect_x_indexed_low_address_byte,
-        get_indirect_zero_page_high_address_byte, get_indirect_zero_page_low_address_byte, get_pc,
-        get_x_indexed_base_address_with_carry, get_y_indexed_base_address_with_carry,
-        operations::other::nop, read_data, read_high_base_address_byte,
-        read_high_effective_address_byte, read_low_base_address_byte,
-        read_low_effective_address_byte, read_low_indirect_address_byte, write_data,
+        operations::{other::nop, unofficial::jam},
+        *,
     },
     instructions::Instruction,
 };
 
-pub enum Unofficial {
-    ZeroPage,
-    ZeroPageX,
-    Absolute,
-    AbsoluteX,
-    AbsoluteY,
-    IndirectX,
-    IndirectY,
-    Halt,
+pub struct ZeroPage {
+    pub op: HalfCycle,
 }
 
-/*
-The functionality here is closest to the ReadModifyWrite (RMW) instructions.
-This is because the unofficial opcodes here mostly use RMW operations, with some
-other addressing modes mixed in.
-Reference: https://www.nesdev.org/wiki/CPU_unofficial_opcodes#Arrangement
- */
-impl Instruction for Unofficial {
-    fn get_cycles(&self, operation: HalfCycle) -> Vec<Cycle> {
-        match self {
-            Unofficial::ZeroPage => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                [get_effective_zero_page_address, read_data],
-                [get_effective_zero_page_address, write_data],
-                [get_effective_zero_page_address, operation],
+impl Instruction<4> for ZeroPage {
+    fn get_cycles(&self) -> [Cycle; 4] {
+        [
+            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            [get_effective_zero_page_address, read_data],
+            [get_effective_zero_page_address, write_data],
+            [get_effective_zero_page_address, self.op],
+        ]
+    }
+}
+
+pub struct ZeroPageX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<5> for ZeroPageX {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            [get_base_zero_page_address, read_data],
+            [get_effective_zero_page_x_indexed_address, read_data],
+            [get_effective_zero_page_x_indexed_address, write_data],
+            [get_effective_zero_page_x_indexed_address, self.op],
+        ]
+    }
+}
+
+pub struct Absolute {
+    pub op: HalfCycle,
+}
+
+impl Instruction<5> for Absolute {
+    fn get_cycles(&self) -> [Cycle; 5] {
+        [
+            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
+            [get_effective_address, read_data],
+            [get_effective_address, write_data],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct AbsoluteX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<6> for AbsoluteX {
+    fn get_cycles(&self) -> [Cycle; 6] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            FETCH_HIGH_BASE_ADDRESS_BYTE,
+            [get_x_indexed_base_address_with_carry, read_data],
+            [get_effective_address, read_data],
+            [get_effective_address, write_data],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct AbsoluteY {
+    pub op: HalfCycle,
+}
+
+impl Instruction<6> for AbsoluteY {
+    fn get_cycles(&self) -> [Cycle; 6] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            FETCH_HIGH_BASE_ADDRESS_BYTE,
+            [get_y_indexed_base_address_with_carry, read_data],
+            [get_effective_address, read_data],
+            [get_effective_address, write_data],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct IndirectX {
+    pub op: HalfCycle,
+}
+
+impl Instruction<7> for IndirectX {
+    fn get_cycles(&self) -> [Cycle; 7] {
+        [
+            FETCH_LOW_BASE_ADDRESS_BYTE,
+            [get_base_zero_page_address, read_data],
+            [
+                get_indirect_x_indexed_low_address_byte,
+                read_low_effective_address_byte,
             ],
-            Unofficial::ZeroPageX => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                [get_base_zero_page_address, read_data],
-                [get_effective_zero_page_x_indexed_address, read_data],
-                [get_effective_zero_page_x_indexed_address, write_data],
-                [get_effective_zero_page_x_indexed_address, operation],
+            [
+                get_indirect_x_indexed_high_address_byte,
+                read_high_effective_address_byte,
             ],
-            Unofficial::Absolute => vec![
-                FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-                FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
-                [get_effective_address, read_data],
-                [get_effective_address, write_data],
-                [get_effective_address, operation],
+            [get_effective_address, read_data],
+            [get_effective_address, write_data],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct IndirectY {
+    pub op: HalfCycle,
+}
+
+impl Instruction<7> for IndirectY {
+    fn get_cycles(&self) -> [Cycle; 7] {
+        [
+            [get_pc, read_low_indirect_address_byte],
+            [
+                get_indirect_zero_page_low_address_byte,
+                read_low_base_address_byte,
             ],
-            Unofficial::AbsoluteX => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                FETCH_HIGH_BASE_ADDRESS_BYTE,
-                [get_x_indexed_base_address_with_carry, read_data],
-                [get_effective_address, read_data],
-                [get_effective_address, write_data],
-                [get_effective_address, operation],
+            [
+                get_indirect_zero_page_high_address_byte,
+                read_high_base_address_byte,
             ],
-            Unofficial::AbsoluteY => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                FETCH_HIGH_BASE_ADDRESS_BYTE,
-                [get_y_indexed_base_address_with_carry, read_data],
-                [get_effective_address, read_data],
-                [get_effective_address, write_data],
-                [get_effective_address, operation],
-            ],
-            Unofficial::IndirectX => vec![
-                FETCH_LOW_BASE_ADDRESS_BYTE,
-                [get_base_zero_page_address, read_data],
-                [
-                    get_indirect_x_indexed_low_address_byte,
-                    read_low_effective_address_byte,
-                ],
-                [
-                    get_indirect_x_indexed_high_address_byte,
-                    read_high_effective_address_byte,
-                ],
-                [get_effective_address, read_data],
-                [get_effective_address, write_data],
-                [get_effective_address, operation],
-            ],
-            Unofficial::IndirectY => vec![
-                [get_pc, read_low_indirect_address_byte],
-                [
-                    get_indirect_zero_page_low_address_byte,
-                    read_low_base_address_byte,
-                ],
-                [
-                    get_indirect_zero_page_high_address_byte,
-                    read_high_base_address_byte,
-                ],
-                [get_y_indexed_base_address_with_carry, read_data],
-                [get_effective_address, read_data],
-                [get_effective_address, write_data],
-                [get_effective_address, operation],
-            ],
-            Unofficial::Halt => vec![[nop, operation]],
-        }
+            [get_y_indexed_base_address_with_carry, read_data],
+            [get_effective_address, read_data],
+            [get_effective_address, write_data],
+            [get_effective_address, self.op],
+        ]
+    }
+}
+
+pub struct Halt {}
+
+impl Instruction<1> for Halt {
+    fn get_cycles(&self) -> [Cycle; 1] {
+        [[nop, jam]]
     }
 }
