@@ -33,8 +33,8 @@ impl Instruction<5> for JumpToSubroutine {
         [
             FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
             [get_sp, read_data],
-            [push_stack, write_pc_high],
-            [push_stack, write_pc_low],
+            PUSH_PC_HIGH_TO_STACK,
+            PUSH_PC_LOW_TO_STACK,
             [get_pc, self.op],
         ]
     }
@@ -46,8 +46,8 @@ impl Instruction<6> for Break {
     fn get_cycles(&self) -> [Cycle; 6] {
         [
             [get_pc, read_data],
-            [push_stack, write_pc_high],
-            [push_stack, write_pc_low],
+            PUSH_PC_HIGH_TO_STACK,
+            PUSH_PC_LOW_TO_STACK,
             [push_stack, write_break_status],
             [get_low_irq_vector, read_low_pc_address_byte],
             [get_high_irq_vector, read_high_pc_address_byte],

@@ -35,7 +35,7 @@ impl Instruction<5> for IndirectX {
     fn get_cycles(&self) -> [Cycle; 5] {
         [
             FETCH_LOW_BASE_ADDRESS_BYTE,
-            [get_base_zero_page_address, read_data],
+            READ_FROM_BASE_ZERO_PAGE_ADDRESS,
             [
                 get_indirect_x_indexed_low_address_byte,
                 read_low_effective_address_byte,
