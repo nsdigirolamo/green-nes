@@ -18,7 +18,7 @@ pub fn lax_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn lax_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+pub fn lax_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     lax(cpu, buses);
 
     if cpu.crossed_page {
@@ -47,7 +47,7 @@ pub fn isc(cpu: &mut CPU, buses: &mut Buses) {
 }
 
 pub fn slo(cpu: &mut CPU, buses: &mut Buses) {
-    super::shift::asl(cpu, buses);
+    super::shift::asl_m(cpu, buses);
     super::bitwise::ora(cpu, buses);
 }
 
@@ -57,12 +57,12 @@ pub fn rla(cpu: &mut CPU, buses: &mut Buses) {
 }
 
 pub fn sre(cpu: &mut CPU, buses: &mut Buses) {
-    super::shift::lsr(cpu, buses);
+    super::shift::lsr_m(cpu, buses);
     super::bitwise::eor(cpu, buses);
 }
 
 pub fn rra(cpu: &mut CPU, buses: &mut Buses) {
-    super::shift::ror(cpu, buses);
+    super::shift::ror_m(cpu, buses);
     super::arithmetic::adc(cpu, buses);
 }
 

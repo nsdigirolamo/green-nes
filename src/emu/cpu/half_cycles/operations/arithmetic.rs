@@ -96,6 +96,10 @@ pub fn adc(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Add With Carry
+///
+/// Adds a memory value and the carry flag to the accumulator. Uses an
+/// additional cycle if a page is crossed.
 pub fn adc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     adc(cpu, buses);
 
@@ -104,7 +108,11 @@ pub fn adc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn adc_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Add With Carry
+///
+/// Adds a memory value and the carry flag to the accumulator. Uses an
+/// additional cycle if a page is crossed.
+pub fn adc_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     adc(cpu, buses);
 
     if cpu.crossed_page {
@@ -131,6 +139,10 @@ pub fn sbc(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Subtract With Carry
+///
+/// Subtracts a memory value and the bitwise NOT of the carry flag from the
+/// accumulator. Uses an additional cycle if a page is crossed.
 pub fn sbc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     sbc(cpu, buses);
 
@@ -139,7 +151,11 @@ pub fn sbc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn sbc_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Subtract With Carry
+///
+/// Subtracts a memory value and the bitwise NOT of the carry flag from the
+/// accumulator. Uses an additional cycle if a page is crossed.
+pub fn sbc_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     sbc(cpu, buses);
 
     if cpu.crossed_page {

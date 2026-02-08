@@ -14,6 +14,10 @@ pub fn lda(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag(data >> 7 == 1);
 }
 
+/// # Load Accumulator
+///
+/// Loads a memory value into the accumulator. Uses an additional cycle if a
+/// page is crossed.
 pub fn lda_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     lda(cpu, buses);
 
@@ -22,7 +26,11 @@ pub fn lda_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn lda_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Load Accumulator
+///
+/// Loads a memory value into the accumulator. Uses an additional cycle if a
+/// page is crossed.
+pub fn lda_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     lda(cpu, buses);
 
     if cpu.crossed_page {
@@ -41,7 +49,11 @@ pub fn ldx(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag(data >> 7 == 1);
 }
 
-pub fn ldx_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Load X Register
+///
+/// Loads a memory value into the X register. Uses an additional cycle if a page
+/// is crossed.
+pub fn ldx_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ldx(cpu, buses);
 
     if cpu.crossed_page {
@@ -60,7 +72,11 @@ pub fn ldy(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag(data >> 7 == 1);
 }
 
-pub fn ldy_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Load Y Register
+///
+/// Loads a memory value into the Y register. Uses an additional cycle if a page
+/// is crossed.
+pub fn ldy_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ldy(cpu, buses);
 
     if cpu.crossed_page {

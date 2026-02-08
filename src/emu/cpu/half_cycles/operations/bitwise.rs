@@ -15,6 +15,10 @@ pub fn and(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Bitwise AND
+///
+/// Bitwise AND of a memory value and the accumulator. Uses an additional cycle
+/// if a page is crossed.
 pub fn and_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     and(cpu, buses);
 
@@ -23,7 +27,11 @@ pub fn and_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn and_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Bitwise AND
+///
+/// Bitwise AND of a memory value and the accumulator. Uses an additional cycle
+/// if a page is crossed.
+pub fn and_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     and(cpu, buses);
 
     if cpu.crossed_page {
@@ -59,6 +67,10 @@ pub fn eor(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Bitwise Exclusive OR
+///
+/// Bitwise XOR of a memory value and the accumulator. Uses an additional cycle
+/// if a page is crossed.
 pub fn eor_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     eor(cpu, buses);
 
@@ -67,7 +79,11 @@ pub fn eor_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn eor_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Bitwise Exclusive OR
+///
+/// Bitwise XOR of a memory value and the accumulator. Uses an additional cycle
+/// if a page is crossed.
+pub fn eor_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     eor(cpu, buses);
 
     if cpu.crossed_page {
@@ -87,6 +103,10 @@ pub fn ora(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Bitwise OR
+///
+/// Bitwise OR of a memory value and the accumulator. Uses an additional cycle
+/// if a page crossed.
 pub fn ora_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     ora(cpu, buses);
 
@@ -95,7 +115,11 @@ pub fn ora_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn ora_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Bitwise OR
+///
+/// Bitwise OR of a memory value and the accumulator. Uses an additional cycle
+/// if a page crossed.
+pub fn ora_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ora(cpu, buses);
 
     if cpu.crossed_page {

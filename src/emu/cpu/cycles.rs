@@ -3,7 +3,7 @@ use crate::emu::cpu::{
     half_cycles::{
         operations::{
             access::*, arithmetic::*, bitwise::*, branch::*, compare::*, flags::*, other::*,
-            shift::*, stack::*, transfer::*, unofficial::*,
+            shift::*, stack::*, transfer::*,
         },
         *,
     },
@@ -45,42 +45,35 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x00 => &miscellaneous::Break {}.get_cycles(),
         0x01 => &read::IndirectX { op: ora }.get_cycles(),
         0x02 => &unofficial::Halt {}.get_cycles(),
-        0x03 => &unofficial::IndirectX { op: slo }.get_cycles(),
+        0x03 => todo!("opcode not implemented: {opcode:02X}"),
         0x04 => &read::ZeroPage { op: nop }.get_cycles(),
         0x05 => &read::ZeroPage { op: ora }.get_cycles(),
-        0x06 => &read_modify_write::ZeroPage { op: asl }.get_cycles(),
-        0x07 => &unofficial::ZeroPage { op: asl }.get_cycles(),
+        0x06 => &read_modify_write::ZeroPage { op: asl_m }.get_cycles(),
+        0x07 => todo!("opcode not implemented: {opcode:02X}"),
         0x08 => &miscellaneous::Push { op: php }.get_cycles(),
         0x09 => &read::Immediate { op: ora }.get_cycles(),
         0x0A => &single_byte::SingleByte { op: asl_a }.get_cycles(),
         0x0B => todo!("opcode not implemented: {opcode:02X}"),
         0x0C => &read::Absolute { op: nop }.get_cycles(),
         0x0D => &read::Absolute { op: ora }.get_cycles(),
-        0x0E => &read_modify_write::Absolute { op: asl }.get_cycles(),
-        0x0F => &unofficial::Absolute { op: slo }.get_cycles(),
+        0x0E => &read_modify_write::Absolute { op: asl_m }.get_cycles(),
+        0x0F => todo!("opcode not implemented: {opcode:02X}"),
         0x10 => &miscellaneous::Branch { op: bpl }.get_cycles(),
         0x11 => &read::IndirectY { op: ora_indirect_y }.get_cycles(),
         0x12 => &unofficial::Halt {}.get_cycles(),
-        0x13 => &unofficial::IndirectY { op: slo }.get_cycles(),
+        0x13 => todo!("opcode not implemented: {opcode:02X}"),
         0x14 => &read::ZeroPageX { op: nop }.get_cycles(),
         0x15 => &read::ZeroPageX { op: ora }.get_cycles(),
-        0x16 => &read_modify_write::ZeroPageX { op: asl }.get_cycles(),
-        0x17 => &unofficial::ZeroPageX { op: slo }.get_cycles(),
+        0x16 => &read_modify_write::ZeroPageX { op: asl_m }.get_cycles(),
+        0x17 => todo!("opcode not implemented: {opcode:02X}"),
         0x18 => &single_byte::SingleByte { op: clc }.get_cycles(),
         0x19 => &read::AbsoluteY { op: ora }.get_cycles(),
         0x1A => &single_byte::SingleByte { op: nop }.get_cycles(),
-        0x1B => &unofficial::AbsoluteY { op: slo }.get_cycles(),
-        0x1C => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0x1D => &read::AbsoluteX {
-            op: ora_absolute_indexed,
-        }
-        .get_cycles(),
-        0x1E => &read_modify_write::AbsoluteX { op: asl }.get_cycles(),
+        0x1B => todo!("opcode not implemented: {opcode:02X}"),
+        0x1C => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0x1D => &read::AbsoluteX { op: ora_abs_index }.get_cycles(),
+        0x1E => &read_modify_write::AbsoluteX { op: asl_m }.get_cycles(),
         0x1F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x20 => &miscellaneous::JumpToSubroutine { op: nop }.get_cycles(),
         0x21 => &read::IndirectX { op: and }.get_cycles(),
         0x22 => &unofficial::Halt {}.get_cycles(),
@@ -97,7 +90,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x2D => &read::Absolute { op: and }.get_cycles(),
         0x2E => &read_modify_write::Absolute { op: rol }.get_cycles(),
         0x2F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x30 => &miscellaneous::Branch { op: bmi }.get_cycles(),
         0x31 => &read::IndirectY { op: and_indirect_y }.get_cycles(),
         0x32 => &unofficial::Halt {}.get_cycles(),
@@ -110,24 +102,17 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x39 => &read::AbsoluteY { op: and }.get_cycles(),
         0x3A => &single_byte::SingleByte { op: nop }.get_cycles(),
         0x3B => todo!("opcode not implemented: {opcode:02X}"),
-        0x3C => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0x3D => &read::AbsoluteX {
-            op: and_absolute_indexed,
-        }
-        .get_cycles(),
+        0x3C => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0x3D => &read::AbsoluteX { op: and_abs_index }.get_cycles(),
         0x3E => &read_modify_write::AbsoluteX { op: rol }.get_cycles(),
         0x3F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x40 => &miscellaneous::ReturnFromInterrupt { op: nop }.get_cycles(),
         0x41 => &read::IndirectX { op: eor }.get_cycles(),
         0x42 => &unofficial::Halt {}.get_cycles(),
         0x43 => todo!("opcode not implemented: {opcode:02X}"),
         0x44 => &read::ZeroPage { op: nop }.get_cycles(),
         0x45 => &read::ZeroPage { op: eor }.get_cycles(),
-        0x46 => &read_modify_write::ZeroPage { op: lsr }.get_cycles(),
+        0x46 => &read_modify_write::ZeroPage { op: lsr_m }.get_cycles(),
         0x47 => todo!("opcode not implemented: {opcode:02X}"),
         0x48 => &miscellaneous::Push { op: pha }.get_cycles(),
         0x49 => &read::Immediate { op: eor }.get_cycles(),
@@ -135,39 +120,31 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x4B => todo!("opcode not implemented: {opcode:02X}"),
         0x4C => &miscellaneous::JumpAbsolute { op: nop }.get_cycles(),
         0x4D => &read::Absolute { op: eor }.get_cycles(),
-        0x4E => &read_modify_write::Absolute { op: lsr }.get_cycles(),
+        0x4E => &read_modify_write::Absolute { op: lsr_m }.get_cycles(),
         0x4F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x50 => &miscellaneous::Branch { op: bvc }.get_cycles(),
         0x51 => &read::IndirectY { op: eor_indirect_y }.get_cycles(),
         0x52 => &unofficial::Halt {}.get_cycles(),
         0x53 => todo!("opcode not implemented: {opcode:02X}"),
         0x54 => &read::ZeroPageX { op: nop }.get_cycles(),
         0x55 => &read::ZeroPageX { op: eor }.get_cycles(),
-        0x56 => &read_modify_write::ZeroPageX { op: lsr }.get_cycles(),
+        0x56 => &read_modify_write::ZeroPageX { op: lsr_m }.get_cycles(),
         0x57 => todo!("opcode not implemented: {opcode:02X}"),
         0x58 => &single_byte::SingleByte { op: cli }.get_cycles(),
         0x59 => &read::AbsoluteY { op: eor }.get_cycles(),
         0x5A => &single_byte::SingleByte { op: nop }.get_cycles(),
         0x5B => todo!("opcode not implemented: {opcode:02X}"),
-        0x5C => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0x5D => &read::AbsoluteX {
-            op: eor_absolute_indexed,
-        }
-        .get_cycles(),
-        0x5E => &read_modify_write::AbsoluteX { op: lsr }.get_cycles(),
+        0x5C => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0x5D => &read::AbsoluteX { op: eor_abs_index }.get_cycles(),
+        0x5E => &read_modify_write::AbsoluteX { op: lsr_m }.get_cycles(),
         0x5F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x60 => &miscellaneous::ReturnFromSubroutine {}.get_cycles(),
         0x61 => &read::IndirectX { op: adc }.get_cycles(),
         0x62 => &unofficial::Halt {}.get_cycles(),
         0x63 => todo!("opcode not implemented: {opcode:02X}"),
         0x64 => &read::ZeroPage { op: nop }.get_cycles(),
         0x65 => &read::ZeroPage { op: adc }.get_cycles(),
-        0x66 => &read_modify_write::ZeroPage { op: ror }.get_cycles(),
+        0x66 => &read_modify_write::ZeroPage { op: ror_m }.get_cycles(),
         0x67 => todo!("opcode not implemented: {opcode:02X}"),
         0x68 => &miscellaneous::Pull { op: pla }.get_cycles(),
         0x69 => &read::Immediate { op: adc }.get_cycles(),
@@ -175,32 +152,24 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x6B => todo!("opcode not implemented: {opcode:02X}"),
         0x6C => &miscellaneous::JumpIndirect {}.get_cycles(),
         0x6D => &read::Absolute { op: adc }.get_cycles(),
-        0x6E => &read_modify_write::Absolute { op: ror }.get_cycles(),
+        0x6E => &read_modify_write::Absolute { op: ror_m }.get_cycles(),
         0x6F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x70 => &miscellaneous::Branch { op: bvs }.get_cycles(),
         0x71 => &read::IndirectY { op: adc_indirect_y }.get_cycles(),
         0x72 => &unofficial::Halt {}.get_cycles(),
         0x73 => todo!("opcode not implemented: {opcode:02X}"),
         0x74 => &read::ZeroPageX { op: nop }.get_cycles(),
         0x75 => &read::ZeroPageX { op: adc }.get_cycles(),
-        0x76 => &read_modify_write::ZeroPageX { op: ror }.get_cycles(),
+        0x76 => &read_modify_write::ZeroPageX { op: ror_m }.get_cycles(),
         0x77 => todo!("opcode not implemented: {opcode:02X}"),
         0x78 => &single_byte::SingleByte { op: sei }.get_cycles(),
         0x79 => &read::AbsoluteY { op: adc }.get_cycles(),
         0x7A => &single_byte::SingleByte { op: nop }.get_cycles(),
         0x7B => todo!("opcode not implemented: {opcode:02X}"),
-        0x7C => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0x7D => &read::AbsoluteX {
-            op: adc_absolute_indexed,
-        }
-        .get_cycles(),
-        0x7E => &read_modify_write::AbsoluteX { op: ror }.get_cycles(),
+        0x7C => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0x7D => &read::AbsoluteX { op: adc_abs_index }.get_cycles(),
+        0x7E => &read_modify_write::AbsoluteX { op: ror_m }.get_cycles(),
         0x7F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x80 => &read::Immediate { op: nop }.get_cycles(),
         0x81 => &store::IndirectX { op: sta }.get_cycles(),
         0x82 => &read::Immediate { op: nop }.get_cycles(),
@@ -217,7 +186,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x8D => &store::Absolute { op: sta }.get_cycles(),
         0x8E => &store::Absolute { op: stx }.get_cycles(),
         0x8F => todo!("opcode not implemented: {opcode:02X}"),
-
         0x90 => &miscellaneous::Branch { op: bcc }.get_cycles(),
         0x91 => &store::IndirectY { op: sta }.get_cycles(),
         0x92 => &unofficial::Halt {}.get_cycles(),
@@ -234,7 +202,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0x9D => &store::AbsoluteX { op: sta }.get_cycles(),
         0x9E => todo!("opcode not implemented: {opcode:02X}"),
         0x9F => todo!("opcode not implemented: {opcode:02X}"),
-
         0xA0 => &read::Immediate { op: ldy }.get_cycles(),
         0xA1 => &read::IndirectX { op: lda }.get_cycles(),
         0xA2 => &read::Immediate { op: ldx }.get_cycles(),
@@ -251,7 +218,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xAD => &read::Absolute { op: lda }.get_cycles(),
         0xAE => &read::Absolute { op: ldx }.get_cycles(),
         0xAF => todo!("opcode not implemented: {opcode:02X}"),
-
         0xB0 => &miscellaneous::Branch { op: bcs }.get_cycles(),
         0xB1 => &read::IndirectY { op: lda_indirect_y }.get_cycles(),
         0xB2 => &unofficial::Halt {}.get_cycles(),
@@ -261,26 +227,13 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xB6 => &read::ZeroPageY { op: ldx }.get_cycles(),
         0xB7 => todo!("opcode not implemented: {opcode:02X}"),
         0xB8 => &single_byte::SingleByte { op: clv }.get_cycles(),
-        0xB9 => &read::AbsoluteY {
-            op: lda_absolute_indexed,
-        }
-        .get_cycles(),
+        0xB9 => &read::AbsoluteY { op: lda_abs_index }.get_cycles(),
         0xBA => &single_byte::SingleByte { op: tsx }.get_cycles(),
         0xBB => todo!("opcode not implemented: {opcode:02X}"),
-        0xBC => &read::AbsoluteX {
-            op: ldy_absolute_indexed,
-        }
-        .get_cycles(),
-        0xBD => &read::AbsoluteX {
-            op: lda_absolute_indexed,
-        }
-        .get_cycles(),
-        0xBE => &read::AbsoluteY {
-            op: ldx_absolute_indexed,
-        }
-        .get_cycles(),
+        0xBC => &read::AbsoluteX { op: ldy_abs_index }.get_cycles(),
+        0xBD => &read::AbsoluteX { op: lda_abs_index }.get_cycles(),
+        0xBE => &read::AbsoluteY { op: ldx_abs_index }.get_cycles(),
         0xBF => todo!("opcode not implemented: {opcode:02X}"),
-
         0xC0 => &read::Immediate { op: cpy }.get_cycles(),
         0xC1 => &read::IndirectX { op: cmp }.get_cycles(),
         0xC2 => &read::Immediate { op: nop }.get_cycles(),
@@ -297,7 +250,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xCD => &read::Absolute { op: cmp }.get_cycles(),
         0xCE => &read_modify_write::Absolute { op: dec }.get_cycles(),
         0xCF => todo!("opcode not implemented: {opcode:02X}"),
-
         0xD0 => &miscellaneous::Branch { op: bne }.get_cycles(),
         0xD1 => &read::IndirectY { op: cmp_indirect_y }.get_cycles(),
         0xD2 => &unofficial::Halt {}.get_cycles(),
@@ -310,17 +262,10 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xD9 => &read::AbsoluteY { op: cmp }.get_cycles(),
         0xDA => &single_byte::SingleByte { op: nop }.get_cycles(),
         0xDB => todo!("opcode not implemented: {opcode:02X}"),
-        0xDC => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0xDD => &read::AbsoluteX {
-            op: cmp_absolute_indexed,
-        }
-        .get_cycles(),
+        0xDC => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0xDD => &read::AbsoluteX { op: cmp_abs_index }.get_cycles(),
         0xDE => &read_modify_write::AbsoluteX { op: dec }.get_cycles(),
         0xDF => todo!("opcode not implemented: {opcode:02X}"),
-
         0xE0 => &read::Immediate { op: cpx }.get_cycles(),
         0xE1 => &read::IndirectX { op: sbc }.get_cycles(),
         0xE2 => &read::Immediate { op: nop }.get_cycles(),
@@ -337,7 +282,6 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xED => &read::Absolute { op: sbc }.get_cycles(),
         0xEE => &read_modify_write::Absolute { op: inc }.get_cycles(),
         0xEF => todo!("opcode not implemented: {opcode:02X}"),
-
         0xF0 => &miscellaneous::Branch { op: beq }.get_cycles(),
         0xF1 => &read::IndirectY { op: sbc_indirect_y }.get_cycles(),
         0xF2 => &unofficial::Halt {}.get_cycles(),
@@ -350,14 +294,8 @@ pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
         0xF9 => &read::AbsoluteY { op: sbc }.get_cycles(),
         0xFA => &single_byte::SingleByte { op: nop }.get_cycles(),
         0xFB => todo!("opcode not implemented: {opcode:02X}"),
-        0xFC => &read::AbsoluteX {
-            op: nop_absolute_indexed,
-        }
-        .get_cycles(),
-        0xFD => &read::AbsoluteX {
-            op: sbc_absolute_indexed,
-        }
-        .get_cycles(),
+        0xFC => &read::AbsoluteX { op: nop_abs_index }.get_cycles(),
+        0xFD => &read::AbsoluteX { op: sbc_abs_index }.get_cycles(),
         0xFE => &read_modify_write::AbsoluteX { op: inc }.get_cycles(),
         0xFF => todo!("opcode not implemented: {opcode:02X}"),
     };

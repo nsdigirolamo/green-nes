@@ -15,6 +15,10 @@ pub fn cmp(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Compare Accumulator
+///
+/// Compares A to a memory value, setting flags as appropriate. Uses an
+/// additional cycle if a page is crossed.
 pub fn cmp_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     cmp(cpu, buses);
 
@@ -23,7 +27,11 @@ pub fn cmp_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
-pub fn cmp_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
+/// # Compare Accumulator
+///
+/// Compares A to a memory value, setting flags as appropriate. Uses an
+/// additional cycle if a page is crossed.
+pub fn cmp_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     cmp(cpu, buses);
 
     if cpu.crossed_page {
