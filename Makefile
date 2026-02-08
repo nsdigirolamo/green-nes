@@ -8,7 +8,7 @@ test:
 	cargo test
 
 nestest:
-	target/release/green-nes -d low run tests/nestest.nes 49152 > tests/nestest.out
+	target/release/green-nes -d low run tests/nestest/nestest.nes 49152 > tests/nestest/nestest.out
 
 colortest:
 	target/release/green-nes -d low run tests/color_test/color_test.nes > tests/color_test/out.txt
