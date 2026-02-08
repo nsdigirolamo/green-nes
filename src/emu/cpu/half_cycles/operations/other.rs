@@ -3,6 +3,9 @@ use crate::emu::{
     cpu::{CPU, half_cycles::get_effective_address},
 };
 
+/// # No Operation
+///
+/// Does nothing.
 pub fn nop(_: &mut CPU, _: &mut Buses) {}
 
 pub fn nop_absolute_indexed(cpu: &mut CPU, _: &mut Buses) {

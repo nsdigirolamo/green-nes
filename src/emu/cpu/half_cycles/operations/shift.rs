@@ -1,5 +1,10 @@
 use crate::emu::{buses::Buses, cpu::CPU};
 
+/// # Arithmetic Shift Left
+///
+/// Shifts all of the bits of a memory value or the accumulator one position to
+/// the left. Bit seven is shifted into the carry flag, and 0 is shifted into
+/// bit zero.
 pub fn asl(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = data << 1;
@@ -20,6 +25,11 @@ pub fn asl_a(cpu: &mut CPU, _: &mut Buses) {
     cpu.registers.a = result;
 }
 
+/// # Logical Shift Right
+///
+/// Shifts all of the bits of a memory value or the accumulator one position to
+/// the right, moving the value of each bit into the next bit. 0 is shifted into
+/// bit seven, and bit zero is shifted into the carry flag.
 pub fn lsr(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = data >> 1;
@@ -40,6 +50,11 @@ pub fn lsr_a(cpu: &mut CPU, _: &mut Buses) {
     cpu.registers.a = result;
 }
 
+/// Rotate Left
+///
+/// Shifts a memory value or the accumulator to the left, moving the value of
+/// each bit into the neighboring bit and treating the carry flag as though it
+/// is both to the left of bit seven and to the right of bit zero.
 pub fn rol(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = (data << 1) | (cpu.get_carry_flag() as u8);
@@ -60,6 +75,11 @@ pub fn rol_a(cpu: &mut CPU, _: &mut Buses) {
     cpu.registers.a = result;
 }
 
+/// # Rotate Right
+///
+/// Shifts a memory value or the accumulator to the left, moving the value of
+/// each bit into the neighboring bit and treating the carry flag as though it
+/// is both to the right of bit zero and to the left of bit seven.
 pub fn ror(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let masked_data = data & 0b_1111_1110;

@@ -3,6 +3,9 @@ use crate::emu::{
     cpu::{CPU, half_cycles::get_effective_address},
 };
 
+/// # Compare Accumulator
+///
+/// Compares A to a memory value, setting flags as appropriate.
 pub fn cmp(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a.wrapping_sub(data);
@@ -28,6 +31,9 @@ pub fn cmp_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Compare X Register
+///
+/// Compares X to a memory value, setting flags as appropriate.
 pub fn cpx(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.x_index.wrapping_sub(data);
@@ -37,6 +43,9 @@ pub fn cpx(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((result & 0b_1000_0000) != 0);
 }
 
+/// # Compare Y Register
+///
+/// Compares Y to a memory value, setting flags as appropriate.
 pub fn cpy(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.y_index.wrapping_sub(data);

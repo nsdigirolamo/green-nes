@@ -3,6 +3,9 @@ use crate::emu::{
     cpu::{CPU, half_cycles::get_effective_address},
 };
 
+/// # Load Accumulator
+///
+/// Loads a memory value into the accumulator.
 pub fn lda(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
@@ -27,6 +30,9 @@ pub fn lda_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Load X Register
+///
+/// Loads a memory value into the X register.
 pub fn ldx(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
@@ -43,6 +49,9 @@ pub fn ldx_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Load Y Register
+///
+/// Loads a memory value into the Y register.
 pub fn ldy(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
@@ -59,18 +68,27 @@ pub fn ldy_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Store Accumulator
+///
+/// Stores the accumulator's value into memory.
 pub fn sta(cpu: &mut CPU, buses: &mut Buses) {
     let data = cpu.registers.a;
 
     buses.write(data)
 }
 
+/// # Store X Register
+///
+/// Stores the X register's value into memory.
 pub fn stx(cpu: &mut CPU, buses: &mut Buses) {
     let data = cpu.registers.x_index;
 
     buses.write(data);
 }
 
+/// # Store Y Register
+///
+/// Stores the Y register's value into memory.
 pub fn sty(cpu: &mut CPU, buses: &mut Buses) {
     let data = cpu.registers.y_index;
 

@@ -1,5 +1,8 @@
 use crate::emu::{buses::Buses, cpu::CPU};
 
+/// # Jump To Subroutine
+///
+/// Sets the program counter to a new value. Allows returning via RTS.
 pub fn jsr(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
@@ -8,6 +11,9 @@ pub fn jsr(cpu: &mut CPU, buses: &mut Buses) {
     cpu.registers.pc = cpu.buses.effective_addr;
 }
 
+/// # Jump
+///
+/// Sets the program counter to a new value. Does not allow returning.
 pub fn jmp_absolute(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
@@ -16,6 +22,9 @@ pub fn jmp_absolute(cpu: &mut CPU, buses: &mut Buses) {
     cpu.registers.pc = cpu.buses.effective_addr;
 }
 
+/// # Return From Interrupt
+///
+/// Returns from an interrupt handler.
 pub fn rti(cpu: &mut CPU, buses: &mut Buses) {
     // B and extra bit are ignored
     let masked_stack_status = buses.read() & 0b_1100_1111;

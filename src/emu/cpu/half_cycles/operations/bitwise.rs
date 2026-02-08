@@ -3,6 +3,9 @@ use crate::emu::{
     cpu::{CPU, half_cycles::get_effective_address},
 };
 
+/// # Bitwise AND
+///
+/// Bitwise AND of a memory value and the accumulator.
 pub fn and(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a & data;
@@ -28,6 +31,13 @@ pub fn and_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Bit Test
+///
+/// Modifies flags in the following fashion:
+/// * The zero flag is set depending on the result of a bitwise AND of the
+///   accumulator and a memory value.
+/// * Loads bit six from the memory value into the overflow flag.
+/// * Loads bit seven from the memory value into the negative flag.
 pub fn bit(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a & data;
@@ -37,6 +47,9 @@ pub fn bit(cpu: &mut CPU, buses: &mut Buses) {
     cpu.set_negative_flag((data & 0b_1000_0000) != 0);
 }
 
+/// # Bitwise Exclusive OR
+///
+/// Bitwise XOR of a memory value and the accumulator.
 pub fn eor(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a ^ data;
@@ -62,6 +75,9 @@ pub fn eor_absolute_indexed(cpu: &mut CPU, buses: &mut Buses) {
     }
 }
 
+/// # Bitwise OR
+///
+/// Bitwise OR of a memory value and the accumulator.
 pub fn ora(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a | data;
