@@ -169,7 +169,7 @@ impl PPU {
     }
 
     /// Writes a byte to the PPU address. This has the side effect of updating
-    /// the internal `t`, `w`, and `v` registers.
+    /// the internal `t`, `w`, and `v` registers. 91154
     pub fn write_ppu_addr(&mut self, data: u8) {
         let is_first_write = !self.registers.internal.w;
 
@@ -212,10 +212,18 @@ impl PPU {
         data
     }
 
-    /// Writes a byte to the PPU's 14-bit address space.
+    /// Writes a byte to the PPU's 14-bit address space. This also has the side
+    /// effect of updating the internal `v` register.
     pub fn write_ppu_data(&mut self, data: u8) {
+        // First, write to the address specified by the current VRAM address.
         let addr = self.registers.internal.v;
         self.buses.write(addr, data);
+
+        // Then, increment the address by the value specified in PPUCTRL and
+        // store the new value back into the internal v register.
+        let addr_incr = self.registers.ppu_ctrl.get_vram_addr_incr();
+        let new_addr = addr.wrapping_add(addr_incr);
+        self.registers.internal.v = new_addr;
     }
 
     /// Returns a byte from the PPUDATA read buffer without side effects.

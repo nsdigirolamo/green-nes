@@ -163,10 +163,20 @@ pub fn get_debug_text(nes: &NES) -> String {
 /// ```
 ///
 fn create_relative_debug_text(label: &str, operand: u8, program_counter: u16) -> String {
+    let offset = operand as i8;
     let (pch, pcl) = split_u16!(program_counter);
 
-    let (pc_low_offset, overflow) = pcl.wrapping_add(2).overflowing_add_signed(operand as i8);
-    let relative_addr = concat_u8!(pch, pc_low_offset);
+    let (pc_low_offset, overflow) = pcl.wrapping_add(2).overflowing_add_signed(offset);
+
+    let pch_offset = if overflow && offset < 0 {
+        pch.wrapping_sub(1)
+    } else if overflow && offset > 0 {
+        pch.wrapping_add(1)
+    } else {
+        pch
+    };
+
+    let relative_addr = concat_u8!(pch_offset, pc_low_offset);
 
     format!(
         "{label} #{operand:02X} = &{relative_addr:04X} {}",

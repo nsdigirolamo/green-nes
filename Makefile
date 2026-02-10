@@ -1,4 +1,4 @@
-.PHONY: build-dev build-release dev release
+.PHONY: build test nestest colortest pacman donkey-kong
 
 build:
 	cargo build -r
@@ -14,4 +14,7 @@ colortest:
 	target/release/green-nes -d low run tests/color_test/color_test.nes > tests/color_test/out.txt
 
 pacman:
-	target/release/green-nes -d low run tests/pacman.nes > tests/pacman.out
+	target/release/green-nes -d low run tests/pacman/pacman.nes > tests/pacman/pacman.out
+
+donkey-kong:
+	target/release/green-nes -d low run tests/donkey-kong/donkey-kong.nes > tests/donkey-kong/donkey-kong.out
