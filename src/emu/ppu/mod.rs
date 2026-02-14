@@ -66,8 +66,7 @@ impl PPU {
             if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
                 self.update_nmi();
-                let nametable = self.dump_nametables()[0];
-                self.frame = Some(render_frame(&nametable));
+                self.frame = Some(render_frame(self));
             } else if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
                 self.update_nmi();
@@ -169,16 +168,18 @@ impl PPU {
     }
 
     /// Writes a byte to the PPU address. This has the side effect of updating
-    /// the internal `t`, `w`, and `v` registers. 91154
+    /// the internal `t`, `w`, and `v` registers.
     pub fn write_ppu_addr(&mut self, data: u8) {
         let is_first_write = !self.registers.internal.w;
 
         if is_first_write {
+            self.registers.internal.t = 0;
             let high_byte = ((data & 0b_0011_1111) as u16) << 8;
 
             self.registers.internal.t |= high_byte;
-            self.registers.internal.t &= 0b_0011_1111_1111_1111;
             self.registers.internal.w = true;
+
+            println!("PPU ADDR first write: {data:02X}");
         } else {
             let low_byte = data as u16;
 
@@ -188,7 +189,12 @@ impl PPU {
             // TODO: This should only happen 1 to 1.5 dots after the write.
             // https://www.nesdev.org/wiki/PPU_programmer_reference#PPUADDR
             // https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
-            self.registers.internal.v = self.registers.internal.t
+            self.registers.internal.v = self.registers.internal.t;
+
+            println!(
+                "PPU ADDR second write: #{data:02X} v register: &{:04X}",
+                self.registers.internal.v
+            );
         }
     }
 
@@ -201,6 +207,7 @@ impl PPU {
 
         // Next, read from the internal v register to get current VRAM address.
         let addr = self.registers.internal.v;
+        // Store the new  byte into the read buffer.
         self.ppu_data_read_buffer = self.buses.read(addr);
 
         // Finally, increment the address by the value specified in PPUCTRL
@@ -208,6 +215,8 @@ impl PPU {
         let addr_incr = self.registers.ppu_ctrl.get_vram_addr_incr();
         let new_addr = addr.wrapping_add(addr_incr);
         self.registers.internal.v = new_addr;
+
+        println!("PPU DATA read {data:02X}");
 
         data
     }
@@ -218,6 +227,8 @@ impl PPU {
         // First, write to the address specified by the current VRAM address.
         let addr = self.registers.internal.v;
         self.buses.write(addr, data);
+
+        println!("PPU DATA write #{data:02X} to &{addr:04X}");
 
         // Then, increment the address by the value specified in PPUCTRL and
         // store the new value back into the internal v register.
