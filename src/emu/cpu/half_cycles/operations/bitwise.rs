@@ -64,7 +64,7 @@ pub fn eor(cpu: &mut CPU, buses: &mut Buses) {
 
     cpu.registers.a = result;
     cpu.registers.psr.set_zero(result == 0);
-    cpu.registers.psr.set_negative(data & Flags::N != 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Bitwise Exclusive OR
