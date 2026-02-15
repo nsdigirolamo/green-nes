@@ -104,6 +104,10 @@ impl NES {
                 println!("{self:?}")
             }
 
+            if self.cpu.get_registers().pc == (0x00, 0x01) {
+                break;
+            }
+
             self.buses.tick(false);
             let _ = self.buses.take_frame();
             self.cpu.tick(&mut self.buses);
@@ -277,8 +281,9 @@ impl fmt::Display for NES {
             [{ab_mem0:02X} {ab_mem1:02X} {ab_mem2:02X}] \
             DATA_BUS: {data_bus:02X} \
             IR:{ir:02X} A:{accumulator:02X} X:{x_index:02X} Y:{y_index:02X} \
-            P:{psr:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
-            CYC:{cycle_count:}"
+            P:{:02X} SP:{sp:02X} [{sp_mem0:02X} {sp_mem1:02X} {sp_mem2:02X}] \
+            CYC:{cycle_count:}",
+            u8::from(psr)
         )
     }
 }
@@ -297,30 +302,18 @@ impl fmt::Debug for NES {
         let y_index = registers.y_index;
 
         let psr = registers.psr;
-        let c = if self.cpu.get_carry_flag() { "C" } else { "." };
-        let z = if self.cpu.get_zero_flag() { "Z" } else { "." };
-        let i = if self.cpu.get_interrupt_disable_flag() {
+        let c = if psr.get_carry() { "C" } else { "." };
+        let z = if psr.get_zero() { "Z" } else { "." };
+        let i = if psr.get_interrupt_disable() {
             "I"
         } else {
             "."
         };
-        let d = if self.cpu.get_decimal_mode_flag() {
-            "D"
-        } else {
-            "."
-        };
-        let b = if self.cpu.get_b_flag() { "B" } else { "." };
-        let one = if self.cpu.get_1_flag() { "1" } else { "." };
-        let v = if self.cpu.get_overflow_flag() {
-            "V"
-        } else {
-            "."
-        };
-        let n = if self.cpu.get_negative_flag() {
-            "N"
-        } else {
-            "."
-        };
+        let d = if psr.get_decimal() { "D" } else { "." };
+        let b = if psr.get_break() { "B" } else { "." };
+        let one = "1";
+        let v = if psr.get_overflow() { "V" } else { "." };
+        let n = if psr.get_negative() { "N" } else { "." };
         let flags = format!("{n}{v}{one}{b}{d}{i}{z}{c}");
 
         let sp = registers.sp;
@@ -334,7 +327,8 @@ impl fmt::Debug for NES {
             f,
             "{pc:04X}  {pc0:02X} {pc1:02X} {pc2:02X}  {debug_text:45} \
             A:{accumulator:02X} X:{x_index:02X} \
-            Y:{y_index:02X} P:{psr:02X} ({flags}) SP:{sp:02X} F:{frame:04} L:{scanline:03} CYC:{cycle_count:}",
+            Y:{y_index:02X} P:{:02X} ({flags}) SP:{sp:02X} F:{frame:04} L:{scanline:03} CYC:{cycle_count:}",
+            u8::from(psr),
         )
     }
 }
@@ -366,7 +360,7 @@ mod tests {
                     y_index: 0x00,
                     pc: (0xC0, 0x00),
                     sp: 0xFD,
-                    psr: 0b100100,
+                    psr: 0b100100.into(),
                     ir: 0x00,
                 },
             ),

@@ -31,5 +31,5 @@ pub fn rti(cpu: &mut CPU, buses: &mut Buses) {
     let masked_processor_status = cpu.registers.psr & 0b_0011_0000;
     let new_processor_status = masked_stack_status | masked_processor_status;
 
-    cpu.registers.psr = new_processor_status;
+    cpu.registers.psr = new_processor_status.into();
 }

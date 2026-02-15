@@ -8,7 +8,7 @@ use crate::emu::{
 /// If the carry flag is set, branch to a nearby location by adding the branch
 /// offset to the program counter.
 pub fn bcs(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, cpu.get_carry_flag());
+    do_branch(cpu, buses, cpu.registers.psr.get_carry());
 }
 
 /// # Branch If Carry Clear
@@ -16,7 +16,7 @@ pub fn bcs(cpu: &mut CPU, buses: &mut Buses) {
 /// If the carry flag is clear, branch to a nearby location by adding the branch
 /// offset to the program counter.
 pub fn bcc(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, !cpu.get_carry_flag())
+    do_branch(cpu, buses, !cpu.registers.psr.get_carry())
 }
 
 /// # Branch If Equal
@@ -24,7 +24,7 @@ pub fn bcc(cpu: &mut CPU, buses: &mut Buses) {
 /// If the zero flag is set, branch to a nearby location by adding the branch
 /// offset to the program counter.
 pub fn beq(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, cpu.get_zero_flag())
+    do_branch(cpu, buses, cpu.registers.psr.get_zero())
 }
 
 /// # Branch If Not Equal
@@ -32,7 +32,7 @@ pub fn beq(cpu: &mut CPU, buses: &mut Buses) {
 /// If the zero flag is clear, branch to a nearby location by adding the branch
 /// offset to the program counter.
 pub fn bne(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, !cpu.get_zero_flag())
+    do_branch(cpu, buses, !cpu.registers.psr.get_zero())
 }
 
 /// # Branch If Minus
@@ -40,7 +40,7 @@ pub fn bne(cpu: &mut CPU, buses: &mut Buses) {
 /// If the negative flag is set, branch to a nearby location by adding the
 /// branch offset to the program counter.
 pub fn bmi(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, cpu.get_negative_flag())
+    do_branch(cpu, buses, cpu.registers.psr.get_negative())
 }
 
 /// # Branch If Plus
@@ -48,7 +48,7 @@ pub fn bmi(cpu: &mut CPU, buses: &mut Buses) {
 /// If the negative flag is clear, branch to a nearby location by adding the
 /// branch offset to the program counter.
 pub fn bpl(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, !cpu.get_negative_flag())
+    do_branch(cpu, buses, !cpu.registers.psr.get_negative())
 }
 
 /// # Branch If Overflow Set
@@ -56,7 +56,7 @@ pub fn bpl(cpu: &mut CPU, buses: &mut Buses) {
 /// If the overflow flag is set, branch to a nearby location by adding the
 /// branch offset to the program counter.
 pub fn bvs(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, cpu.get_overflow_flag())
+    do_branch(cpu, buses, cpu.registers.psr.get_overflow())
 }
 
 /// # Branch If Overflow Clear
@@ -64,7 +64,7 @@ pub fn bvs(cpu: &mut CPU, buses: &mut Buses) {
 /// If the overflow flag is clear, branch to a nearby location by adding the
 /// branch offset to the program counter.
 pub fn bvc(cpu: &mut CPU, buses: &mut Buses) {
-    do_branch(cpu, buses, !cpu.get_overflow_flag())
+    do_branch(cpu, buses, !cpu.registers.psr.get_overflow())
 }
 
 fn do_branch(cpu: &mut CPU, buses: &mut Buses, condition: bool) {

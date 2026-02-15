@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address},
+    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
 };
 
 /// # Bitwise AND
@@ -11,8 +11,8 @@ pub fn and(cpu: &mut CPU, buses: &mut Buses) {
     let result = cpu.registers.a & data;
 
     cpu.registers.a = result;
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Bitwise AND
@@ -50,9 +50,9 @@ pub fn bit(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a & data;
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_overflow_flag((data & 0b_0100_0000) != 0);
-    cpu.set_negative_flag((data & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_overflow(data & Flags::V != 0);
+    cpu.registers.psr.set_negative(data & Flags::N != 0);
 }
 
 /// # Bitwise Exclusive OR
@@ -63,8 +63,8 @@ pub fn eor(cpu: &mut CPU, buses: &mut Buses) {
     let result = cpu.registers.a ^ data;
 
     cpu.registers.a = result;
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(data & Flags::N != 0);
 }
 
 /// # Bitwise Exclusive OR
@@ -99,8 +99,8 @@ pub fn ora(cpu: &mut CPU, buses: &mut Buses) {
     let result = cpu.registers.a | data;
 
     cpu.registers.a = result;
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Bitwise OR

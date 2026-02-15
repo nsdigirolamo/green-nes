@@ -242,5 +242,5 @@ pub fn write_pc_low(cpu: &mut CPU, buses: &mut Buses) {
 
 pub fn write_break_status(cpu: &mut CPU, buses: &mut Buses) {
     buses.write(cpu.registers.psr | 0b_0011_0000);
-    cpu.set_interrupt_disable_flag(true);
+    cpu.registers.psr.set_interrupt_disable(true);
 }

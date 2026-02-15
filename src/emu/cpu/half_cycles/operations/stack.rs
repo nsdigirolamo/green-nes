@@ -1,4 +1,7 @@
-use crate::emu::{buses::Buses, cpu::CPU};
+use crate::emu::{
+    buses::Buses,
+    cpu::{CPU, registers::flags::Flags},
+};
 
 /// # Push Accumulator
 ///
@@ -20,8 +23,8 @@ pub fn php(cpu: &mut CPU, buses: &mut Buses) {
 pub fn pla(cpu: &mut CPU, buses: &mut Buses) {
     let result = buses.read();
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.a = result
 }
 
@@ -32,15 +35,15 @@ pub fn pla(cpu: &mut CPU, buses: &mut Buses) {
 pub fn plp(cpu: &mut CPU, buses: &mut Buses) {
     // B and extra bit are ignored
     let masked_stack_status = buses.read() & 0b_1100_1111;
-    let masked_processor_status = cpu.registers.psr & 0b_0011_0000;
-    let new_processor_status = masked_stack_status | masked_processor_status;
+    let masked_psr = cpu.registers.psr & 0b_0011_0000;
+    let new_psr = masked_stack_status | masked_psr;
 
-    let old_interrupt_disable = cpu.get_interrupt_disable_flag();
-    let new_interrupt_disable = new_processor_status >> 2 & 1 == 1;
+    let old_i = cpu.registers.psr.get_interrupt_disable();
+    let new_i = new_psr >> 2 & 1 == 1;
 
-    cpu.registers.psr = new_processor_status;
+    cpu.registers.psr = new_psr.into();
 
     // Set back to old interrupt disable flag, then re-apply with delay.
-    cpu.set_interrupt_disable_flag(old_interrupt_disable);
-    cpu.set_interrupt_disable_flag_with_delay(new_interrupt_disable);
+    cpu.registers.psr.set_interrupt_disable(old_i);
+    cpu.interrupt_disabled = Some(new_i);
 }

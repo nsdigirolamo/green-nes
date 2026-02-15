@@ -16,6 +16,7 @@ use crate::{
 
 pub mod buses;
 pub mod cycles;
+pub mod flags;
 pub mod half_cycles;
 pub mod instructions;
 pub mod registers;
@@ -26,7 +27,9 @@ pub struct CPU {
     half_cycle_count: u64,
     is_halted: bool,
     registers: Registers,
+    /// Buses internal to the CPU.
     buses: Buses,
+    /// Indicates that a memory page was crossed in a previous cycle.
     crossed_page: bool,
     /// The state of the NMI pin on the external buses during the previous
     /// cycle.
@@ -63,7 +66,8 @@ impl CPU {
             Some(cycle) => self.run_cycle(buses, cycle),
             None => {
                 let nmi_needs_handling = self.nmi_detected;
-                let irq_needs_handling = self.irq_detected && !self.get_interrupt_disable_flag();
+                let irq_needs_handling =
+                    self.irq_detected && !self.registers.psr.get_interrupt_disable();
 
                 if nmi_needs_handling || irq_needs_handling {
                     self.run_cycle(buses, [get_pc_without_increment, read_opcode]);
@@ -82,7 +86,7 @@ impl CPU {
                     get_cycles(self, self.registers.ir);
 
                     if let Some(interrupt_disable) = self.interrupt_disabled.take() {
-                        self.set_interrupt_disable_flag(interrupt_disable);
+                        self.registers.psr.set_interrupt_disable(interrupt_disable);
                     }
                 }
             }
@@ -122,7 +126,7 @@ impl CPU {
     }
 
     pub fn reset(&mut self, buses: &mut ExternalBuses, initial_pc: Option<u16>) {
-        self.set_interrupt_disable_flag(true);
+        self.registers.psr.set_interrupt_disable(true);
         self.registers.pc = match initial_pc {
             Some(addr) => split_u16!(addr),
             None => {
@@ -164,111 +168,5 @@ impl CPU {
     pub fn increment_pc(&mut self) {
         let address = concat_u8!(self.registers.pc.0, self.registers.pc.1);
         self.registers.pc = split_u16!(address.wrapping_add(1));
-    }
-
-    pub fn get_negative_flag(&self) -> bool {
-        (self.registers.psr & 0b10000000) != 0
-    }
-
-    pub fn set_negative_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b10000000
-        } else {
-            self.registers.psr & 0b01111111
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn get_overflow_flag(&self) -> bool {
-        (self.registers.psr & 0b01000000) != 0
-    }
-
-    pub fn set_overflow_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b01000000
-        } else {
-            self.registers.psr & 0b10111111
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn get_b_flag(&self) -> bool {
-        (self.registers.psr & 0b00010000) != 0
-    }
-
-    pub fn set_b_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b00010000
-        } else {
-            self.registers.psr & 0b11101111
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn get_1_flag(&self) -> bool {
-        (self.registers.psr & 0b_0010_0000) != 0
-    }
-
-    pub fn get_decimal_mode_flag(&self) -> bool {
-        (self.registers.psr & 0b00001000) != 0
-    }
-
-    pub fn set_decimal_mode_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b00001000
-        } else {
-            self.registers.psr & 0b11110111
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn get_interrupt_disable_flag(&self) -> bool {
-        (self.registers.psr & 0b00000100) != 0
-    }
-
-    pub fn set_interrupt_disable_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b00000100
-        } else {
-            self.registers.psr & 0b11111011
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn set_interrupt_disable_flag_with_delay(&mut self, flag: bool) {
-        self.interrupt_disabled = Some(flag);
-    }
-
-    pub fn get_zero_flag(&self) -> bool {
-        (self.registers.psr & 0b00000010) != 0
-    }
-
-    pub fn set_zero_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b00000010
-        } else {
-            self.registers.psr & 0b11111101
-        };
-
-        self.registers.psr = new_status;
-    }
-
-    pub fn get_carry_flag(&self) -> bool {
-        (self.registers.psr & 0b00000001) != 0
-    }
-
-    pub fn set_carry_flag(&mut self, flag: bool) {
-        let new_status = if flag {
-            self.registers.psr | 0b00000001
-        } else {
-            self.registers.psr & 0b11111110
-        };
-
-        self.registers.psr = new_status;
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     did_signed_overflow,
     emu::{
         buses::Buses,
-        cpu::{CPU, half_cycles::get_effective_address},
+        cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
     },
 };
 
@@ -13,8 +13,8 @@ pub fn inc(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = data.wrapping_add(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     buses.write(result);
 }
 
@@ -25,8 +25,8 @@ pub fn inx(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.x_index;
     let result = data.wrapping_add(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.x_index = result;
 }
 
@@ -37,8 +37,8 @@ pub fn iny(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.y_index;
     let result = data.wrapping_add(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.y_index = result;
 }
 
@@ -49,8 +49,8 @@ pub fn dec(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = data.wrapping_sub(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     buses.write(result);
 }
 
@@ -61,8 +61,8 @@ pub fn dex(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.x_index;
     let result = data.wrapping_sub(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.x_index = result;
 }
 
@@ -73,8 +73,8 @@ pub fn dey(cpu: &mut CPU, _: &mut Buses) {
     let data = cpu.registers.y_index;
     let result = data.wrapping_sub(1);
 
-    cpu.set_zero_flag(result == 0);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.y_index = result;
 }
 
@@ -85,15 +85,15 @@ pub fn adc(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let accumulator = cpu.registers.a;
     let (sum, overflow1) = accumulator.overflowing_add(data);
-    let (result, overflow2) = sum.overflowing_add(cpu.get_carry_flag() as u8);
+    let (result, overflow2) = sum.overflowing_add(cpu.registers.psr.get_carry() as u8);
     let did_unsigned_overflow = overflow1 | overflow2;
     let did_signed_overflow = did_signed_overflow!(accumulator, data, result);
 
     cpu.registers.a = result;
-    cpu.set_carry_flag(did_unsigned_overflow);
-    cpu.set_zero_flag(result == 0);
-    cpu.set_overflow_flag(did_signed_overflow);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_carry(did_unsigned_overflow);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_overflow(did_signed_overflow);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Add With Carry
@@ -128,15 +128,15 @@ pub fn sbc(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let accumulator = cpu.registers.a;
     let (sum, overflow1) = accumulator.overflowing_add(!data);
-    let (result, overflow2) = sum.overflowing_add(cpu.get_carry_flag() as u8);
+    let (result, overflow2) = sum.overflowing_add(cpu.registers.psr.get_carry() as u8);
     let did_unsigned_overflow = overflow1 | overflow2;
     let did_signed_overflow = did_signed_overflow!(accumulator, !data, result);
 
     cpu.registers.a = result;
-    cpu.set_carry_flag(did_unsigned_overflow);
-    cpu.set_zero_flag(result == 0);
-    cpu.set_overflow_flag(did_signed_overflow);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_carry(did_unsigned_overflow);
+    cpu.registers.psr.set_zero(result == 0);
+    cpu.registers.psr.set_overflow(did_signed_overflow);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Subtract With Carry

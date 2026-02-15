@@ -12,6 +12,7 @@ use crate::emu::cpu::{
     },
 };
 
+/// A single execution cycle for the CPU.
 pub type Cycle = [HalfCycle; 2];
 
 /// Fetches the value addressed by the program counter and stores it into the

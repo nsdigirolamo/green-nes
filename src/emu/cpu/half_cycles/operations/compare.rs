@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address},
+    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
 };
 
 /// # Compare Accumulator
@@ -10,9 +10,9 @@ pub fn cmp(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.a.wrapping_sub(data);
 
-    cpu.set_carry_flag(cpu.registers.a >= data);
-    cpu.set_zero_flag(cpu.registers.a == data);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_carry(cpu.registers.a >= data);
+    cpu.registers.psr.set_zero(cpu.registers.a == data);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Compare Accumulator
@@ -46,9 +46,9 @@ pub fn cpx(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.x_index.wrapping_sub(data);
 
-    cpu.set_carry_flag(cpu.registers.x_index >= data);
-    cpu.set_zero_flag(cpu.registers.x_index == data);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_carry(cpu.registers.x_index >= data);
+    cpu.registers.psr.set_zero(cpu.registers.x_index == data);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }
 
 /// # Compare Y Register
@@ -58,7 +58,7 @@ pub fn cpy(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
     let result = cpu.registers.y_index.wrapping_sub(data);
 
-    cpu.set_carry_flag(cpu.registers.y_index >= data);
-    cpu.set_zero_flag(cpu.registers.y_index == data);
-    cpu.set_negative_flag((result & 0b_1000_0000) != 0);
+    cpu.registers.psr.set_carry(cpu.registers.y_index >= data);
+    cpu.registers.psr.set_zero(cpu.registers.y_index == data);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
 }

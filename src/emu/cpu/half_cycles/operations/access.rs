@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address},
+    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
 };
 
 /// # Load Accumulator
@@ -10,8 +10,8 @@ pub fn lda(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
     cpu.registers.a = data;
-    cpu.set_zero_flag(data == 0);
-    cpu.set_negative_flag(data >> 7 == 1);
+    cpu.registers.psr.set_zero(data == 0);
+    cpu.registers.psr.set_negative(data & Flags::N != 0);
 }
 
 /// # Load Accumulator
@@ -45,8 +45,8 @@ pub fn ldx(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
     cpu.registers.x_index = data;
-    cpu.set_zero_flag(data == 0);
-    cpu.set_negative_flag(data >> 7 == 1);
+    cpu.registers.psr.set_zero(data == 0);
+    cpu.registers.psr.set_negative(data & Flags::N != 0);
 }
 
 /// # Load X Register
@@ -68,8 +68,8 @@ pub fn ldy(cpu: &mut CPU, buses: &mut Buses) {
     let data = buses.read();
 
     cpu.registers.y_index = data;
-    cpu.set_zero_flag(data == 0);
-    cpu.set_negative_flag(data >> 7 == 1);
+    cpu.registers.psr.set_zero(data == 0);
+    cpu.registers.psr.set_negative(data & Flags::N != 0);
 }
 
 /// # Load Y Register
