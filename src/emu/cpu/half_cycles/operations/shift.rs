@@ -13,7 +13,7 @@ pub fn asl_m(cpu: &mut CPU, buses: &mut Buses) {
 
     cpu.registers.psr.set_carry(data & Flags::N != 0);
     cpu.registers.psr.set_zero(result == 0);
-    cpu.registers.psr.set_negative(data & Flags::N != 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     buses.write(result);
 }
 
@@ -27,7 +27,7 @@ pub fn asl_a(cpu: &mut CPU, _: &mut Buses) {
 
     cpu.registers.psr.set_carry(data & Flags::N != 0);
     cpu.registers.psr.set_zero(result == 0);
-    cpu.registers.psr.set_negative(data & Flags::N != 0);
+    cpu.registers.psr.set_negative(result & Flags::N != 0);
     cpu.registers.a = result;
 }
 
