@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
+    cpu::{CPU, half_cycles::get_effective_addr, registers::flags::Flags},
 };
 
 /// # Load Accumulator
@@ -22,7 +22,7 @@ pub fn lda_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     lda(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, lda]);
+        cpu.cycle_queue.push_back([get_effective_addr, lda]);
     }
 }
 
@@ -34,7 +34,7 @@ pub fn lda_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     lda(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, lda]);
+        cpu.cycle_queue.push_back([get_effective_addr, lda]);
     }
 }
 
@@ -57,7 +57,7 @@ pub fn ldx_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ldx(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, ldx]);
+        cpu.cycle_queue.push_back([get_effective_addr, ldx]);
     }
 }
 
@@ -80,7 +80,7 @@ pub fn ldy_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ldy(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, ldy]);
+        cpu.cycle_queue.push_back([get_effective_addr, ldy]);
     }
 }
 

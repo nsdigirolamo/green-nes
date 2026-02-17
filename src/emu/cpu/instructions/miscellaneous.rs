@@ -6,7 +6,7 @@ pub struct Push {
 
 impl Instruction<2> for Push {
     fn get_cycles(&self) -> [Cycle; 2] {
-        [[get_pc_without_increment, read_data], [push_stack, self.op]]
+        [[get_pc, read_data], [push_stack, self.op]]
     }
 }
 
@@ -17,7 +17,7 @@ pub struct Pull {
 impl Instruction<3> for Pull {
     fn get_cycles(&self) -> [Cycle; 3] {
         [
-            [get_pc_without_increment, read_data],
+            [get_pc, read_data],
             [pop_stack, read_data],
             [get_sp, self.op],
         ]
@@ -35,7 +35,7 @@ impl Instruction<5> for JumpToSubroutine {
             [get_sp, read_data],
             PUSH_PC_HIGH_TO_STACK,
             PUSH_PC_LOW_TO_STACK,
-            [get_pc, self.op],
+            [get_pc_with_inc, self.op],
         ]
     }
 }
@@ -45,12 +45,12 @@ pub struct Break {}
 impl Instruction<6> for Break {
     fn get_cycles(&self) -> [Cycle; 6] {
         [
-            [get_pc, read_data],
+            [get_pc_with_inc, read_data],
             PUSH_PC_HIGH_TO_STACK,
             PUSH_PC_LOW_TO_STACK,
             [push_stack, write_break_status],
-            [get_low_irq_vector, read_low_pc_address_byte],
-            [get_high_irq_vector, read_high_pc_address_byte],
+            [get_irq_vector_low_byte, read_pc_low_byte],
+            [get_irq_vector_high_byte, read_pc_high_byte],
         ]
     }
 }
@@ -62,11 +62,11 @@ pub struct ReturnFromInterrupt {
 impl Instruction<5> for ReturnFromInterrupt {
     fn get_cycles(&self) -> [Cycle; 5] {
         [
-            [get_pc, read_data],
+            [get_pc_with_inc, read_data],
             [pop_stack, read_data],
             [pop_stack, self.op],
-            [pop_stack, read_low_pc_address_byte],
-            [get_sp, read_high_pc_address_byte],
+            [pop_stack, read_pc_low_byte],
+            [get_sp, read_pc_high_byte],
         ]
     }
 }
@@ -77,7 +77,7 @@ pub struct JumpAbsolute {
 
 impl Instruction<2> for JumpAbsolute {
     fn get_cycles(&self) -> [Cycle; 2] {
-        [FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc, self.op]]
+        [FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc_with_inc, self.op]]
     }
 }
 
@@ -86,10 +86,10 @@ pub struct JumpIndirect {}
 impl Instruction<4> for JumpIndirect {
     fn get_cycles(&self) -> [Cycle; 4] {
         [
-            [get_pc, read_low_indirect_address_byte],
-            [get_pc, read_high_indirect_address_byte],
-            [get_indirect_low_address_byte, read_low_pc_address_byte],
-            [get_indirect_high_address_byte, read_high_pc_address_byte],
+            [get_pc_with_inc, read_indirect_addr_low_byte],
+            [get_pc_with_inc, read_indirect_addr_high_byte],
+            [get_indirect_addr, read_pc_low_byte],
+            [get_indirect_addr_high_byte, read_pc_high_byte],
         ]
     }
 }
@@ -99,11 +99,11 @@ pub struct ReturnFromSubroutine {}
 impl Instruction<5> for ReturnFromSubroutine {
     fn get_cycles(&self) -> [Cycle; 5] {
         [
-            [get_pc, read_data],
+            [get_pc_with_inc, read_data],
             [pop_stack, read_data],
-            [pop_stack, read_low_pc_address_byte],
-            [get_sp, read_high_pc_address_byte],
-            [get_pc, read_data],
+            [pop_stack, read_pc_low_byte],
+            [get_sp, read_pc_high_byte],
+            [get_pc_with_inc, read_data],
         ]
     }
 }
@@ -114,6 +114,6 @@ pub struct Branch {
 
 impl Instruction<1> for Branch {
     fn get_cycles(&self) -> [Cycle; 1] {
-        [[get_pc, self.op]]
+        [[get_pc_with_inc, self.op]]
     }
 }

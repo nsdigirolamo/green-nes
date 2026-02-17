@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
+    cpu::{CPU, half_cycles::get_effective_addr, registers::flags::Flags},
 };
 
 /// # Bitwise AND
@@ -23,7 +23,7 @@ pub fn and_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     and(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, and]);
+        cpu.cycle_queue.push_back([get_effective_addr, and]);
     }
 }
 
@@ -35,7 +35,7 @@ pub fn and_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     and(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, and]);
+        cpu.cycle_queue.push_back([get_effective_addr, and]);
     }
 }
 
@@ -75,7 +75,7 @@ pub fn eor_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     eor(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, eor]);
+        cpu.cycle_queue.push_back([get_effective_addr, eor]);
     }
 }
 
@@ -87,7 +87,7 @@ pub fn eor_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     eor(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, eor]);
+        cpu.cycle_queue.push_back([get_effective_addr, eor]);
     }
 }
 
@@ -111,7 +111,7 @@ pub fn ora_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     ora(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, ora]);
+        cpu.cycle_queue.push_back([get_effective_addr, ora]);
     }
 }
 
@@ -123,6 +123,6 @@ pub fn ora_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     ora(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, ora]);
+        cpu.cycle_queue.push_back([get_effective_addr, ora]);
     }
 }

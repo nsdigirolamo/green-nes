@@ -2,7 +2,7 @@ use crate::{
     did_signed_overflow,
     emu::{
         buses::Buses,
-        cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
+        cpu::{CPU, half_cycles::get_effective_addr, registers::flags::Flags},
     },
 };
 
@@ -104,7 +104,7 @@ pub fn adc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     adc(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, adc]);
+        cpu.cycle_queue.push_back([get_effective_addr, adc]);
     }
 }
 
@@ -116,7 +116,7 @@ pub fn adc_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     adc(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, adc]);
+        cpu.cycle_queue.push_back([get_effective_addr, adc]);
     }
 }
 
@@ -147,7 +147,7 @@ pub fn sbc_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     sbc(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, sbc]);
+        cpu.cycle_queue.push_back([get_effective_addr, sbc]);
     }
 }
 
@@ -159,6 +159,6 @@ pub fn sbc_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     sbc(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, sbc]);
+        cpu.cycle_queue.push_back([get_effective_addr, sbc]);
     }
 }

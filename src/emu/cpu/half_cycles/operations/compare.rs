@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address, registers::flags::Flags},
+    cpu::{CPU, half_cycles::get_effective_addr, registers::flags::Flags},
 };
 
 /// # Compare Accumulator
@@ -23,7 +23,7 @@ pub fn cmp_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     cmp(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, cmp]);
+        cpu.cycle_queue.push_back([get_effective_addr, cmp]);
     }
 }
 
@@ -35,7 +35,7 @@ pub fn cmp_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     cmp(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, cmp]);
+        cpu.cycle_queue.push_back([get_effective_addr, cmp]);
     }
 }
 

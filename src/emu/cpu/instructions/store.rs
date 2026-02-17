@@ -8,7 +8,7 @@ impl Instruction<2> for ZeroPage {
     fn get_cycles(&self) -> [Cycle; 2] {
         [
             FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
-            [get_effective_zero_page_address, self.op],
+            [get_effective_zero_page_addr, self.op],
         ]
     }
 }
@@ -22,7 +22,7 @@ impl Instruction<3> for Absolute {
         [
             FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
             FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE,
-            [get_effective_address, self.op],
+            [get_effective_addr, self.op],
         ]
     }
 }
@@ -37,14 +37,14 @@ impl Instruction<5> for IndirectX {
             FETCH_LOW_BASE_ADDRESS_BYTE,
             READ_FROM_BASE_ZERO_PAGE_ADDRESS,
             [
-                get_indirect_x_indexed_low_address_byte,
-                read_low_effective_address_byte,
+                get_base_zero_page_x_indexed_addr,
+                read_effective_addr_low_byte,
             ],
             [
-                get_indirect_x_indexed_high_address_byte,
-                read_high_effective_address_byte,
+                get_base_zero_page_x_indexed_addr_high_byte,
+                read_effective_addr_high_byte,
             ],
-            [get_effective_address, self.op],
+            [get_effective_addr, self.op],
         ]
     }
 }
@@ -56,17 +56,14 @@ pub struct IndirectY {
 impl Instruction<5> for IndirectY {
     fn get_cycles(&self) -> [Cycle; 5] {
         [
-            [get_pc, read_low_indirect_address_byte],
+            [get_pc_with_inc, read_indirect_addr_low_byte],
+            [get_indirect_zero_page_addr, read_base_addr_low_byte],
             [
-                get_indirect_zero_page_low_address_byte,
-                read_low_base_address_byte,
+                get_indirect_zero_page_addr_high_byte,
+                read_base_addr_high_byte,
             ],
-            [
-                get_indirect_zero_page_high_address_byte,
-                read_high_base_address_byte,
-            ],
-            [get_indirect_y_indexed_address, read_data],
-            [get_effective_address, self.op],
+            [get_indirect_y_indexed_addr, read_data],
+            [get_effective_addr, self.op],
         ]
     }
 }
@@ -80,8 +77,8 @@ impl Instruction<4> for AbsoluteX {
         [
             FETCH_LOW_BASE_ADDRESS_BYTE,
             FETCH_HIGH_BASE_ADDRESS_BYTE,
-            [get_x_indexed_base_address_with_carry, read_data],
-            [get_effective_address, self.op],
+            [get_base_addr_x_indexed_with_carry, read_data],
+            [get_effective_addr, self.op],
         ]
     }
 }
@@ -95,8 +92,8 @@ impl Instruction<4> for AbsoluteY {
         [
             FETCH_LOW_BASE_ADDRESS_BYTE,
             FETCH_HIGH_BASE_ADDRESS_BYTE,
-            [get_y_indexed_base_address_with_carry, read_data],
-            [get_effective_address, self.op],
+            [get_base_addr_y_indexed_with_carry, read_data],
+            [get_effective_addr, self.op],
         ]
     }
 }
@@ -109,8 +106,8 @@ impl Instruction<3> for ZeroPageX {
     fn get_cycles(&self) -> [Cycle; 3] {
         [
             FETCH_LOW_BASE_ADDRESS_BYTE,
-            [get_base_zero_page_address, read_data],
-            [get_effective_zero_page_x_indexed_address, self.op],
+            [get_base_zero_page_addr, read_data],
+            [get_base_zero_page_x_indexed_addr, self.op],
         ]
     }
 }
@@ -123,8 +120,8 @@ impl Instruction<3> for ZeroPageY {
     fn get_cycles(&self) -> [Cycle; 3] {
         [
             FETCH_LOW_BASE_ADDRESS_BYTE,
-            [get_base_zero_page_address, read_data],
-            [get_effective_zero_page_y_indexed_address, self.op],
+            [get_base_zero_page_addr, read_data],
+            [get_base_zero_page_y_indexed_addr, self.op],
         ]
     }
 }

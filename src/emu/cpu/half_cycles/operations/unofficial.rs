@@ -1,6 +1,6 @@
 use crate::emu::{
     buses::Buses,
-    cpu::{CPU, half_cycles::get_effective_address},
+    cpu::{CPU, half_cycles::get_effective_addr},
 };
 
 // See: https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
@@ -54,7 +54,7 @@ pub fn lax_indirect_y(cpu: &mut CPU, buses: &mut Buses) {
     lax(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, lax]);
+        cpu.cycle_queue.push_back([get_effective_addr, lax]);
     }
 }
 
@@ -66,7 +66,7 @@ pub fn lax_abs_index(cpu: &mut CPU, buses: &mut Buses) {
     lax(cpu, buses);
 
     if cpu.crossed_page {
-        cpu.cycle_queue.push_back([get_effective_address, lax]);
+        cpu.cycle_queue.push_back([get_effective_addr, lax]);
     }
 }
 

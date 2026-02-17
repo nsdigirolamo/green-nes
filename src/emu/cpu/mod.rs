@@ -7,7 +7,7 @@ use crate::{
         cpu::{
             buses::Buses,
             cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
-            half_cycles::{get_pc_without_increment, read_opcode},
+            half_cycles::{get_pc, read_opcode},
             registers::{REGISTERS_AT_POWERON, Registers},
         },
     },
@@ -70,7 +70,7 @@ impl CPU {
                     self.irq_detected && !self.registers.psr.get_interrupt_disable();
 
                 if nmi_needs_handling || irq_needs_handling {
-                    self.run_cycle(buses, [get_pc_without_increment, read_opcode]);
+                    self.run_cycle(buses, [get_pc, read_opcode]);
 
                     if nmi_needs_handling {
                         self.cycle_queue.extend(HANDLE_NMI.to_vec());

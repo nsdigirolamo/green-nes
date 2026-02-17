@@ -17,70 +17,69 @@ pub type Cycle = [HalfCycle; 2];
 
 /// Fetches the value addressed by the program counter and stores it into the
 /// instruction register.
-pub const FETCH_INSTRUCTION: Cycle = [get_pc, read_opcode];
+pub const FETCH_INSTRUCTION: Cycle = [get_pc_with_inc, read_opcode];
 
 /// Fetches the value addressed by the program counter and stores it into the
 /// effective address high byte.
-pub const FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc, read_high_effective_address_byte];
+pub const FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE: Cycle =
+    [get_pc_with_inc, read_effective_addr_high_byte];
 
 /// Fetches the value addressed by the program counter and stores it into the
 /// effective address low byte.
-pub const FETCH_LOW_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc, read_low_effective_address_byte];
+pub const FETCH_LOW_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_effective_addr_low_byte];
 
 /// Reads the value addressed by the effective address, placing it on the data
 /// bus.
-pub const READ_FROM_EFFECTIVE_ADDRESS: Cycle = [get_effective_address, read_data];
+pub const READ_FROM_EFFECTIVE_ADDRESS: Cycle = [get_effective_addr, read_data];
 
 /// Writes the value from the data bus to the location addressed by the
 /// effective address.
-pub const WRITE_TO_EFFECTIVE_ADDRESS: Cycle = [get_effective_address, write_data];
+pub const WRITE_TO_EFFECTIVE_ADDRESS: Cycle = [get_effective_addr, write_data];
 
 /// Reads the value addressed by the low byte of the effective address from the
 /// zero page, placing it on the data bus.
-pub const READ_FROM_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle =
-    [get_effective_zero_page_address, read_data];
+pub const READ_FROM_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle = [get_effective_zero_page_addr, read_data];
 
 /// Writes the value from the data bus to the zero page location addressed by
 /// the low byte of the effective address.
-pub const WRITE_TO_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle =
-    [get_effective_zero_page_address, write_data];
+pub const WRITE_TO_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle = [get_effective_zero_page_addr, write_data];
 
 /// Fetches the value addressed by the program counter and stores it into the
 /// base address high byte.
-pub const FETCH_HIGH_BASE_ADDRESS_BYTE: Cycle = [get_pc, read_high_base_address_byte];
+pub const FETCH_HIGH_BASE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_base_addr_high_byte];
 
 /// Fetches the value addressed by the program counter and stores it into the
 /// base address low byte.
-pub const FETCH_LOW_BASE_ADDRESS_BYTE: Cycle = [get_pc, read_low_base_address_byte];
+pub const FETCH_LOW_BASE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_base_addr_low_byte];
 
 /// Reads from the value addressed by the low byte of the base address from the
 /// zero page, placing it on the data bus.
-pub const READ_FROM_BASE_ZERO_PAGE_ADDRESS: Cycle = [get_base_zero_page_address, read_data];
+pub const READ_FROM_BASE_ZERO_PAGE_ADDRESS: Cycle = [get_base_zero_page_addr, read_data];
 
 /// Pushes the high byte of the program counter to the top of the stack.
-pub const PUSH_PC_HIGH_TO_STACK: Cycle = [push_stack, write_pc_high];
+pub const PUSH_PC_HIGH_TO_STACK: Cycle = [push_stack, write_pc_high_byte];
 
 /// Pushes the low byte of the program counter to the top of the stack.
-pub const PUSH_PC_LOW_TO_STACK: Cycle = [push_stack, write_pc_low];
+pub const PUSH_PC_LOW_TO_STACK: Cycle = [push_stack, write_pc_low_byte];
 
 /// Same functionality as BRK but with different vector.
 pub const HANDLE_NMI: [Cycle; 6] = [
-    [get_pc_without_increment, read_data],
-    [push_stack, write_pc_high],
-    [push_stack, write_pc_low],
+    [get_pc, read_data],
+    [push_stack, write_pc_high_byte],
+    [push_stack, write_pc_low_byte],
     [push_stack, write_break_status],
-    [get_low_nmi_vector, read_low_pc_address_byte],
-    [get_high_nmi_vector, read_high_pc_address_byte],
+    [get_nmi_vector_low_byte, read_pc_low_byte],
+    [get_nmi_vector_high_byte, read_pc_high_byte],
 ];
 
 /// Same functionality as BRK.
 pub const HANDLE_IRQ: [Cycle; 6] = [
-    [get_pc_without_increment, read_data],
-    [push_stack, write_pc_high],
-    [push_stack, write_pc_low],
+    [get_pc, read_data],
+    [push_stack, write_pc_high_byte],
+    [push_stack, write_pc_low_byte],
     [push_stack, write_break_status],
-    [get_low_irq_vector, read_low_pc_address_byte],
-    [get_high_irq_vector, read_high_pc_address_byte],
+    [get_irq_vector_low_byte, read_pc_low_byte],
+    [get_irq_vector_high_byte, read_pc_high_byte],
 ];
 
 pub fn get_cycles(cpu: &mut CPU, opcode: u8) {
