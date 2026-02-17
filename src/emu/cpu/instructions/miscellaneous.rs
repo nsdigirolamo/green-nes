@@ -31,10 +31,10 @@ pub struct JumpToSubroutine {
 impl Instruction<5> for JumpToSubroutine {
     fn get_cycles(&self) -> [Cycle; 5] {
         [
-            FETCH_LOW_EFFECTIVE_ADDRESS_BYTE,
+            GET_EFFECTIVE_ADDR_LOW_BYTE,
             [get_sp, read_data],
-            PUSH_PC_HIGH_TO_STACK,
-            PUSH_PC_LOW_TO_STACK,
+            [push_stack, write_pc_high_byte],
+            [push_stack, write_pc_low_byte],
             [get_pc_with_inc, self.op],
         ]
     }
@@ -46,8 +46,8 @@ impl Instruction<6> for Break {
     fn get_cycles(&self) -> [Cycle; 6] {
         [
             [get_pc_with_inc, read_data],
-            PUSH_PC_HIGH_TO_STACK,
-            PUSH_PC_LOW_TO_STACK,
+            [push_stack, write_pc_high_byte],
+            [push_stack, write_pc_low_byte],
             [push_stack, write_break_status],
             [get_irq_vector_low_byte, read_pc_low_byte],
             [get_irq_vector_high_byte, read_pc_high_byte],
@@ -77,7 +77,7 @@ pub struct JumpAbsolute {
 
 impl Instruction<2> for JumpAbsolute {
     fn get_cycles(&self) -> [Cycle; 2] {
-        [FETCH_LOW_EFFECTIVE_ADDRESS_BYTE, [get_pc_with_inc, self.op]]
+        [GET_EFFECTIVE_ADDR_LOW_BYTE, [get_pc_with_inc, self.op]]
     }
 }
 

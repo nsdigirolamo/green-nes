@@ -15,52 +15,25 @@ use crate::emu::cpu::{
 /// A single execution cycle for the CPU.
 pub type Cycle = [HalfCycle; 2];
 
-/// Fetches the value addressed by the program counter and stores it into the
-/// instruction register.
-pub const FETCH_INSTRUCTION: Cycle = [get_pc_with_inc, read_opcode];
+/// Gets the opcode at the `PC` address and loads it into `IR`.
+pub const GET_OPCODE: Cycle = [get_pc_with_inc, read_opcode];
 
-/// Fetches the value addressed by the program counter and stores it into the
-/// effective address high byte.
-pub const FETCH_HIGH_EFFECTIVE_ADDRESS_BYTE: Cycle =
-    [get_pc_with_inc, read_effective_addr_high_byte];
-
-/// Fetches the value addressed by the program counter and stores it into the
-/// effective address low byte.
-pub const FETCH_LOW_EFFECTIVE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_effective_addr_low_byte];
-
-/// Reads the value addressed by the effective address, placing it on the data
-/// bus.
+/// Gets the byte at the `PC` address and loads it into `ADH`.
+pub const GET_EFFECTIVE_ADDR_HIGH_BYTE: Cycle = [get_pc_with_inc, read_effective_addr_high_byte];
+/// Gets the byte at the `PC` address and loads it into `ADL`.
+pub const GET_EFFECTIVE_ADDR_LOW_BYTE: Cycle = [get_pc_with_inc, read_effective_addr_low_byte];
+/// Reads the byte at the effective address and loads it onto the data bus.
 pub const READ_FROM_EFFECTIVE_ADDRESS: Cycle = [get_effective_addr, read_data];
-
-/// Writes the value from the data bus to the location addressed by the
-/// effective address.
+/// Writes the byte on the data bus to the effective address.
 pub const WRITE_TO_EFFECTIVE_ADDRESS: Cycle = [get_effective_addr, write_data];
 
-/// Reads the value addressed by the low byte of the effective address from the
-/// zero page, placing it on the data bus.
-pub const READ_FROM_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle = [get_effective_zero_page_addr, read_data];
+/// Gets the byte at the `PC` address and loads it into `BAH`.
+pub const GET_BASE_ADDR_HIGH_BYTE: Cycle = [get_pc_with_inc, read_base_addr_high_byte];
+/// Gets the byte at the `PC` address and loads it into `BAL`.
+pub const GET_BASE_ADDR_LOW_BYTE: Cycle = [get_pc_with_inc, read_base_addr_low_byte];
 
-/// Writes the value from the data bus to the zero page location addressed by
-/// the low byte of the effective address.
-pub const WRITE_TO_EFFECTIVE_ZERO_PAGE_ADDRESS: Cycle = [get_effective_zero_page_addr, write_data];
-
-/// Fetches the value addressed by the program counter and stores it into the
-/// base address high byte.
-pub const FETCH_HIGH_BASE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_base_addr_high_byte];
-
-/// Fetches the value addressed by the program counter and stores it into the
-/// base address low byte.
-pub const FETCH_LOW_BASE_ADDRESS_BYTE: Cycle = [get_pc_with_inc, read_base_addr_low_byte];
-
-/// Reads from the value addressed by the low byte of the base address from the
-/// zero page, placing it on the data bus.
-pub const READ_FROM_BASE_ZERO_PAGE_ADDRESS: Cycle = [get_base_zero_page_addr, read_data];
-
-/// Pushes the high byte of the program counter to the top of the stack.
-pub const PUSH_PC_HIGH_TO_STACK: Cycle = [push_stack, write_pc_high_byte];
-
-/// Pushes the low byte of the program counter to the top of the stack.
-pub const PUSH_PC_LOW_TO_STACK: Cycle = [push_stack, write_pc_low_byte];
+/// Reads the byte at the base zero page address and loads it onto the data bus.
+pub const READ_FROM_BASE_ZERO_PAGE_ADDR: Cycle = [get_base_zero_page_addr, read_data];
 
 /// Same functionality as BRK but with different vector.
 pub const HANDLE_NMI: [Cycle; 6] = [

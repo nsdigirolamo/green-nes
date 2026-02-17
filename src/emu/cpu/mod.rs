@@ -6,7 +6,7 @@ use crate::{
         buses::Buses as ExternalBuses,
         cpu::{
             buses::Buses,
-            cycles::{Cycle, FETCH_INSTRUCTION, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+            cycles::{Cycle, GET_OPCODE, HANDLE_IRQ, HANDLE_NMI, get_cycles},
             half_cycles::{get_pc, read_opcode},
             registers::{REGISTERS_AT_POWERON, Registers},
         },
@@ -82,7 +82,7 @@ impl CPU {
                         self.cycle_queue.extend(HANDLE_IRQ.to_vec());
                     }
                 } else {
-                    self.run_cycle(buses, FETCH_INSTRUCTION);
+                    self.run_cycle(buses, GET_OPCODE);
                     get_cycles(self, self.registers.ir);
 
                     if let Some(interrupt_disable) = self.interrupt_disabled.take() {
