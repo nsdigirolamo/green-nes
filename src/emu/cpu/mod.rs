@@ -5,7 +5,6 @@ use crate::{
     emu::{
         buses::Buses as ExternalBuses,
         cpu::{
-            buses::Buses,
             cycles::{Cycle, GET_OPCODE, HANDLE_IRQ, HANDLE_NMI, get_cycles},
             half_cycles::{get_pc, read_opcode},
             registers::{REGISTERS_AT_POWERON, Registers},
@@ -14,12 +13,22 @@ use crate::{
     split_u16,
 };
 
-pub mod buses;
 pub mod cycles;
 pub mod flags;
 pub mod half_cycles;
 pub mod instructions;
 pub mod registers;
+
+#[derive(Default, Clone, Copy)]
+/// Internal CPU buses.
+pub struct Buses {
+    /// Base (BAH, BAL) address bus.
+    pub base_addr: (u8, u8),
+    /// Effective (ADH, ADL) address bus.
+    pub effective_addr: (u8, u8),
+    /// Indirect (IAH, IAL) address bus.
+    pub indirect_addr: (u8, u8),
+}
 
 #[derive(Default, Clone)]
 pub struct CPU {
