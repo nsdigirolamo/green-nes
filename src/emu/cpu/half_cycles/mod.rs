@@ -1,4 +1,8 @@
-use crate::emu::{buses::Buses, cpu::CPU};
+use crate::{
+    concat_u8,
+    emu::{buses::Buses, cpu::CPU},
+    split_u16,
+};
 
 pub mod operations;
 
@@ -10,7 +14,8 @@ pub type HalfCycle = fn(&mut CPU, &mut Buses);
 /// program counter.
 pub fn get_pc_with_inc(cpu: &mut CPU, buses: &mut Buses) {
     buses.addr = cpu.registers.pc;
-    cpu.increment_pc();
+    let new_pc = concat_u8!(cpu.registers.pc.0, cpu.registers.pc.1).wrapping_add(1);
+    cpu.registers.pc = split_u16!(new_pc);
 }
 
 /// Loads the program counter onto the address bus.

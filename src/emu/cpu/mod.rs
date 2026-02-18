@@ -1,11 +1,10 @@
 use std::collections::VecDeque;
 
 use crate::{
-    concat_u8,
     emu::{
         buses::Buses as ExternalBuses,
         cpu::{
-            cycles::{Cycle, GET_OPCODE, HANDLE_IRQ, HANDLE_NMI, get_cycles},
+            cycles::{Cycle, HANDLE_IRQ, HANDLE_NMI},
             half_cycles::{get_pc, read_opcode},
             registers::{REGISTERS_AT_POWERON, Registers},
         },
@@ -70,36 +69,43 @@ impl CPU {
 
     pub fn tick(&mut self, buses: &mut ExternalBuses) {
         let cycle = self.cycle_queue.pop_front();
-
         match cycle {
             Some(cycle) => self.run_cycle(buses, cycle),
             None => {
-                let nmi_needs_handling = self.nmi_detected;
-                let irq_needs_handling =
-                    self.irq_detected && !self.registers.psr.get_interrupt_disable();
+                let interrupted = self.handle_interrupts(buses);
 
-                if nmi_needs_handling || irq_needs_handling {
-                    self.run_cycle(buses, [get_pc, read_opcode]);
+                if interrupted {
+                    return;
+                }
 
-                    if nmi_needs_handling {
-                        self.cycle_queue.extend(HANDLE_NMI.to_vec());
-                        self.nmi_detected = false;
-                        return;
-                    }
+                self.get_cycles(buses);
 
-                    if irq_needs_handling {
-                        self.cycle_queue.extend(HANDLE_IRQ.to_vec());
-                    }
-                } else {
-                    self.run_cycle(buses, GET_OPCODE);
-                    get_cycles(self, self.registers.ir);
-
-                    if let Some(interrupt_disable) = self.interrupt_disabled.take() {
-                        self.registers.psr.set_interrupt_disable(interrupt_disable);
-                    }
+                if let Some(interrupt_disable) = self.interrupt_disabled.take() {
+                    self.registers.psr.set_interrupt_disable(interrupt_disable);
                 }
             }
         }
+    }
+
+    fn handle_interrupts(&mut self, buses: &mut ExternalBuses) -> bool {
+        let nmi = self.nmi_detected;
+        let irq = self.irq_detected && !self.registers.psr.get_interrupt_disable();
+
+        if !(nmi || irq) {
+            return false;
+        }
+
+        if nmi {
+            self.run_cycle(buses, [get_pc, read_opcode]);
+            self.cycle_queue.extend(HANDLE_NMI.to_vec());
+            self.nmi_detected = false;
+        } else if irq {
+            self.run_cycle(buses, [get_pc, read_opcode]);
+            self.cycle_queue.extend(HANDLE_IRQ.to_vec());
+            self.irq_detected = false;
+        }
+
+        true
     }
 
     fn run_cycle(&mut self, buses: &mut ExternalBuses, cycle: Cycle) {
@@ -150,10 +156,6 @@ impl CPU {
         self.cycle_queue.clone()
     }
 
-    pub fn get_half_cycle_count(&self) -> u64 {
-        self.half_cycle_count
-    }
-
     pub fn get_cycle_count(&self) -> u64 {
         self.half_cycle_count / 2
     }
@@ -164,18 +166,5 @@ impl CPU {
 
     pub fn get_registers(&self) -> Registers {
         self.registers
-    }
-
-    pub fn get_buses(&self) -> Buses {
-        self.buses
-    }
-
-    pub fn crossed_page(&self) -> bool {
-        self.crossed_page
-    }
-
-    pub fn increment_pc(&mut self) {
-        let address = concat_u8!(self.registers.pc.0, self.registers.pc.1);
-        self.registers.pc = split_u16!(address.wrapping_add(1));
     }
 }
