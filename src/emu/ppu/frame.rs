@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{array, fmt};
 
 use sdl2::{pixels::Color, rect::Point};
 
@@ -116,18 +116,20 @@ pub fn render_frame(ppu: &PPU) -> Frame {
     for nametable_index in 0..NAMETABLE_SIZE {
         let pattern_index = ppu.buses.read(NAMETABLES_START_ADDR + nametable_index);
         let pattern_start_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
-        let mut pattern = Pattern::default();
 
-        for (row_index, row) in pattern.data.iter_mut().enumerate() {
-            let row_addr = pattern_start_addr + row_index as u16;
-            let low_bits = ppu.buses.read(row_addr);
-            let high_bits = ppu.buses.read(row_addr + PATTERN_HEIGHT_PIXELS);
+        let pattern = Pattern {
+            data: array::from_fn(|row_index| {
+                let row_addr = pattern_start_addr + row_index as u16;
+                let lo_bits = ppu.buses.read(row_addr);
+                let hi_bits = ppu.buses.read(row_addr + PATTERN_HEIGHT_PIXELS);
 
-            for (col_index, pixel) in row.iter_mut().enumerate() {
-                let mask = 0b_1000_0000 >> col_index;
-                *pixel = ((high_bits >> col_index & mask) != 0, (low_bits & mask) != 0);
-            }
-        }
+                array::from_fn(|col_index| {
+                    let mask = 0b_1000_0000 >> col_index;
+
+                    ((hi_bits & mask) != 0, (lo_bits & mask) != 0)
+                })
+            }),
+        };
 
         for (row_index, row) in pattern.data.iter().enumerate() {
             let y = PATTERN_HEIGHT_PIXELS * (nametable_index / PATTERN_COLS_PER_FRAME)
