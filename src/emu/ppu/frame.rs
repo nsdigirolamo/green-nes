@@ -6,7 +6,7 @@ use crate::emu::ppu::{
     PPU,
     nametable::{NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable},
     patterns::{
-        PATTERN_HEIGHT_PIXELS, PATTERN_SIZE, PATTERN_WIDTH_PIXELS, Pattern, PatternTable,
+        PATTERN_HEIGHT_PIXELS, PATTERN_SIZE, PATTERN_WIDTH_PIXELS, PatternTable,
         get_pattern_from_nametable_entry,
     },
 };
@@ -109,49 +109,37 @@ impl fmt::Debug for Frame {
 }
 
 pub fn render_frame(ppu: &PPU) -> Frame {
-    let mut frame = Frame::default();
-
     let pattern_table_addr = ppu.registers.ppu_ctrl.get_background_pattern_table_addr();
 
-    for nametable_index in 0..NAMETABLE_SIZE {
-        let pattern_index = ppu.buses.read(NAMETABLES_START_ADDR + nametable_index);
-        let pattern_start_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
+    let pixels = array::from_fn(|y| {
+        array::from_fn(|x| {
+            let stride = (y / PATTERN_HEIGHT_PIXELS as usize) * PATTERN_COLS_PER_FRAME as usize;
+            let nametable_index = stride + (x / PATTERN_WIDTH_PIXELS as usize);
+            let nametable_addr = NAMETABLES_START_ADDR + nametable_index as u16;
 
-        let pattern = Pattern {
-            data: array::from_fn(|row_index| {
-                let row_addr = pattern_start_addr + row_index as u16;
-                let lo_bits = ppu.buses.read(row_addr);
-                let hi_bits = ppu.buses.read(row_addr + PATTERN_HEIGHT_PIXELS);
+            let pattern_index = ppu.buses.read(nametable_addr);
+            let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
 
-                array::from_fn(|col_index| {
-                    let mask = 0b_1000_0000 >> col_index;
+            let pattern_col_index = x % PATTERN_WIDTH_PIXELS as usize;
+            let pattern_row_index = y % PATTERN_HEIGHT_PIXELS as usize;
 
-                    ((hi_bits & mask) != 0, (lo_bits & mask) != 0)
-                })
-            }),
-        };
+            let pattern_row_addr = pattern_addr + pattern_row_index as u16;
+            let lo_bits = ppu.buses.read(pattern_row_addr);
+            let hi_bits = ppu.buses.read(pattern_row_addr + PATTERN_HEIGHT_PIXELS);
 
-        for (row_index, row) in pattern.data.iter().enumerate() {
-            let y = PATTERN_HEIGHT_PIXELS * (nametable_index / PATTERN_COLS_PER_FRAME)
-                + row_index as u16;
+            let mask = 0b_1000_0000 >> pattern_col_index;
+            let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
 
-            for (col_index, pixel) in row.iter().enumerate() {
-                let x = PATTERN_WIDTH_PIXELS * (nametable_index % PATTERN_COLS_PER_FRAME)
-                    + col_index as u16;
-
-                let color = match pixel {
-                    (false, false) => Color::RGB(32, 32, 32),
-                    (false, true) => Color::RGB(159, 159, 159),
-                    (true, false) => Color::RGB(96, 96, 96),
-                    (true, true) => Color::RGB(223, 223, 223),
-                };
-
-                frame.set_pixel(Point::new(x as i32, y as i32), color);
+            match pixel {
+                (false, false) => (32, 32, 32),
+                (false, true) => (159, 159, 159),
+                (true, false) => (96, 96, 96),
+                (true, true) => (223, 223, 223),
             }
-        }
-    }
+        })
+    });
 
-    frame
+    Frame::new(pixels)
 }
 
 pub fn render_nametable(nametable: &Nametable) -> Frame {
