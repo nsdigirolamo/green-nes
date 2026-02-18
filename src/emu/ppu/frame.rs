@@ -108,38 +108,41 @@ impl fmt::Debug for Frame {
     }
 }
 
-pub fn render_frame(ppu: &PPU) -> Frame {
-    let pattern_table_addr = ppu.registers.ppu_ctrl.get_background_pattern_table_addr();
+impl PPU {
+    pub fn render_frame(&mut self) {
+        let pattern_table_addr = self.registers.ppu_ctrl.get_background_pattern_table_addr();
 
-    let pixels = array::from_fn(|y| {
-        array::from_fn(|x| {
+        let pixels = array::from_fn(|y| {
             let stride = (y / PATTERN_HEIGHT_PIXELS as usize) * PATTERN_COLS_PER_FRAME as usize;
-            let nametable_index = stride + (x / PATTERN_WIDTH_PIXELS as usize);
-            let nametable_addr = NAMETABLES_START_ADDR + nametable_index as u16;
-
-            let pattern_index = ppu.buses.read(nametable_addr);
-            let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
-
-            let pattern_col_index = x % PATTERN_WIDTH_PIXELS as usize;
             let pattern_row_index = y % PATTERN_HEIGHT_PIXELS as usize;
 
-            let pattern_row_addr = pattern_addr + pattern_row_index as u16;
-            let lo_bits = ppu.buses.read(pattern_row_addr);
-            let hi_bits = ppu.buses.read(pattern_row_addr + PATTERN_HEIGHT_PIXELS);
+            array::from_fn(|x| {
+                let nametable_index = stride + (x / PATTERN_WIDTH_PIXELS as usize);
+                let nametable_addr = NAMETABLES_START_ADDR + nametable_index as u16;
 
-            let mask = 0b_1000_0000 >> pattern_col_index;
-            let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
+                let pattern_index = self.buses.read(nametable_addr);
+                let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
 
-            match pixel {
-                (false, false) => (32, 32, 32),
-                (false, true) => (159, 159, 159),
-                (true, false) => (96, 96, 96),
-                (true, true) => (223, 223, 223),
-            }
-        })
-    });
+                let pattern_col_index = x % PATTERN_WIDTH_PIXELS as usize;
 
-    Frame::new(pixels)
+                let pattern_row_addr = pattern_addr + pattern_row_index as u16;
+                let lo_bits = self.buses.read(pattern_row_addr);
+                let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT_PIXELS);
+
+                let mask = 0b_1000_0000 >> pattern_col_index;
+                let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
+
+                match pixel {
+                    (false, false) => (32, 32, 32),
+                    (false, true) => (159, 159, 159),
+                    (true, false) => (96, 96, 96),
+                    (true, true) => (223, 223, 223),
+                }
+            })
+        });
+
+        self.frame = Some(Frame::new(pixels));
+    }
 }
 
 pub fn render_nametable(nametable: &Nametable) -> Frame {

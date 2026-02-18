@@ -4,7 +4,7 @@ use crate::emu::{
     cartridge::Cartridge,
     ppu::{
         buses::Buses,
-        frame::{Frame, render_frame},
+        frame::Frame,
         nametable::{
             ATTRIBUTE_TABLE_SIZE, NAMETABLE_SIZE, NAMETABLES_COUNT, NAMETABLES_START_ADDR,
             Nametable,
@@ -66,7 +66,7 @@ impl PPU {
             if self.scanline_index == VBLANK_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(true);
                 self.update_nmi();
-                self.frame = Some(render_frame(self));
+                self.render_frame();
             } else if self.scanline_index == PRERENDER_LINE_INDEX {
                 self.registers.ppu_status.set_vblank_flag(false);
                 self.update_nmi();
