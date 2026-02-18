@@ -178,8 +178,6 @@ impl PPU {
 
             self.registers.internal.t |= high_byte;
             self.registers.internal.w = true;
-
-            println!("PPU ADDR first write: {data:02X}");
         } else {
             let low_byte = data as u16;
 
@@ -190,11 +188,6 @@ impl PPU {
             // https://www.nesdev.org/wiki/PPU_programmer_reference#PPUADDR
             // https://www.nesdev.org/wiki/PPU_scrolling#PPU_internal_registers
             self.registers.internal.v = self.registers.internal.t;
-
-            println!(
-                "PPU ADDR second write: #{data:02X} v register: &{:04X}",
-                self.registers.internal.v
-            );
         }
     }
 
@@ -216,8 +209,6 @@ impl PPU {
         let new_addr = addr.wrapping_add(addr_incr);
         self.registers.internal.v = new_addr;
 
-        println!("PPU DATA read {data:02X}");
-
         data
     }
 
@@ -227,8 +218,6 @@ impl PPU {
         // First, write to the address specified by the current VRAM address.
         let addr = self.registers.internal.v;
         self.buses.write(addr, data);
-
-        println!("PPU DATA write #{data:02X} to &{addr:04X}");
 
         // Then, increment the address by the value specified in PPUCTRL and
         // store the new value back into the internal v register.
