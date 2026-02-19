@@ -4,7 +4,13 @@ use sdl2::{pixels::Color, rect::Point};
 
 use crate::emu::ppu::{
     PPU,
-    nametable::{NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable},
+    buses::{PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE},
+    nametable::{
+        ATTRIBUTE_AREA_COLS_PER_FRAME, ATTRIBUTE_AREA_HEIGHT_PIXELS, ATTRIBUTE_AREA_WIDTH_PIXELS,
+        NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable, PATTERN_COLS_PER_ATTRIBUTE_AREA,
+        PATTERN_ROWS_PER_ATTRIBUTE_AREA,
+    },
+    palettes::PALETTE_TABLE,
     patterns::{
         PATTERN_HEIGHT_PIXELS, PATTERN_SIZE, PATTERN_WIDTH_PIXELS, PatternTable,
         get_pattern_from_nametable_entry,
@@ -111,20 +117,50 @@ impl fmt::Debug for Frame {
 impl PPU {
     pub fn render_frame(&mut self) {
         let pattern_table_addr = self.registers.ppu_ctrl.get_background_pattern_table_addr();
+        let nametable_addr = NAMETABLES_START_ADDR;
 
         let pixels = array::from_fn(|y| {
-            let stride = (y / PATTERN_HEIGHT_PIXELS as usize) * PATTERN_COLS_PER_FRAME as usize;
-            let pattern_row_index = y % PATTERN_HEIGHT_PIXELS as usize;
-
             array::from_fn(|x| {
-                let nametable_index = stride + (x / PATTERN_WIDTH_PIXELS as usize);
-                let nametable_addr = NAMETABLES_START_ADDR + nametable_index as u16;
+                let nametable_stride =
+                    (y / PATTERN_HEIGHT_PIXELS as usize) * PATTERN_COLS_PER_FRAME as usize;
+                let nametable_index = nametable_stride + (x / PATTERN_WIDTH_PIXELS as usize);
+                let pattern_index = self.buses.read(nametable_addr + nametable_index as u16);
 
-                let pattern_index = self.buses.read(nametable_addr);
-                let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
-
+                let pattern_row_index = y % PATTERN_HEIGHT_PIXELS as usize;
                 let pattern_col_index = x % PATTERN_WIDTH_PIXELS as usize;
 
+                let attribute_stride = (y / ATTRIBUTE_AREA_HEIGHT_PIXELS as usize)
+                    * ATTRIBUTE_AREA_COLS_PER_FRAME as usize;
+                let attribute_index = attribute_stride + (x / ATTRIBUTE_AREA_WIDTH_PIXELS as usize);
+                let attribute = self
+                    .buses
+                    .read(nametable_addr + NAMETABLE_SIZE + attribute_index as u16);
+
+                let palette_index = match (
+                    ((pattern_row_index % PATTERN_ROWS_PER_ATTRIBUTE_AREA as usize) / 2),
+                    ((pattern_col_index % PATTERN_COLS_PER_ATTRIBUTE_AREA as usize) / 2),
+                ) {
+                    (0, 0) => attribute & 0b_0000_0011,
+                    (0, 1) => (attribute >> 2) & 0b_0000_0011,
+                    (1, 0) => (attribute >> 4) & 0b_0000_0011,
+                    (1, 1) => (attribute >> 6) & 0b_0000_0011,
+                    idx => unreachable!("unreachable palette index: ({}, {})", idx.0, idx.1),
+                };
+
+                let palette0 = self.buses.read(
+                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE),
+                );
+                let palette1 = self.buses.read(
+                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 1,
+                );
+                let palette2 = self.buses.read(
+                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 2,
+                );
+                let palette3 = self.buses.read(
+                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 3,
+                );
+
+                let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
                 let pattern_row_addr = pattern_addr + pattern_row_index as u16;
                 let lo_bits = self.buses.read(pattern_row_addr);
                 let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT_PIXELS);
@@ -133,10 +169,10 @@ impl PPU {
                 let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
 
                 match pixel {
-                    (false, false) => (32, 32, 32),
-                    (false, true) => (159, 159, 159),
-                    (true, false) => (96, 96, 96),
-                    (true, true) => (223, 223, 223),
+                    (false, false) => PALETTE_TABLE[palette0 as usize],
+                    (false, true) => PALETTE_TABLE[palette1 as usize],
+                    (true, false) => PALETTE_TABLE[palette2 as usize],
+                    (true, true) => PALETTE_TABLE[palette3 as usize],
                 }
             })
         });

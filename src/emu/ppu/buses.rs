@@ -20,7 +20,9 @@ pub const UNUSED_END_ADDR: u16 = UNUSED_START_ADDR + UNUSED_SIZE;
 
 // Palette RAM
 
-pub const PALETTE_RAM_SIZE: u16 = 32;
+pub const PALETTE_SIZE: u16 = 4;
+pub const PALETTE_COUNT: u16 = 8;
+pub const PALETTE_RAM_SIZE: u16 = PALETTE_SIZE * PALETTE_COUNT;
 pub const PALETTE_RAM_MIRRORS_SIZE: u16 = 224;
 
 pub const PALETTE_RAM_START_ADDR: u16 = UNUSED_END_ADDR;
@@ -95,27 +97,21 @@ impl Buses {
 }
 
 fn do_palette_read(buses: &Buses, addr: u16) -> u8 {
-    let mapped_addr = match addr % PALETTE_RAM_SIZE {
-        0x0010 => 0x0000,
-        0x0014 => 0x0004,
-        0x0018 => 0x0008,
-        0x001C => 0x000C,
-        a => a,
+    let addr = match addr {
+        0x3F00 | 0x3F04 | 0x3F08 | 0x3F0C | 0x3F10 | 0x3F14 | 0x3F18 | 0x3F1C => 0x3F00,
+        _ => addr,
     };
 
-    buses.palette_ram[mapped_addr as usize]
+    buses.palette_ram[(addr % PALETTE_RAM_SIZE) as usize]
 }
 
 fn do_palette_write(buses: &mut Buses, addr: u16, data: u8) {
-    let mapped_addr = match addr % PALETTE_RAM_SIZE {
-        0x0010 => 0x0000,
-        0x0014 => 0x0004,
-        0x0018 => 0x0008,
-        0x001C => 0x000C,
-        a => a,
+    let addr = match addr {
+        0x3F00 | 0x3F04 | 0x3F08 | 0x3F0C | 0x3F10 | 0x3F14 | 0x3F18 | 0x3F1C => 0x3F00,
+        _ => addr,
     };
 
-    buses.palette_ram[mapped_addr as usize] = data
+    buses.palette_ram[(addr % PALETTE_RAM_SIZE) as usize] = data;
 }
 
 fn do_nametable_read(buses: &Buses, addr: u16) -> u8 {
