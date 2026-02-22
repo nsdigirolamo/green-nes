@@ -81,20 +81,20 @@ impl NES {
 
                 canvas.copy(&texture, None, None).unwrap();
                 canvas.present();
+
+                for event in event_pump.poll_iter() {
+                    match event {
+                        Event::Quit { .. }
+                        | Event::KeyDown {
+                            keycode: Some(Keycode::Escape),
+                            ..
+                        } => break 'running,
+                        _ => {}
+                    }
+                }
             }
 
             self.cpu.tick(&mut self.buses);
-
-            for event in event_pump.poll_iter() {
-                match event {
-                    Event::Quit { .. }
-                    | Event::KeyDown {
-                        keycode: Some(Keycode::Escape),
-                        ..
-                    } => break 'running,
-                    _ => {}
-                }
-            }
         }
     }
 
