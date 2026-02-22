@@ -69,8 +69,10 @@ impl NES {
 
             self.buses.tick(true);
 
-            let frame = self.buses.take_frame();
-            if let Some(frame) = frame {
+            if self.buses.ppu.is_frame_ready() {
+                let mut frame = Frame::default();
+                self.buses.ppu.draw_frame(&mut frame);
+
                 texture
                     .update(
                         None,
@@ -109,7 +111,6 @@ impl NES {
             }
 
             self.buses.tick(false);
-            let _ = self.buses.take_frame();
             self.cpu.tick(&mut self.buses);
         }
     }

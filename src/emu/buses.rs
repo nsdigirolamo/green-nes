@@ -1,7 +1,6 @@
 use crate::concat_u8;
 use crate::emu::cartridge::Cartridge;
 use crate::emu::ppu::PPU;
-use crate::emu::ppu::frame::Frame;
 
 // Internal RAM
 
@@ -36,15 +35,14 @@ const TEST_MODE_END_ADDR: u16 = TEST_MODE_START_ADDR + TEST_MODE_SIZE as u16;
 const CARTRIDGE_ROM_MAPPER_START_ADDR: u16 = TEST_MODE_END_ADDR;
 
 pub struct Buses {
-    // Data
     ram: [u8; RAM_SIZE],
     pub addr: (u8, u8),
     pub data: u8,
-    // Connected Devices
-    ppu: PPU,
+    pub ppu: PPU,
     cart: Cartridge,
-    // Misc
+    /// The IRQ pin, where `True` means the pin is pulled low.
     irq: bool,
+    /// The NMI pin, where `True` means the pin is pulled low.
     nmi: bool,
 }
 
@@ -171,11 +169,6 @@ impl Buses {
                 self.cart.mapper.borrow_mut().prg_write(addr, data)
             }
         }
-    }
-
-    /// Take a frame from the PPU.
-    pub fn take_frame(&mut self) -> Option<Frame> {
-        self.ppu.take_frame()
     }
 
     /// Returns `true` if the IRQ pin is pulled low.

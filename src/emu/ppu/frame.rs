@@ -24,7 +24,7 @@ pub const FRAME_HEIGHT_PIXELS: u16 = 240;
 pub const PATTERN_ROWS_PER_FRAME: u16 = FRAME_HEIGHT_PIXELS / PATTERN_HEIGHT_PIXELS;
 pub const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH_PIXELS / PATTERN_WIDTH_PIXELS;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Frame {
     pixels: [[(u8, u8, u8); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize],
 }
@@ -80,22 +80,25 @@ impl Frame {
     }
 
     /// Returns the pixel data for a frame as a flattened list of bytes.
-    pub fn get_pixel_data(&self) -> Vec<u8> {
-        let mut vec = Vec::new();
-
-        for color in self.pixels.as_flattened().iter() {
-            vec.push(color.0);
-            vec.push(color.1);
-            vec.push(color.2);
-        }
-
-        vec
+    pub fn get_pixel_data(
+        &self,
+    ) -> [u8; FRAME_WIDTH_PIXELS as usize * FRAME_HEIGHT_PIXELS as usize * 3] {
+        let flattened = self.pixels.as_flattened();
+        array::from_fn(|i| {
+            let pixel = flattened[i / 3];
+            match i % 3 {
+                0 => pixel.0,
+                1 => pixel.1,
+                2 => pixel.2,
+                _ => unreachable!("mod 3 should not exceed 2"),
+            }
+        })
     }
 }
 
 impl Default for Frame {
     fn default() -> Self {
-        Frame::new([[(255, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
+        Frame::new([[(0, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
     }
 }
 
@@ -177,7 +180,8 @@ impl PPU {
             })
         });
 
-        self.frame = Some(Frame::new(pixels));
+        self.frame = Frame::new(pixels);
+        self.frame_ready = true;
     }
 }
 
