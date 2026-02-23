@@ -5,39 +5,6 @@ use crate::emu::{
 
 // See: https://www.nesdev.org/wiki/Programming_with_unofficial_opcodes
 
-/// # Bitwise AND and Logical Shift Right (Accumulator)
-///
-/// Performs a bitwise AND and then a logical shift right on the accumulator.
-pub fn alr(_: &mut CPU, _: &mut Buses) {
-    todo!("operation not yet implemented: ALR")
-}
-
-/// # Bitwise AND With Carry
-///
-/// Performs a bitwise AND immediate and then copies the resulting negative flag
-/// into the carry flag.
-pub fn anc(_: &mut CPU, _: &mut Buses) {
-    todo!("operation not yet implemented: ANC")
-}
-
-/// # Bitwise AND With Rotate Right (Accumulator)
-///
-/// Performs a bitwise AND and then a rotate right (accumulator), and sets the
-/// flags in the following fashion:
-/// * The negative flag is set to bit seven of the result.
-/// * The zero flag is set if the result is zero.
-/// * The carry bit is set to bit six of the result.
-/// * The overflow bit is set to bit six XOR bit five of the result.
-pub fn arr(_: &mut CPU, _: &mut Buses) {
-    todo!("operation not yet implemented: ARR")
-}
-
-/// # Bitwise AND of X Register
-///
-/// Sets the X register to a bitwise AND of the accumulator and the X register's
-/// current value.
-pub fn axs(_: &mut CPU, _: &mut Buses) {}
-
 /// # Load Accumulator and X Register
 ///
 /// Loads a memory value into the accumulator and X register.
