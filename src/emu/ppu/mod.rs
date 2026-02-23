@@ -5,19 +5,17 @@ use crate::emu::{
     ppu::{
         buses::Buses,
         frame::Frame,
-        nametable::{
-            ATTRIBUTE_TABLE_SIZE, NAMETABLE_SIZE, NAMETABLES_COUNT, NAMETABLES_START_ADDR,
-            Nametable,
-        },
+        mappings::{ATTRIBUTE_TABLE_SIZE, NAMETABLE_COUNT, NAMETABLE_SIZE, NAMETABLES_START_ADDR},
+        nametable::Nametable,
         registers::{REGISTERS_AT_POWERON, Registers},
     },
 };
 
 pub mod buses;
 pub mod frame;
+pub mod mappings;
 pub mod nametable;
 pub mod palettes;
-pub mod patterns;
 pub mod registers;
 
 const OAM_SPRITE_SIZE: usize = 4;
@@ -248,11 +246,11 @@ impl PPU {
         todo!("write to OAMDMA is not implemented")
     }
 
-    pub fn dump_nametables(&self) -> [Nametable; NAMETABLES_COUNT as usize] {
+    pub fn dump_nametables(&self) -> [Nametable; NAMETABLE_COUNT as usize] {
         let mut data =
-            [[0u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize]; NAMETABLES_COUNT as usize];
+            [[0u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize]; NAMETABLE_COUNT as usize];
 
-        for nametable_index in 0..NAMETABLES_COUNT {
+        for nametable_index in 0..NAMETABLE_COUNT {
             for entry_index in 0..(NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) {
                 let addr = NAMETABLES_START_ADDR + (nametable_index * NAMETABLE_SIZE) + entry_index;
                 data[nametable_index as usize][entry_index as usize] = self.buses.read(addr)

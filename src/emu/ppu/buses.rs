@@ -1,44 +1,7 @@
 use crate::emu::{
     cartridge::{Cartridge, NametableMirroring},
-    ppu::{
-        nametable::{
-            ATTRIBUTE_TABLE_0_END_ADDR, ATTRIBUTE_TABLE_1_END_ADDR, ATTRIBUTE_TABLE_2_END_ADDR,
-            ATTRIBUTE_TABLE_3_END_ADDR, NAMETABLE_0_START_ADDR, NAMETABLE_1_START_ADDR,
-            NAMETABLE_2_START_ADDR, NAMETABLE_3_START_ADDR, NAMETABLES_END_ADDR,
-            NAMETABLES_START_ADDR, Nametable,
-        },
-        patterns::{PATTERN_TABLES_END_ADDR, PATTERN_TABLES_START_ADDR},
-    },
+    ppu::{mappings::*, nametable::Nametable},
 };
-
-// Unused
-
-pub const UNUSED_SIZE: u16 = 3840;
-
-pub const UNUSED_START_ADDR: u16 = NAMETABLES_END_ADDR;
-pub const UNUSED_END_ADDR: u16 = UNUSED_START_ADDR + UNUSED_SIZE;
-
-// Palette RAM
-
-pub const PALETTE_SIZE: u16 = 4;
-pub const PALETTE_COUNT: u16 = 8;
-pub const PALETTE_RAM_SIZE: u16 = PALETTE_SIZE * PALETTE_COUNT;
-pub const PALETTE_RAM_MIRRORS_SIZE: u16 = 224;
-
-pub const PALETTE_RAM_START_ADDR: u16 = UNUSED_END_ADDR;
-
-pub const PALETTE_RAM_BACKGROUND_START_ADDR: u16 = PALETTE_RAM_START_ADDR;
-pub const PALETTE_RAM_BACKGROUND_END_ADDR: u16 =
-    PALETTE_RAM_BACKGROUND_START_ADDR + (PALETTE_RAM_SIZE / 2);
-
-pub const PALETTE_RAM_SPRITE_START_ADDR: u16 = PALETTE_RAM_BACKGROUND_END_ADDR;
-pub const PALETTE_RAM_SPITE_END_ADDR: u16 = PALETTE_RAM_SPRITE_START_ADDR + (PALETTE_RAM_SIZE / 2);
-
-pub const PALETTE_RAM_MIRRORS_START_ADDR: u16 = PALETTE_RAM_SPITE_END_ADDR;
-pub const PALETTE_RAM_MIRRORS_END_ADDR: u16 =
-    PALETTE_RAM_MIRRORS_START_ADDR + PALETTE_RAM_MIRRORS_SIZE;
-
-pub const PALETTE_RAM_END_ADDR: u16 = PALETTE_RAM_MIRRORS_END_ADDR;
 
 pub struct Buses {
     nametable_a: Nametable,
@@ -97,6 +60,7 @@ impl Buses {
 }
 
 fn do_palette_read(buses: &Buses, addr: u16) -> u8 {
+    // If the address is entry 0 in a palette, remap to the backdrop color.
     let addr = match addr {
         0x3F00 | 0x3F04 | 0x3F08 | 0x3F0C | 0x3F10 | 0x3F14 | 0x3F18 | 0x3F1C => 0x3F00,
         _ => addr,
@@ -106,6 +70,7 @@ fn do_palette_read(buses: &Buses, addr: u16) -> u8 {
 }
 
 fn do_palette_write(buses: &mut Buses, addr: u16, data: u8) {
+    // If the address is entry 0 in a palette, remap to the backdrop color.
     let addr = match addr {
         0x3F00 | 0x3F04 | 0x3F08 | 0x3F0C | 0x3F10 | 0x3F14 | 0x3F18 | 0x3F1C => 0x3F00,
         _ => addr,

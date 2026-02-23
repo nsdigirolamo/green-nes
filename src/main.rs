@@ -29,16 +29,6 @@ enum Commands {
         #[arg(value_parser = clap::value_parser!(u16), default_value_t = 0xFFFF)]
         start_addr: u16,
     },
-    /// Displays the contents of the pattern tables to the screen.
-    Patterntables {
-        /// Path to the NES program.
-        path: String,
-    },
-    /// Displays the contents of the nametables to the screen.
-    Nametables {
-        /// Path to the NES program.
-        path: String,
-    },
 }
 
 #[derive(Clone, PartialEq, ValueEnum)]
@@ -64,18 +54,6 @@ fn main() {
             let mut nes = NES::new(cart);
             nes.cpu.poweron(&mut nes.buses, start_addr);
             nes.run(debug_level);
-        }
-        Commands::Patterntables { path } => {
-            let cart = load_cart(&path);
-
-            let nes = NES::new(cart.clone());
-            nes.show_pattern_tables(cart);
-        }
-        Commands::Nametables { path } => {
-            let cart = load_cart(&path);
-
-            let nes = NES::new(cart.clone());
-            nes.show_nametables(nes.buses.get_ppu());
         }
     }
 

@@ -1,42 +1,40 @@
-use std::{array, fmt};
-
-use sdl2::{pixels::Color, rect::Point};
-
 use crate::emu::ppu::{
     PPU,
-    buses::{PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE},
-    nametable::{
-        ATTRIBUTE_AREA_COLS_PER_FRAME, ATTRIBUTE_AREA_HEIGHT_PIXELS, ATTRIBUTE_AREA_WIDTH_PIXELS,
-        NAMETABLE_SIZE, NAMETABLES_START_ADDR, Nametable, PATTERN_COLS_PER_ATTRIBUTE_AREA,
-        PATTERN_ROWS_PER_ATTRIBUTE_AREA,
+    mappings::{
+        NAMETABLE_SIZE, NAMETABLES_START_ADDR, PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE,
     },
     palettes::PALETTE_TABLE,
-    patterns::{
-        PATTERN_HEIGHT_PIXELS, PATTERN_SIZE, PATTERN_WIDTH_PIXELS, PatternTable,
-        get_pattern_from_nametable_entry,
-    },
 };
-use std::fmt::Write;
+use sdl2::{pixels::Color, rect::Point};
+use std::array;
 
-pub const FRAME_WIDTH_PIXELS: u16 = 256;
-pub const FRAME_HEIGHT_PIXELS: u16 = 240;
+const PATTERN_WIDTH: u16 = 8;
+const PATTERN_HEIGHT: u16 = 8;
 
-pub const PATTERN_ROWS_PER_FRAME: u16 = FRAME_HEIGHT_PIXELS / PATTERN_HEIGHT_PIXELS;
-pub const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH_PIXELS / PATTERN_WIDTH_PIXELS;
+const PATTERN_PLANE_COUNT: u16 = 2;
+const PATTERN_SIZE: u16 = PATTERN_HEIGHT * PATTERN_PLANE_COUNT;
+const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH / PATTERN_WIDTH;
+
+#[derive(Clone, Copy, Default)]
+pub struct Pattern {
+    pub data: [[(bool, bool); PATTERN_WIDTH as usize]; PATTERN_HEIGHT as usize],
+}
+
+const FRAME_WIDTH: u16 = 256;
+const FRAME_HEIGHT: u16 = 240;
+const FRAME_BYTES_PER_PIXEL: u16 = 3;
 
 #[derive(Clone, Copy)]
 pub struct Frame {
-    pixels: [[(u8, u8, u8); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize],
+    pixels: [[(u8, u8, u8); FRAME_WIDTH as usize]; FRAME_HEIGHT as usize],
 }
 
 impl Frame {
-    pub const WIDTH_PIXELS: usize = FRAME_WIDTH_PIXELS as usize;
-    pub const HEIGHT_PIXELS: usize = FRAME_HEIGHT_PIXELS as usize;
-    pub const BYTES_PER_PIXEL: usize = 3;
+    pub const WIDTH: usize = FRAME_WIDTH as usize;
+    pub const HEIGHT: usize = FRAME_HEIGHT as usize;
+    pub const BYTES_PER_PIXEL: usize = FRAME_BYTES_PER_PIXEL as usize;
 
-    pub fn new(
-        pixels: [[(u8, u8, u8); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize],
-    ) -> Self {
+    pub fn new(pixels: [[(u8, u8, u8); FRAME_WIDTH as usize]; FRAME_HEIGHT as usize]) -> Self {
         Frame { pixels }
     }
 
@@ -79,10 +77,10 @@ impl Frame {
         self.pixels[location.y as usize][location.x as usize] = pixel;
     }
 
-    /// Returns the pixel data for a frame as a flattened list of bytes.
+    /// Returns the pixel data for a frame as a flattened array of bytes.
     pub fn get_pixel_data(
         &self,
-    ) -> [u8; FRAME_WIDTH_PIXELS as usize * FRAME_HEIGHT_PIXELS as usize * 3] {
+    ) -> [u8; FRAME_WIDTH as usize * FRAME_HEIGHT as usize * FRAME_BYTES_PER_PIXEL as usize] {
         let flattened = self.pixels.as_flattened();
         array::from_fn(|i| {
             let pixel = flattened[i / 3];
@@ -90,7 +88,7 @@ impl Frame {
                 0 => pixel.0,
                 1 => pixel.1,
                 2 => pixel.2,
-                _ => unreachable!("mod 3 should not exceed 2"),
+                _ => unreachable!("mod 3 is not greater than 2"),
             }
         })
     }
@@ -98,24 +96,15 @@ impl Frame {
 
 impl Default for Frame {
     fn default() -> Self {
-        Frame::new([[(0, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize])
+        Frame::new([[(0, 0, 0); FRAME_WIDTH as usize]; FRAME_HEIGHT as usize])
     }
 }
 
-impl fmt::Debug for Frame {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut result = "".to_string();
-
-        for row in self.pixels.iter() {
-            for pixel in row.iter() {
-                write!(result, " ({},{},{})", pixel.0, pixel.1, pixel.2)?;
-            }
-            writeln!(result)?;
-        }
-
-        write!(f, "{result}")
-    }
-}
+const ATTRIBUTE_AREA_HEIGHT: u16 = PATTERN_HEIGHT * PATTERN_ROWS_PER_ATTRIBUTE_AREA;
+const ATTRIBUTE_AREA_WIDTH: u16 = PATTERN_WIDTH * PATTERN_COLS_PER_ATTRIBUTE_AREA;
+const PATTERN_ROWS_PER_ATTRIBUTE_AREA: u16 = 4;
+const PATTERN_COLS_PER_ATTRIBUTE_AREA: u16 = 4;
+const ATTRIBUTE_AREA_COLS_PER_FRAME: u16 = PATTERN_COLS_PER_FRAME / PATTERN_COLS_PER_ATTRIBUTE_AREA;
 
 impl PPU {
     pub fn render_frame(&mut self) {
@@ -125,16 +114,16 @@ impl PPU {
         let pixels = array::from_fn(|y| {
             array::from_fn(|x| {
                 let nametable_stride =
-                    (y / PATTERN_HEIGHT_PIXELS as usize) * PATTERN_COLS_PER_FRAME as usize;
-                let nametable_index = nametable_stride + (x / PATTERN_WIDTH_PIXELS as usize);
+                    (y / PATTERN_HEIGHT as usize) * PATTERN_COLS_PER_FRAME as usize;
+                let nametable_index = nametable_stride + (x / PATTERN_WIDTH as usize);
                 let pattern_index = self.buses.read(nametable_addr + nametable_index as u16);
 
-                let pattern_row_index = y % PATTERN_HEIGHT_PIXELS as usize;
-                let pattern_col_index = x % PATTERN_WIDTH_PIXELS as usize;
+                let pattern_row_index = y % PATTERN_HEIGHT as usize;
+                let pattern_col_index = x % PATTERN_WIDTH as usize;
 
-                let attribute_stride = (y / ATTRIBUTE_AREA_HEIGHT_PIXELS as usize)
-                    * ATTRIBUTE_AREA_COLS_PER_FRAME as usize;
-                let attribute_index = attribute_stride + (x / ATTRIBUTE_AREA_WIDTH_PIXELS as usize);
+                let attribute_stride =
+                    (y / ATTRIBUTE_AREA_HEIGHT as usize) * ATTRIBUTE_AREA_COLS_PER_FRAME as usize;
+                let attribute_index = attribute_stride + (x / ATTRIBUTE_AREA_WIDTH as usize);
                 let attribute = self
                     .buses
                     .read(nametable_addr + NAMETABLE_SIZE + attribute_index as u16);
@@ -166,7 +155,7 @@ impl PPU {
                 let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
                 let pattern_row_addr = pattern_addr + pattern_row_index as u16;
                 let lo_bits = self.buses.read(pattern_row_addr);
-                let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT_PIXELS);
+                let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT);
 
                 let mask = 0b_1000_0000 >> pattern_col_index;
                 let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
@@ -183,74 +172,4 @@ impl PPU {
         self.frame = Frame::new(pixels);
         self.frame_ready = true;
     }
-}
-
-pub fn render_nametable(nametable: &Nametable) -> Frame {
-    let mut frame = Frame::default();
-
-    for (i, entry) in nametable.iter().enumerate() {
-        if NAMETABLE_SIZE <= i as u16 {
-            break;
-        }
-
-        let pattern = get_pattern_from_nametable_entry(*entry);
-
-        let pattern_y_offset = PATTERN_HEIGHT_PIXELS * (i as u16 / PATTERN_COLS_PER_FRAME);
-        let pattern_x_offset = PATTERN_WIDTH_PIXELS * (i as u16 % PATTERN_COLS_PER_FRAME);
-
-        for (row, row_of_pixels) in pattern.data.iter().enumerate() {
-            let y = pattern_y_offset + row as u16;
-
-            for (col, pixel) in row_of_pixels.iter().enumerate() {
-                let x = pattern_x_offset + col as u16;
-
-                let color = match pixel {
-                    (false, false) => Color::RGB(32, 32, 32),
-                    (false, true) => Color::RGB(159, 159, 159),
-                    (true, false) => Color::RGB(96, 96, 96),
-                    (true, true) => Color::RGB(223, 223, 223),
-                };
-
-                frame.set_pixel(Point::new(x as i32, y as i32), color);
-            }
-        }
-    }
-
-    frame
-}
-
-pub fn render_pattern_table(pattern_table: &PatternTable) -> Frame {
-    let mut frame =
-        Frame::new([[(0, 0, 0); FRAME_WIDTH_PIXELS as usize]; FRAME_HEIGHT_PIXELS as usize]);
-
-    const MARGIN_WIDTH_PIXELS: u16 = 3;
-    const PATTERNS_PER_ROW: u16 = 16;
-
-    for (pattern_index, pattern) in pattern_table.data.iter().enumerate() {
-        let pattern_y_offset = MARGIN_WIDTH_PIXELS
-            + ((PATTERN_HEIGHT_PIXELS + MARGIN_WIDTH_PIXELS)
-                * (pattern_index as u16 / PATTERNS_PER_ROW));
-        let pattern_x_offset = MARGIN_WIDTH_PIXELS
-            + ((PATTERN_WIDTH_PIXELS + MARGIN_WIDTH_PIXELS)
-                * (pattern_index as u16 % PATTERNS_PER_ROW));
-
-        for (row, row_of_pixels) in pattern.data.iter().enumerate() {
-            let y = pattern_y_offset + row as u16;
-
-            for (col, pixel) in row_of_pixels.iter().enumerate() {
-                let x = pattern_x_offset + col as u16;
-
-                let color = match pixel {
-                    (false, false) => Color::RGB(32, 32, 32),
-                    (false, true) => Color::RGB(159, 159, 159),
-                    (true, false) => Color::RGB(96, 96, 96),
-                    (true, true) => Color::RGB(223, 223, 223),
-                };
-
-                frame.set_pixel(Point::new(x as i32, y as i32), color);
-            }
-        }
-    }
-
-    frame
 }
