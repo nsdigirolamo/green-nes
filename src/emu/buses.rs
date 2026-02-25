@@ -1,6 +1,8 @@
+use std::array;
+
 use crate::concat_u8;
 use crate::emu::cartridge::Cartridge;
-use crate::emu::ppu::PPU;
+use crate::emu::ppu::{OAM_SIZE, PPU};
 
 // Internal RAM
 
@@ -72,18 +74,20 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
-                let mapped_addr = addr % 8;
+                let mapped_addr = addr % 0x08;
                 match mapped_addr {
-                    0 => 0, // ignore; write-only
-                    1 => 0, // ignore; write-only
-                    2 => self.ppu.read_ppu_status(),
-                    3 => 0, // ignore; write-only
-                    4 => self.ppu.read_oam_data(),
-                    5 => 0, // ignore; write-only
-                    6 => 0, // ignore; write-only
-                    7 => self.ppu.read_ppu_data(),
+                    0x00 => 0, // ignore; write-only
+                    0x01 => 0, // ignore; write-only
+                    0x02 => self.ppu.read_ppu_status(),
+                    0x03 => 0, // ignore; write-only
+                    0x04 => self.ppu.read_oam_data(),
+                    0x05 => 0, // ignore; write-only
+                    0x06 => 0, // ignore; write-only
+                    0x07 => self.ppu.read_ppu_data(),
                     _ => {
-                        unreachable!("bus fetch failed: {mapped_addr} should not be greater than 7")
+                        unreachable!(
+                            "bus fetch failed: {mapped_addr} should not be greater than 0x07"
+                        )
                     }
                 }
             }
@@ -102,18 +106,20 @@ impl Buses {
                 self.ram[mapped_addr as usize]
             }
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
-                let mapped_addr = addr % 8;
+                let mapped_addr = addr % 0x08;
                 match mapped_addr {
-                    0 => 0, // ignore; write-only
-                    1 => 0, // ignore; write-only
-                    2 => self.ppu.peek_ppu_status(),
-                    3 => 0, // ignore; write-only
-                    4 => self.ppu.read_oam_data(),
-                    5 => 0, // ignore; write-only
-                    6 => 0, // ignore; write-only
-                    7 => self.ppu.peek_ppu_data(),
+                    0x00 => 0, // ignore; write-only
+                    0x01 => 0, // ignore; write-only
+                    0x02 => self.ppu.peek_ppu_status(),
+                    0x03 => 0, // ignore; write-only
+                    0x04 => self.ppu.read_oam_data(),
+                    0x05 => 0, // ignore; write-only
+                    0x06 => 0, // ignore; write-only
+                    0x07 => self.ppu.peek_ppu_data(),
                     _ => {
-                        unreachable!("bus peek failed: {mapped_addr} should not be greater than 7")
+                        unreachable!(
+                            "bus peek failed: {mapped_addr} should not be greater than 0x07"
+                        )
                     }
                 }
             }
@@ -134,7 +140,7 @@ impl Buses {
     }
 
     /// Places the given byte onto the data bus, and then writes that byte to
-    /// the memory address specified on the addres bus.
+    /// the memory address specified on the address bus.
     pub fn write(&mut self, data: u8) {
         self.data = data;
 
@@ -145,22 +151,57 @@ impl Buses {
                 self.ram[mapped_addr as usize] = data;
             }
             PPU_REGISTERS_START_ADDR..PPU_REGISTERS_END_ADDR => {
-                let mapped_addr = addr % 8;
+                let mapped_addr = addr % 0x08;
                 match mapped_addr {
-                    0 => self.ppu.write_ppu_ctrl(data),
-                    1 => self.ppu.write_ppu_mask(data),
-                    2 => (), // ignore; read-only
-                    3 => self.ppu.write_oam_addr(data),
-                    4 => self.ppu.write_oam_data(data),
-                    5 => self.ppu.write_ppu_scroll(data),
-                    6 => self.ppu.write_ppu_addr(data),
-                    7 => self.ppu.write_ppu_data(data),
+                    0x00 => self.ppu.write_ppu_ctrl(data),
+                    0x01 => self.ppu.write_ppu_mask(data),
+                    0x02 => (), // ignore; read-only
+                    0x03 => self.ppu.write_oam_addr(data),
+                    0x04 => self.ppu.write_oam_data(data),
+                    0x05 => self.ppu.write_ppu_scroll(data),
+                    0x06 => self.ppu.write_ppu_addr(data),
+                    0x07 => self.ppu.write_ppu_data(data),
                     _ => {
                         unreachable!("bus write failed: {mapped_addr} should not be greater than 7")
                     }
                 }
             }
-            IO_START_ADDR..IO_END_ADDR => (),               // TODO
+            IO_START_ADDR..IO_END_ADDR => {
+                let mapped_addr = addr % 0x18;
+                match mapped_addr {
+                    0x00 => (), // todo: SQ1_VOL
+                    0x01 => (), // todo: SQ1_SWEEP
+                    0x02 => (), // todo: SQ1_LOW
+                    0x03 => (), // todo: SQ1_HIGH
+                    0x04 => (), // todo: SQ2_VOL
+                    0x05 => (), // todo: SQ2_SWEEP
+                    0x06 => (), // todo: SQ2_LO
+                    0x07 => (), // todo: SQ2_HI
+                    0x08 => (), // todo: TRI_LINEAR
+                    0x09 => (), // ignore; unused
+                    0x0A => (), // todo: TRI_LO
+                    0x0B => (), // todo: TRI_HI
+                    0x0C => (), // todo: NOISE_VOL
+                    0x0D => (), // ignore; unused
+                    0x0E => (), // todo: NOISE_LO
+                    0x0F => (), // todo: NOISE_HI
+                    0x10 => (), // todo: DMC_FREQ
+                    0x11 => (), // todo: DMC_RAW
+                    0x12 => (), // todo: DMC_START
+                    0x13 => (), // todo: DMC_LEN
+                    0x14 => {
+                        let oam_data: [u8; OAM_SIZE] =
+                            array::from_fn(|i| self.fetch_data(concat_u8!(data, i)));
+                        self.ppu.write_oam_dma(oam_data);
+                    }
+                    0x15 => (), // todo: SND_CHN
+                    0x16 => (), // todo: JOY1
+                    0x17 => (), // todo: JOY2
+                    _ => unreachable!(
+                        "bus write failed: {mapped_addr} should not be greater than 0x17"
+                    ),
+                }
+            }
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => (), // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => {
                 self.cart.mapper.borrow_mut().prg_write(addr, data)

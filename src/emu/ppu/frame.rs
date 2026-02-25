@@ -1,19 +1,13 @@
-use crate::emu::ppu::{
-    PPU,
-    mappings::{
-        NAMETABLE_SIZE, NAMETABLES_START_ADDR, PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE,
-    },
-    palettes::PALETTE_TABLE,
-};
+use crate::emu::ppu::{PPU, palettes::PALETTE_TABLE};
 use sdl2::{pixels::Color, rect::Point};
 use std::array;
 
-const PATTERN_WIDTH: u16 = 8;
-const PATTERN_HEIGHT: u16 = 8;
+pub const PATTERN_WIDTH: u16 = 8;
+pub const PATTERN_HEIGHT: u16 = 8;
 
-const PATTERN_PLANE_COUNT: u16 = 2;
-const PATTERN_SIZE: u16 = PATTERN_HEIGHT * PATTERN_PLANE_COUNT;
-const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH / PATTERN_WIDTH;
+pub const PATTERN_PLANE_COUNT: u16 = 2;
+pub const PATTERN_SIZE: u16 = PATTERN_HEIGHT * PATTERN_PLANE_COUNT;
+pub const PATTERN_COLS_PER_FRAME: u16 = FRAME_WIDTH / PATTERN_WIDTH;
 
 #[derive(Clone, Copy, Default)]
 pub struct Pattern {
@@ -100,57 +94,36 @@ impl Default for Frame {
     }
 }
 
-const ATTRIBUTE_AREA_HEIGHT: u16 = PATTERN_HEIGHT * PATTERN_ROWS_PER_ATTRIBUTE_AREA;
-const ATTRIBUTE_AREA_WIDTH: u16 = PATTERN_WIDTH * PATTERN_COLS_PER_ATTRIBUTE_AREA;
-const PATTERN_ROWS_PER_ATTRIBUTE_AREA: u16 = 4;
-const PATTERN_COLS_PER_ATTRIBUTE_AREA: u16 = 4;
-const ATTRIBUTE_AREA_COLS_PER_FRAME: u16 = PATTERN_COLS_PER_FRAME / PATTERN_COLS_PER_ATTRIBUTE_AREA;
+pub const ATTRIBUTE_AREA_HEIGHT: u16 = PATTERN_HEIGHT * PATTERN_ROWS_PER_ATTRIBUTE_AREA;
+pub const ATTRIBUTE_AREA_WIDTH: u16 = PATTERN_WIDTH * PATTERN_COLS_PER_ATTRIBUTE_AREA;
+pub const PATTERN_ROWS_PER_ATTRIBUTE_AREA: u16 = 4;
+pub const PATTERN_COLS_PER_ATTRIBUTE_AREA: u16 = 4;
+pub const ATTRIBUTE_AREA_COLS_PER_FRAME: u16 =
+    PATTERN_COLS_PER_FRAME / PATTERN_COLS_PER_ATTRIBUTE_AREA;
 
 impl PPU {
     pub fn render_frame(&mut self) {
         let pattern_table_addr = self.registers.ppu_ctrl.get_background_pattern_table_addr();
-        let nametable_addr = NAMETABLES_START_ADDR;
 
         let pixels = array::from_fn(|y| {
             array::from_fn(|x| {
-                let nametable_stride =
-                    (y / PATTERN_HEIGHT as usize) * PATTERN_COLS_PER_FRAME as usize;
-                let nametable_index = nametable_stride + (x / PATTERN_WIDTH as usize);
-                let pattern_index = self.buses.read(nametable_addr + nametable_index as u16);
-
+                let pattern_index = self.get_pattern_index(x as u16, y as u16);
                 let pattern_row_index = y % PATTERN_HEIGHT as usize;
                 let pattern_col_index = x % PATTERN_WIDTH as usize;
 
-                let attribute_stride =
-                    (y / ATTRIBUTE_AREA_HEIGHT as usize) * ATTRIBUTE_AREA_COLS_PER_FRAME as usize;
-                let attribute_index = attribute_stride + (x / ATTRIBUTE_AREA_WIDTH as usize);
-                let attribute = self
-                    .buses
-                    .read(nametable_addr + NAMETABLE_SIZE + attribute_index as u16);
-
+                let attribute_byte = self.get_attribute_byte(x as u16, y as u16);
                 let palette_index = match (
                     ((pattern_row_index % PATTERN_ROWS_PER_ATTRIBUTE_AREA as usize) / 2),
                     ((pattern_col_index % PATTERN_COLS_PER_ATTRIBUTE_AREA as usize) / 2),
                 ) {
-                    (0, 0) => attribute & 0b_0000_0011,
-                    (0, 1) => (attribute >> 2) & 0b_0000_0011,
-                    (1, 0) => (attribute >> 4) & 0b_0000_0011,
-                    (1, 1) => (attribute >> 6) & 0b_0000_0011,
+                    (0, 0) => attribute_byte & 0b_0000_0011,
+                    (0, 1) => (attribute_byte >> 2) & 0b_0000_0011,
+                    (1, 0) => (attribute_byte >> 4) & 0b_0000_0011,
+                    (1, 1) => (attribute_byte >> 6) & 0b_0000_0011,
                     idx => unreachable!("unreachable palette index: ({}, {})", idx.0, idx.1),
                 };
 
-                let palette0 = self.buses.read(
-                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE),
-                );
-                let palette1 = self.buses.read(
-                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 1,
-                );
-                let palette2 = self.buses.read(
-                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 2,
-                );
-                let palette3 = self.buses.read(
-                    PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE) + 3,
-                );
+                let palette = self.get_background_palette(palette_index);
 
                 let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
                 let pattern_row_addr = pattern_addr + pattern_row_index as u16;
@@ -161,10 +134,10 @@ impl PPU {
                 let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
 
                 match pixel {
-                    (false, false) => PALETTE_TABLE[palette0 as usize],
-                    (false, true) => PALETTE_TABLE[palette1 as usize],
-                    (true, false) => PALETTE_TABLE[palette2 as usize],
-                    (true, true) => PALETTE_TABLE[palette3 as usize],
+                    (false, false) => PALETTE_TABLE[palette.0 as usize],
+                    (false, true) => PALETTE_TABLE[palette.1 as usize],
+                    (true, false) => PALETTE_TABLE[palette.2 as usize],
+                    (true, true) => PALETTE_TABLE[palette.3 as usize],
                 }
             })
         });

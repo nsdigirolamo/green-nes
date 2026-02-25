@@ -1,12 +1,14 @@
-use std::array;
-
 use crate::emu::{
     cartridge::Cartridge,
     ppu::{
         buses::Buses,
-        frame::Frame,
-        mappings::{ATTRIBUTE_TABLE_SIZE, NAMETABLE_COUNT, NAMETABLE_SIZE, NAMETABLES_START_ADDR},
-        nametable::Nametable,
+        frame::{
+            ATTRIBUTE_AREA_COLS_PER_FRAME, ATTRIBUTE_AREA_HEIGHT, ATTRIBUTE_AREA_WIDTH, Frame,
+            PATTERN_COLS_PER_FRAME, PATTERN_HEIGHT, PATTERN_WIDTH,
+        },
+        mappings::{
+            NAMETABLE_SIZE, NAMETABLES_START_ADDR, PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE,
+        },
         registers::{REGISTERS_AT_POWERON, Registers},
     },
 };
@@ -20,7 +22,7 @@ pub mod registers;
 
 const OAM_SPRITE_SIZE: usize = 4;
 const OAM_SPRITE_COUNT: u32 = 64;
-const OAM_SIZE: usize = OAM_SPRITE_SIZE * OAM_SPRITE_COUNT as usize;
+pub const OAM_SIZE: usize = OAM_SPRITE_SIZE * OAM_SPRITE_COUNT as usize;
 
 const PPU_CYCLES_PER_SCANLINE: u32 = 341;
 const VBLANK_LINE_INDEX: u32 = 241;
@@ -76,6 +78,7 @@ impl PPU {
             } else if PRERENDER_LINE_INDEX < self.scanline_index {
                 self.frame_count += 1;
                 self.scanline_index = 0;
+                self.registers.oam_addr.data = 0;
             }
         }
     }
@@ -87,6 +90,46 @@ impl PPU {
 
     pub fn is_frame_ready(&self) -> bool {
         self.frame_ready
+    }
+
+    pub fn get_scanline_index(&self) -> u32 {
+        self.scanline_index
+    }
+
+    pub fn get_frame_count(&self) -> u64 {
+        self.frame_count
+    }
+
+    /// Gets the index of the pattern for the pixel at the given (x,y) position.
+    pub fn get_pattern_index(&self, x: u16, y: u16) -> u8 {
+        let stride = (y / PATTERN_HEIGHT) * PATTERN_COLS_PER_FRAME;
+        let nametable_index = stride + (x / PATTERN_WIDTH);
+
+        // TODO: Start at the proper nametable addr
+        self.buses.read(NAMETABLES_START_ADDR + nametable_index)
+    }
+
+    // Gets the attribute byte for the pixel at the given (x,y) position.
+    pub fn get_attribute_byte(&self, x: u16, y: u16) -> u8 {
+        let stride = (y / ATTRIBUTE_AREA_HEIGHT) * ATTRIBUTE_AREA_COLS_PER_FRAME;
+        let attribute_index = stride + (x / ATTRIBUTE_AREA_WIDTH);
+
+        // TODO: Start at the proper nametable addr
+        self.buses
+            .read(NAMETABLES_START_ADDR + NAMETABLE_SIZE + attribute_index)
+    }
+
+    /// Gets the 4-byte palette for the given palette index. The palette index
+    /// is a 2-bit number that selects one of the four system palettes.
+    pub fn get_background_palette(&self, palette_index: u8) -> (u8, u8, u8, u8) {
+        let addr = PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE);
+
+        (
+            self.buses.read(addr),
+            self.buses.read(addr + 1),
+            self.buses.read(addr + 2),
+            self.buses.read(addr + 3),
+        )
     }
 
     /// Sets the appropriate state of the NMI pin depending on the state of
@@ -240,31 +283,7 @@ impl PPU {
     }
 
     /// Writes a page of memory to the Object Attribute Memory (OAM).
-    pub fn write_oam_dma(&mut self, _data: u8) {
-        // TODO: This is kind of complicated and uses a buffer of bytes.
-        // https://www.nesdev.org/wiki/PPU_programmer_reference#OAMDMA
-        todo!("write to OAMDMA is not implemented")
-    }
-
-    pub fn dump_nametables(&self) -> [Nametable; NAMETABLE_COUNT as usize] {
-        let mut data =
-            [[0u8; (NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) as usize]; NAMETABLE_COUNT as usize];
-
-        for nametable_index in 0..NAMETABLE_COUNT {
-            for entry_index in 0..(NAMETABLE_SIZE + ATTRIBUTE_TABLE_SIZE) {
-                let addr = NAMETABLES_START_ADDR + (nametable_index * NAMETABLE_SIZE) + entry_index;
-                data[nametable_index as usize][entry_index as usize] = self.buses.read(addr)
-            }
-        }
-
-        array::from_fn(|i| Nametable::new(data[i]))
-    }
-
-    pub fn get_scanline_index(&self) -> u32 {
-        self.scanline_index
-    }
-
-    pub fn get_frame_count(&self) -> u64 {
-        self.frame_count
+    pub fn write_oam_dma(&mut self, data: [u8; OAM_SIZE]) {
+        self.oam = data;
     }
 }
