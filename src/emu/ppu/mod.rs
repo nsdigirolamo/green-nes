@@ -7,7 +7,8 @@ use crate::emu::{
             PATTERN_COLS_PER_FRAME, PATTERN_HEIGHT, PATTERN_WIDTH,
         },
         mappings::{
-            NAMETABLE_SIZE, NAMETABLES_START_ADDR, PALETTE_RAM_BACKGROUND_START_ADDR, PALETTE_SIZE,
+            NAMETABLE_SIZE, NAMETABLES_START_ADDR, PALETTE_RAM_BACKGROUND_START_ADDR,
+            PALETTE_RAM_SPRITE_START_ADDR, PALETTE_SIZE,
         },
         registers::{REGISTERS_AT_POWERON, Registers},
     },
@@ -23,6 +24,7 @@ pub mod registers;
 const OAM_SPRITE_SIZE: usize = 4;
 const OAM_SPRITE_COUNT: u32 = 64;
 pub const OAM_SIZE: usize = OAM_SPRITE_SIZE * OAM_SPRITE_COUNT as usize;
+const BYTES_PER_PATTERN: usize = 4;
 
 const PPU_CYCLES_PER_SCANLINE: u32 = 341;
 const VBLANK_LINE_INDEX: u32 = 241;
@@ -119,10 +121,24 @@ impl PPU {
             .read(NAMETABLES_START_ADDR + NAMETABLE_SIZE + attribute_index)
     }
 
-    /// Gets the 4-byte palette for the given palette index. The palette index
-    /// is a 2-bit number that selects one of the four system palettes.
+    /// Gets the 4-byte background palette for the given palette index. The
+    /// palette index is a 2-bit number that selects one of the four system
+    /// palettes.
     pub fn get_background_palette(&self, palette_index: u8) -> (u8, u8, u8, u8) {
         let addr = PALETTE_RAM_BACKGROUND_START_ADDR + (palette_index as u16 * PALETTE_SIZE);
+
+        (
+            self.buses.read(addr),
+            self.buses.read(addr + 1),
+            self.buses.read(addr + 2),
+            self.buses.read(addr + 3),
+        )
+    }
+
+    /// Gets the 4-byte sprite palette for the given palette index. The palette
+    /// index is a 2-bit number that selects one of the four system palettes.
+    pub fn get_sprite_palette(&self, palette_index: u8) -> (u8, u8, u8, u8) {
+        let addr = PALETTE_RAM_SPRITE_START_ADDR + (palette_index as u16 * PALETTE_SIZE);
 
         (
             self.buses.read(addr),
@@ -193,7 +209,7 @@ impl PPU {
         let addr = self.registers.oam_addr.data;
 
         self.oam[addr as usize] = data;
-        self.registers.oam_addr.data += 1;
+        self.registers.oam_addr.data = self.registers.oam_addr.data.wrapping_add(1);
     }
 
     /// Writes a byte to the scroll position. This has the side effect of
@@ -283,7 +299,10 @@ impl PPU {
     }
 
     /// Writes a page of memory to the Object Attribute Memory (OAM).
-    pub fn write_oam_dma(&mut self, data: [u8; OAM_SIZE]) {
-        self.oam = data;
+    pub fn write_oam_dma(&mut self, data: &[u8; OAM_SIZE]) {
+        for d in data.iter() {
+            self.oam[self.registers.oam_addr.data as usize] = *d;
+            self.registers.oam_addr.data = self.registers.oam_addr.data.wrapping_add(1)
+        }
     }
 }

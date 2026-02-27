@@ -1,4 +1,4 @@
-use crate::emu::ppu::{PPU, palettes::PALETTE_TABLE};
+use crate::emu::ppu::{BYTES_PER_PATTERN, OAM_SIZE, PPU, palettes::PALETTE_TABLE};
 use sdl2::{pixels::Color, rect::Point};
 use std::array;
 
@@ -103,9 +103,73 @@ pub const ATTRIBUTE_AREA_COLS_PER_FRAME: u16 =
 
 impl PPU {
     pub fn render_frame(&mut self) {
-        let pattern_table_addr = self.registers.ppu_ctrl.get_background_pattern_table_addr();
+        let mut frame = self.create_background();
+        self.draw_sprites(&mut frame);
+        self.frame = frame;
+        self.frame_ready = true;
+    }
 
-        let pixels = array::from_fn(|y| {
+    fn draw_sprites(&self, frame: &mut Frame) {
+        let sprite_pattern_table_addr = self.registers.ppu_ctrl.get_sprite_pattern_table_addr();
+
+        for i in 0..(OAM_SIZE / BYTES_PER_PATTERN) {
+            let oam_addr = i * BYTES_PER_PATTERN;
+
+            let y_pos = self.oam[oam_addr];
+            let pattern_index = self.oam[oam_addr + 1];
+            let attribute = self.oam[oam_addr + 2];
+            let x_pos = self.oam[oam_addr + 3];
+
+            let palette_index = attribute & 0b_0000_0011;
+            let palette = self.get_sprite_palette(palette_index);
+
+            let pattern_addr = sprite_pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
+
+            let flip_horz = (attribute & 0b_0100_0000) != 0;
+            let flip_vert = (attribute & 0b_1000_0000) != 0;
+
+            for row in 0..PATTERN_HEIGHT {
+                for col in 0..PATTERN_WIDTH {
+                    let x = x_pos as u16 + col;
+                    let y = y_pos as u16 + row;
+
+                    let pattern_row_addr =
+                        pattern_addr + if flip_vert { PATTERN_HEIGHT - row } else { row };
+                    let lo_bits = self.buses.read(pattern_row_addr);
+                    let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT);
+
+                    let mask = if flip_horz {
+                        0b_0000_0001 << col
+                    } else {
+                        0b_1000_0000 >> col
+                    };
+                    let pixel = ((hi_bits & mask) != 0, (lo_bits & mask) != 0);
+
+                    if FRAME_WIDTH <= x || FRAME_HEIGHT <= y {
+                        continue;
+                    }
+
+                    let color = match pixel {
+                        (false, false) => PALETTE_TABLE[palette.0 as usize],
+                        (false, true) => PALETTE_TABLE[palette.1 as usize],
+                        (true, false) => PALETTE_TABLE[palette.2 as usize],
+                        (true, true) => PALETTE_TABLE[palette.3 as usize],
+                    };
+
+                    frame.set_pixel(
+                        Point::new(x as i32, y as i32),
+                        Color::RGB(color.0, color.1, color.2),
+                    );
+                }
+            }
+        }
+    }
+
+    fn create_background(&self) -> Frame {
+        let background_pattern_table_addr =
+            self.registers.ppu_ctrl.get_background_pattern_table_addr();
+
+        Frame::new(array::from_fn(|y| {
             array::from_fn(|x| {
                 let pattern_index = self.get_pattern_index(x as u16, y as u16);
                 let pattern_row_index = y % PATTERN_HEIGHT as usize;
@@ -125,7 +189,8 @@ impl PPU {
 
                 let palette = self.get_background_palette(palette_index);
 
-                let pattern_addr = pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
+                let pattern_addr =
+                    background_pattern_table_addr + (pattern_index as u16 * PATTERN_SIZE);
                 let pattern_row_addr = pattern_addr + pattern_row_index as u16;
                 let lo_bits = self.buses.read(pattern_row_addr);
                 let hi_bits = self.buses.read(pattern_row_addr + PATTERN_HEIGHT);
@@ -140,9 +205,6 @@ impl PPU {
                     (true, true) => PALETTE_TABLE[palette.3 as usize],
                 }
             })
-        });
-
-        self.frame = Frame::new(pixels);
-        self.frame_ready = true;
+        }))
     }
 }
