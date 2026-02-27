@@ -1,5 +1,6 @@
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 
+/// Flags in the CPU's processor status word register.
 #[derive(Default, Clone, Copy)]
 pub struct Flags(pub u8);
 
