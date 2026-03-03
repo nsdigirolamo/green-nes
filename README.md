@@ -1,17 +1,37 @@
 # Green Nintendo Entertainment System (GreenNES)
 
-An emulator for the Nintendo Entertainment System (NES) written in Rust.
+GreenNES is a hobbyist emulator for the Nintendo Entertainment System (NES)
+written in Rust. The emulator in its current state is still incomplete, but it
+should be capable of playing basic early-era NES games like _Pac-Man_ or
+_Donkey Kong_.
 
-## More Information
+## Purpose & Objectives
 
-The emulator in its current state is still incomplete. My CPU implementation is
-in an acceptable working state, and I am now focused on getting the PPU working.
-After the PPU, I'm going to focus on optimizating any performance issues that
-might exist. As a stretch goal I'll consider working on the APU.
+GreenNES was created as a fun exercise to learn more about emulator creation!
+The goals outlined below reflect that original purpose.
+
+GreenNES's CPU implementation is mostly complete, with the exception of a few
+missing unofficial opcodes. The remaining work is centered around the other
+components: the PPU, the APU, and I/O.
+
+### Short-Term Goals
+
+- Lock frame generation to the native framerate (~30 fps).
+- Fix sprite rendering issues.
+- Implement PPU scrolling behavior.
+- Check emulation accuracy against a wider range of test ROMs.
+
+### Long-Term Goals
+
+- Overhaul PPU implementation to be pixel-accurate.
+- Implement APU.
+- Implement the most common cartridge mappers.
+- Improve UI to include useful tools like save states.
 
 ## Resources
 
-Below is a list of resources that I have found to be useful reference material as I build this emulator:
+Below is a list of resources that I have found to be useful reference material
+as I build this emulator:
 
 - The NesDev Wiki's [NES Reference Guide](https://www.nesdev.org/wiki/NES_reference_guide) and [forums](https://forums.nesdev.org/index.php).
 - [_MOS MCS6500 Microcomputer Family Hardware Manual_](https://archive.org/details/mcs-6500-family-hardware-manual-1976-01/page/n1/mode/2up)
