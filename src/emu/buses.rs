@@ -2,6 +2,7 @@ use std::array;
 
 use crate::concat_u8;
 use crate::emu::cartridge::Cartridge;
+use crate::emu::io::controller::Controller;
 use crate::emu::ppu::{OAM_SIZE, PPU};
 
 // Internal RAM
@@ -46,6 +47,7 @@ pub struct Buses {
     irq: bool,
     /// The NMI pin, where `True` means the pin is pulled low.
     nmi: bool,
+    pub controller: Controller,
 }
 
 impl Buses {
@@ -58,6 +60,7 @@ impl Buses {
             nmi: false,
             irq: false,
             ppu: PPU::new(cart),
+            controller: Controller::new(),
         }
     }
 
@@ -86,7 +89,33 @@ impl Buses {
                     _ => unreachable!("mod 8 is no greater than 7"),
                 }
             }
-            IO_START_ADDR..IO_END_ADDR => 0,               // TODO
+            IO_START_ADDR..IO_END_ADDR => match (addr - IO_START_ADDR) % 0x18 {
+                0x00 => 0, // todo: SQ1_VOL
+                0x01 => 0, // todo: SQ1_SWEEP
+                0x02 => 0, // todo: SQ1_LOW
+                0x03 => 0, // todo: SQ1_HIGH
+                0x04 => 0, // todo: SQ2_VOL
+                0x05 => 0, // todo: SQ2_SWEEP
+                0x06 => 0, // todo: SQ2_LO
+                0x07 => 0, // todo: SQ2_HI
+                0x08 => 0, // todo: TRI_LINEAR
+                0x09 => 0, // ignore; unused
+                0x0A => 0, // todo: TRI_LO
+                0x0B => 0, // todo: TRI_HI
+                0x0C => 0, // todo: NOISE_VOL
+                0x0D => 0, // ignore; unused
+                0x0E => 0, // todo: NOISE_LO
+                0x0F => 0, // todo: NOISE_HI
+                0x10 => 0, // todo: DMC_FREQ
+                0x11 => 0, // todo: DMC_RAW
+                0x12 => 0, // todo: DMC_START
+                0x13 => 0, // todo: DMC_LEN
+                0x14 => 0, // todo: OAM_DMA
+                0x15 => 0, // todo: SND_CHN
+                0x16 => self.controller.read(),
+                0x17 => 0, // todo: JOY2
+                _ => unreachable!("mod 0x18 is no greater than 0x17"),
+            },
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => 0, // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => self.cart.mapper.borrow().prg_read(addr),
         }
@@ -153,39 +182,37 @@ impl Buses {
                     _ => unreachable!("mod 8 is no greater than 7"),
                 }
             }
-            IO_START_ADDR..IO_END_ADDR => {
-                match (addr - IO_START_ADDR) % 0x18 {
-                    0x00 => (), // todo: SQ1_VOL
-                    0x01 => (), // todo: SQ1_SWEEP
-                    0x02 => (), // todo: SQ1_LOW
-                    0x03 => (), // todo: SQ1_HIGH
-                    0x04 => (), // todo: SQ2_VOL
-                    0x05 => (), // todo: SQ2_SWEEP
-                    0x06 => (), // todo: SQ2_LO
-                    0x07 => (), // todo: SQ2_HI
-                    0x08 => (), // todo: TRI_LINEAR
-                    0x09 => (), // ignore; unused
-                    0x0A => (), // todo: TRI_LO
-                    0x0B => (), // todo: TRI_HI
-                    0x0C => (), // todo: NOISE_VOL
-                    0x0D => (), // ignore; unused
-                    0x0E => (), // todo: NOISE_LO
-                    0x0F => (), // todo: NOISE_HI
-                    0x10 => (), // todo: DMC_FREQ
-                    0x11 => (), // todo: DMC_RAW
-                    0x12 => (), // todo: DMC_START
-                    0x13 => (), // todo: DMC_LEN
-                    0x14 => {
-                        let oam_data: [u8; OAM_SIZE] =
-                            array::from_fn(|i| self.fetch_data(concat_u8!(data, i)));
-                        self.ppu.write_oam_dma(&oam_data);
-                    }
-                    0x15 => (), // todo: SND_CHN
-                    0x16 => (), // todo: JOY1
-                    0x17 => (), // todo: JOY2
-                    _ => unreachable!("mod 0x18 is no greater than 0x17"),
+            IO_START_ADDR..IO_END_ADDR => match (addr - IO_START_ADDR) % 0x18 {
+                0x00 => (), // todo: SQ1_VOL
+                0x01 => (), // todo: SQ1_SWEEP
+                0x02 => (), // todo: SQ1_LOW
+                0x03 => (), // todo: SQ1_HIGH
+                0x04 => (), // todo: SQ2_VOL
+                0x05 => (), // todo: SQ2_SWEEP
+                0x06 => (), // todo: SQ2_LO
+                0x07 => (), // todo: SQ2_HI
+                0x08 => (), // todo: TRI_LINEAR
+                0x09 => (), // ignore; unused
+                0x0A => (), // todo: TRI_LO
+                0x0B => (), // todo: TRI_HI
+                0x0C => (), // todo: NOISE_VOL
+                0x0D => (), // ignore; unused
+                0x0E => (), // todo: NOISE_LO
+                0x0F => (), // todo: NOISE_HI
+                0x10 => (), // todo: DMC_FREQ
+                0x11 => (), // todo: DMC_RAW
+                0x12 => (), // todo: DMC_START
+                0x13 => (), // todo: DMC_LEN
+                0x14 => {
+                    let oam_data: [u8; OAM_SIZE] =
+                        array::from_fn(|i| self.fetch_data(concat_u8!(data, i)));
+                    self.ppu.write_oam_dma(&oam_data);
                 }
-            }
+                0x15 => (), // todo: SND_CHN
+                0x16 => self.controller.write(data),
+                0x17 => (), // todo: JOY2
+                _ => unreachable!("mod 0x18 is no greater than 0x17"),
+            },
             TEST_MODE_START_ADDR..TEST_MODE_END_ADDR => (), // TODO
             CARTRIDGE_ROM_MAPPER_START_ADDR.. => {
                 self.cart.mapper.borrow_mut().prg_write(addr, data)

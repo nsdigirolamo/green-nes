@@ -1,28 +1,28 @@
-use std::fmt;
-
-pub mod debug;
-
-use sdl2::{
-    event::Event,
-    keyboard::Keycode,
-    pixels::{Color, PixelFormatEnum},
-};
-
 use crate::{
     DebugLevel, concat_u8,
     emu::{
         buses::Buses,
         cartridge::Cartridge,
         cpu::{CPU, registers::Registers},
+        io::controller::Buttons,
         nes::debug::get_debug_text,
         ppu::frame::Frame,
     },
 };
+use sdl2::{
+    event::Event,
+    keyboard::Keycode,
+    pixels::{Color, PixelFormatEnum},
+};
+use std::collections::HashMap;
+use std::fmt;
 
 pub struct NES {
     pub buses: Buses,
     pub cpu: CPU,
 }
+
+pub mod debug;
 
 impl NES {
     pub fn new(cart: Cartridge) -> Self {
@@ -57,6 +57,16 @@ impl NES {
 
         let mut event_pump = sdl_context.event_pump().unwrap();
 
+        let mut key_map = HashMap::new();
+        key_map.insert(Keycode::Down, Buttons::DOWN);
+        key_map.insert(Keycode::Up, Buttons::UP);
+        key_map.insert(Keycode::Right, Buttons::RIGHT);
+        key_map.insert(Keycode::Left, Buttons::LEFT);
+        key_map.insert(Keycode::Space, Buttons::SELECT);
+        key_map.insert(Keycode::Return, Buttons::START);
+        key_map.insert(Keycode::A, Buttons::A);
+        key_map.insert(Keycode::S, Buttons::B);
+
         'running: while !self.cpu.is_halted() {
             if self.cpu.get_cycle_queue().is_empty() && debug_level == DebugLevel::Low {
                 println!("{self:?}")
@@ -86,6 +96,22 @@ impl NES {
                             keycode: Some(Keycode::Escape),
                             ..
                         } => break 'running,
+
+                        Event::KeyDown { keycode, .. } => {
+                            if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                                self.buses
+                                    .controller
+                                    .set_button_pressed(Buttons::from(*key), true);
+                            }
+                        }
+                        Event::KeyUp { keycode, .. } => {
+                            if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                                self.buses
+                                    .controller
+                                    .set_button_pressed(Buttons::from(*key), false);
+                            }
+                        }
+
                         _ => {}
                     }
                 }

@@ -2,6 +2,7 @@ pub mod buses;
 pub mod cartridge;
 pub mod cpu;
 pub mod error;
+pub mod io;
 pub mod nes;
 pub mod ppu;
 
