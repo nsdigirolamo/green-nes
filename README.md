@@ -1,9 +1,15 @@
+
+
 # Green Nintendo Entertainment System (GreenNES)
 
 GreenNES is a hobbyist emulator for the Nintendo Entertainment System (NES)
 written in Rust. The emulator in its current state is still incomplete, but it
 should be capable of playing basic early-era NES games like _Pac-Man_ or
 _Donkey Kong_.
+
+<p align="center">
+  <img width="384" height="360" alt="a recorded pacman demo" src="https://github.com/user-attachments/assets/f26693a1-2b32-46e5-967c-ed0caa83fd1e" />
+</p>
 
 ## Purpose & Objectives
 
