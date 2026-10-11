@@ -1,5 +1,3 @@
-
-
 # Green Nintendo Entertainment System (GreenNES)
 
 GreenNES is a hobbyist emulator for the Nintendo Entertainment System (NES)
@@ -47,3 +45,59 @@ as I build this emulator:
 - [_64doc_](https://atarihq.com/danb/files/64doc.txt) by John West and Marko Mäkelä (also available [here](https://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc) and [here](https://nerdy-nights.nes.science/downloads/missing/64doc.txt)).
 - [_6502 “Illegal” Opcodes Demystified_](https://www.masswerk.at/nowgobang/2021/6502-illegal-opcodes) by Norbert Landsteiner
 - [_How MOS 6502 Illegal Opcodes really work_](https://www.pagetable.com/?p=39) by Michael Steil
+
+## Building & Running from Source
+
+If you want to run GreenNES on your machine, you'll first need to build it from
+source. Start by installing the following tools:
+
+- [Bash](https://www.gnu.org/software/bash/)
+- [Make](https://www.gnu.org/software/make)
+- [Git](https://git-scm.com)
+- [Rust](https://rust-lang.org)
+
+Then clone the repository with Git:
+
+```sh
+git clone https://github.com/nsdigirolamo/green-nes.git
+```
+
+Running the following command will build and save the emulator's binary in
+`./target/release/green-nes`:
+
+```sh
+make build
+```
+
+### Verify a Successful Build
+
+
+The `download-tests.sh` script will download the [nestest](https://www.qmtpro.com/~nes/misc/nestest.txt) 
+test ROM to your machine, alongside its README and a known good log of the test.
+
+Running the following command will execute the above script and then run a 
+single unit test against the downloaded ROM:
+
+```sh
+make test
+```
+
+This unit test passing indicates GreenNES is properly emulating the NES CPU. 
+
+### Running NES Games
+
+Game support on GreenNES is currently limited to only games from [NROM](https://www.nesdev.org/wiki/NROM) 
+cartridge boards in the [iNES](https://www.nesdev.org/wiki/INES#iNES_file_format) 
+1.0 file format. 
+
+To run a game in GreenNES, provide its path to the `run` argument:
+
+```sh
+./target/release/green-nes run game.nes
+```
+
+And running the following will show a list of the emulator's other options:
+
+```sh
+./target/release/green-nes help
+```
